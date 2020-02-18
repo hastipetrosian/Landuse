@@ -12,4 +12,4 @@
 - figure out how to:
     - aggregate/coarsen rasters (e.g. google "R reduce raster resolution")
 	- derive transition tables (for each pair of years)
-	- read the geospatial intro stuff
+	- read the geospatial intro stuff (also https://rspatial.org/raster/analysis/index.html )
