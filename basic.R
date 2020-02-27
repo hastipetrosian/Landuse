@@ -74,8 +74,6 @@ plot_grid(plotlist=plots)
 ## plot(r)
 ## spplot(r) ## ugly
 clim_data <- (
-    read_excel("climate/climate data.xlsx", col_names=TRUE)
-    ## convert Farsi numbers to Western ...
-    %>% mutate_if(contains_slash, make_number)
+    read_excel("climate/climate_data.xlsx", col_names=TRUE)
 )
 

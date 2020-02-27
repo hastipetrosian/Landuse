@@ -1,9 +1,10 @@
-get_categorical_raster <- function(year) {
-    raster_fn <- paste0(year,"R/",year,".tif")
+get_categorical_raster <- function(year,quiet=FALSE) {
+    if (!quiet) cat(year,"\n")
+    raster_fn <- paste0(year,"R/",year,"raster.tif")
     r <- raster(raster_fn)
     r <- ratify(r)
     rat <- levels(r)[[1]]  ## extract ID table
-    dbf_fn <- paste0(year,"R/",year,".tif.vat.dbf")
+    dbf_fn <- paste0(year,"R/",year,"raster.tif.vat.dbf")
     dd <- foreign::read.dbf(dbf_fn)
     landuse_cats <- dd$descrip
     ## check that number of labels equals number of categories!
