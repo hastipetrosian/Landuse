@@ -82,11 +82,37 @@ clim_data <- (
 ### land-use change raster stack
 ## ObsLulcRasterStack(rr_list)  ## doesn't know what to do
 ObsLulcRasterStack(rr_list,pattern="*") ## *=use all rasters
-ObsLulcRasterStack(rr_list,
+rs <- ObsLulcRasterStack(rr_list,
                    pattern="[0-9]+", ## use all numbers
                    ## this only works if we only have the
                    ##  land-use rasters; if we have climate,
                    ##  DEM, etc. then we have to give just
                    ##  the vector of years
                    t=as.numeric(names(rr_list)))
-                   
+
+crosstab(stack(rr_list[[1]],rr_list[[2]]))
+crosstab(stack(rs[[1]],rs[[2]]))
+
+crossTabulate(rs,times=c(1987,2014))
+
+## find attribute table
+attributes(x@data)$attributes
+
+## this stuff doesn't work
+x <- rr_list[[1]]
+y <- rr_list[[2]]
+z <- x==3 & y!=3  ## places where erg was lost between 1987 and 1997 (i.e. nowhere)
+levelplot(z)
+summary(x)
+
+x2 <- rr_list[["2014"]]
+## plots of erg and change
+levelplot(x==3)  ## erg in 1987
+levelplot(y==3)  ## erg in 1997
+levelplot(x==3 & y==3)  ## erg in both years
+levelplot(x!=3)       ## non-erg in 19878
+levelplot(x==3 & y!=3)  ## weird-looking because all zero (no loss of erg)
+levelplot(x!=3 & y==3)  ## gain of erg
+
+levelplot(x==3 & x2!=3)
+
