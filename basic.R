@@ -10,6 +10,7 @@ library(fasterize)  ## may need to install this
 library(rasterVis)
 library(foreign)
 library(cowplot)
+library(lulcc)
 
 source("functions.R")
 
@@ -77,3 +78,15 @@ clim_data <- (
     read_excel("climate/climate_data.xlsx", col_names=TRUE)
 )
 
+
+### land-use change raster stack
+## ObsLulcRasterStack(rr_list)  ## doesn't know what to do
+ObsLulcRasterStack(rr_list,pattern="*") ## *=use all rasters
+ObsLulcRasterStack(rr_list,
+                   pattern="[0-9]+", ## use all numbers
+                   ## this only works if we only have the
+                   ##  land-use rasters; if we have climate,
+                   ##  DEM, etc. then we have to give just
+                   ##  the vector of years
+                   t=as.numeric(names(rr_list)))
+                   
