@@ -135,5 +135,9 @@ before_after(c("erg","other"),c("other","erg"))
 r3 <- overlay(rr_list[[3]], rr_list[[4]],
               fun = before_after)
 levelplot(r3)                      
-
-
+#slope and aspect
+k=terrain(m, opt="slope", unit="radians", neighbors=8)
+plot(k)
+k=terrain(m, opt="aspect", unit="radians", neighbors=8)
+k2=terrain(m, opt="aspect", unit="radians", neighbors=8)
+plot(k2)
