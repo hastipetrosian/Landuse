@@ -116,3 +116,24 @@ levelplot(x!=3 & y==3)  ## gain of erg
 
 levelplot(x==3 & x2!=3)
 
+a <- rr_list[[1]]
+levelplot(a)
+## can't aggregate too much or we lose categories
+r2 <- make_categorical(aggregate(rr_list[[1]],fact=4,fun=modal))
+levelplot(r2)
+dd <- as_tibble(as.data.frame(r2))
+table(dd$landuse)
+
+before_after <- function(x,y) {
+    2*as.numeric(x=="erg")+as.numeric(y=="erg")
+}
+
+## 3=both, 2=before, 1=after, 0=neither
+before_after(c("erg","other"),c("other","erg"))
+## test: work on re-categorizing ...
+
+r3 <- overlay(rr_list[[3]], rr_list[[4]],
+              fun = before_after)
+levelplot(r3)                      
+
+
