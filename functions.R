@@ -6,6 +6,7 @@ dbf_fn <- paste0(year,"R/",year,"raster.tif.vat.dbf")
 dd <- foreign::read.dbf(dbf_fn)
 landuse_cats <- dd$descrip
 
+## take a numeric raster and make it categorical
 make_categorical <- function(r,cats=landuse_cats) {
     r <- ratify(r) ## define as categorical
     rat <- levels(r)[[1]]  ## extract ID table
@@ -17,6 +18,7 @@ make_categorical <- function(r,cats=landuse_cats) {
     return(r)
 }
 
+## read raster land-use files for all years
 get_categorical_raster <- function(year,quiet=FALSE) {
     if (!quiet) cat(year,"\n")
     raster_fn <- paste0(year,"R/",year,"raster.tif")

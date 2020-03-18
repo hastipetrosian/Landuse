@@ -12,6 +12,7 @@ library(foreign)
 library(cowplot)
 library(lulcc)
 
+do_shape_files <- FALSE
 source("functions.R")
 
 ## check what's going on as you go through the code
@@ -19,33 +20,35 @@ source("functions.R")
 ##   names(.)
 ##   str(.)
 
-## all shape files:
-shapefiles <- list.files(pattern="*.shp$",recursive=TRUE)
-## dd_list <- lapply(v2shp, read_sf)
-dd_list <- map(shapefiles, read_sf)  ## reading all of the files into a list
-## extract the first number from each file name
-year_vec <- parse_number(shapefiles)
-names(dd_list) <- year_vec
-plot(dd_list[["2014"]])
-
-## draw all of the vector maps
-op <- par(mfrow=c(2,3))   ## set up a 2x3 grid of plots
-## (2 rows, 3 columns)
-map(dd_list,
-    ## . represents the current element in the list
-    ## key.pos and reset are necessary so we can plot all of the maps
-    ## together (see ?plot.sf)
-    ~ plot(.["descrip"],key.pos=NULL,reset=FALSE))
-par(op)  ## restore old parameters
-
-## dd_list[[1]]["descrip"]
-
-all_descrip <- map(dd_list, ~ sort(.["descrip"]$descrip))
-sort(unique(unlist(all_descrip)))
-
-## acquaculture -> aquaculture
-
-length(dd_list)  ## how many maps?
+if (do_shape_files) {
+  ## all shape files:
+  shapefiles <- list.files(pattern="*.shp$",recursive=TRUE)
+  ## dd_list <- lapply(v2shp, read_sf)
+  dd_list <- map(shapefiles, read_sf)  ## reading all of the files into a list
+  ## extract the first number from each file name
+  year_vec <- parse_number(shapefiles)
+  names(dd_list) <- year_vec
+  plot(dd_list[["2014"]])
+  
+  ## draw all of the vector maps
+  op <- par(mfrow=c(2,3))   ## set up a 2x3 grid of plots
+  ## (2 rows, 3 columns)
+  map(dd_list,
+      ## . represents the current element in the list
+      ## key.pos and reset are necessary so we can plot all of the maps
+      ## together (see ?plot.sf)
+      ~ plot(.["descrip"],key.pos=NULL,reset=FALSE))
+  par(op)  ## restore old parameters
+  
+  ## dd_list[[1]]["descrip"]
+  
+  all_descrip <- map(dd_list, ~ sort(.["descrip"]$descrip))
+  sort(unique(unlist(all_descrip)))
+  
+  ## acquaculture -> aquaculture
+  
+  length(dd_list)  ## how many maps?
+}
 
 ## only reading the landuse rasters
 rasterfiles <- list.files(pattern="*.tif$",recursive=TRUE)
