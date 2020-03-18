@@ -55,7 +55,8 @@ rasterfiles <- list.files(pattern="*.tif$",recursive=TRUE)
 years <- parse_number(rasterfiles)
 years <- years[years>1900] ## leave out DEM file
 
-rr_list <- map(years, get_categorical_raster)  ## reading all of the files into a list
+## reading all of the files into a list
+rr_list <- map(years, get_categorical_raster, list_cats=TRUE)  
 names(rr_list) <- years
 
 dem <- raster("dem/Extract_dem11.tif")
@@ -84,7 +85,6 @@ clim_data <- (
 
 ### land-use change raster stack
 ## ObsLulcRasterStack(rr_list)  ## doesn't know what to do
-ObsLulcRasterStack(rr_list,pattern="*") ## *=use all rasters
 rs <- ObsLulcRasterStack(rr_list,
                    pattern="[0-9]+", ## use all numbers
                    ## this only works if we only have the
@@ -99,7 +99,7 @@ crosstab(stack(rs[[1]],rs[[2]]))
 crossTabulate(rs,times=c(1987,2014))
 
 ## find attribute table
-attributes(x@data)$attributes
+## attributes(x@data)$attributes
 
 ## this stuff doesn't work
 x <- rr_list[[1]]
@@ -122,7 +122,8 @@ levelplot(x==3 & x2!=3)
 a <- rr_list[[1]]
 levelplot(a)
 ## can't aggregate too much or we lose categories
-r2 <- make_categorical(aggregate(rr_list[[1]],fact=4,fun=modal))
+r2 <- make_categorical(aggregate(rr_list[[1]],fact=6,fun=modal),
+                       rat=get_rat(rr_list[[1]]))
 levelplot(r2)
 dd <- as_tibble(as.data.frame(r2))
 table(dd$landuse)
@@ -134,10 +135,15 @@ before_after <- function(x,y) {
 ## 3=both, 2=before, 1=after, 0=neither
 before_after(c("erg","other"),c("other","erg"))
 ## test: work on re-categorizing ...
-
+## BMB: not sure this works yet ...
 r3 <- overlay(rr_list[[3]], rr_list[[4]],
               fun = before_after)
-levelplot(r3)                      
+levelplot(r3)
+r4 <- overlay(rr_list[[1]], rr_list[[6]],
+              fun = before_after)
+levelplot(r4)
+table(as.data.frame(r4)$layer)
+
 #slope and aspect
 k=terrain(m, opt="slope", unit="radians", neighbors=8)
 plot(k)
