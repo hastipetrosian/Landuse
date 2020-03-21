@@ -92,3 +92,4 @@ mutate_if(contains_slash, make_number
 <-aspect=terrain(g1, opt="aspect",unit="radians")
 <-plot(aspect)
 <-plot(slope)
+
