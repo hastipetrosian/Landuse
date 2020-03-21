@@ -1,0 +1,79 @@
+---
+title: "Change detection"
+---
+
+```{r pkgs,message=FALSE,warning=FALSE}
+library(raster)
+library(tidyverse)
+library(readxl)
+library(rasterVis)
+source("functions.R")
+```
+
+```{r analysis1, eval=FALSE}
+a= raster("1987R/1987raster.tif")
+b=raster("1997R/1997raster.tif")
+c=raster("2003R/2003raster.tif")
+d=raster("2008R/2008raster.tif")
+e=raster("2014R/2014raster.tif")
+f=raster("2018R/2018raster.tif")
+H=stack(a,b)
+crosstab(H, row.vars = "Values", col.vars = "name", type ="r")
+```
+
+I repeated the 8th and 9th steps for each pair of years.
+
+
+
+```{r get_rasters}
+rasterfiles <- list.files(pattern="*.tif$",recursive=TRUE)
+years <- parse_number(rasterfiles)
+years <- years[years>1900] ## leave out DEM file
+rr_list <- map(years, get_categorical_raster, quiet=TRUE)
+names(rr_list) <- years
+dem <- raster("dem/Extract_dem11.tif")
+```
+
+Try `?"levelplot-methods"`
+
+```{r aggplot}
+levelplot(aggregate(rr_list[[1]], fact=8),
+          margin=FALSE,
+          region=TRUE)
+## how to get colorkey right?
+```
+
+Utility function for computing land-use changes:
+```{r ctabfun}
+ctabfun <- function(x,y) {
+  (crosstab(stack(x,y),long=TRUE)         ## compute cross-tab
+    %>% setNames(c("pre","post","Freq")) 
+    %>% mutate_at(c("pre","post"),factor, ## convert numbers to labels
+                  levels=levels(x)[[1]]$ID,
+                  labels=levels(x)[[1]]$landuse)
+    ## calculate fraction of pre-cover converted to each type
+    %>% group_by(pre)
+    %>% mutate(prop=Freq/sum(Freq))
+  )
+}
+```
+
+Compute proportions for first two years:
+
+```{r sum}
+(ctabfun(rr_list[[1]],rr_list[[2]])
+  %>% filter(pre!=post)
+  %>% arrange(desc(prop))
+  %>% head()
+)
+```
+
+## get climate data
+
+```{r}
+clim <- (read_excel("climate/climate_data.xlsx")
+  %>% pivot_longer(names_to="variable",
+                   cols=-index)
+  %>% rename(year=index)
+)
+```
