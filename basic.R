@@ -76,6 +76,19 @@ plot_grid(plotlist=plots)
 clim_data <- (
     read_excel("climate/climate data.xlsx", col_names=TRUE)
     ## convert Farsi numbers to Western ...
-    %>% mutate_if(contains_slash, make_number)
-)
-
+mutate_if(contains_slash, make_number
+#raster maps          
+<-a=raster("1987R/1987raster.tif")
+<-b=raster("1997R/1997raster.tif")
+<-c=raster("2003R/2003raster.tif")
+<-d=raster("2008R/2008raster.tif")
+<-e=raster("2014R/2014raster.tif")
+<-f=raster("2018R/2018raster.tif")
+<-g=raster("dem/Extract_dem11.tif")
+#aggregate fact=2
+<-g1=aggregate(g,fact=2,fun=modal)
+#slope and aspect
+<-slope=terrain(g1, opt="slope",unit="radians")
+<-aspect=terrain(g1, opt="aspect",unit="radians")
+<-plot(aspect)
+<-plot(slope)
