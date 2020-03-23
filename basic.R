@@ -167,9 +167,13 @@ table(as.data.frame(r4)$layer)
 
 #slope and aspect
 m=raster("dem/Extract_dem11.tif")
-m1=aggregate(m,fact=4,fun=modal)
+m1=aggregate(m,fact=2,fun=modal)
 k=terrain(m1, opt="slope", unit="radians", neighbors=8)
 plot(k)
 k=terrain(m1, opt="aspect", unit="radians", neighbors=8)
 k2=terrain(m1, opt="aspect", unit="radians", neighbors=8)
 plot(k2)
+#focal with matrix 3*3
+library(raster)
+fa=focal(a,matrix(1/9,nrow=3,ncol=3))
+
