@@ -11,6 +11,7 @@ library(rasterVis)
 library(foreign)
 library(cowplot)
 library(lulcc)
+library(sp)
 
 do_shape_files <- FALSE
 source("functions.R")
@@ -78,30 +79,17 @@ plot_grid(plotlist=plots)
 ## r <- fasterize(x, r, field = "dn")
 ## plot(r)
 ## spplot(r) ## ugly
-<-clim_data <- (
-<<<<<<< HEAD
-    read_excel("climate/climate data.xlsx", col_names=TRUE)
-    ## convert Farsi numbers to Western ...
-mutate_if(contains_slash, make_number
-#raster maps          
-<-raster("1987R/1987raster.tif")
-<-raster("1997R/1997raster.tif")
-<-raster("2003R/2003raster.tif")
-<-d=raster("2008R/2008raster.tif")
-<-e=raster("2014R/2014raster.tif")
-<-f=raster("2018R/2018raster.tif")
-<-g=raster("dem/Extract_dem11.tif")
-#aggregate fact=2
-<-g1=aggregate(g,fact=2,fun=modal)
+clim_data <-  read_excel("climate/climate data.xlsx", col_names=TRUE)
+
+##aggregate fact=2
+## BMB: modal aggregation usually doesn't make sense for numeric rasters
+## dem_agg=aggregate(dem,fact=2,fun=modal)
+
 #slope and aspect
-<-slope=terrain(g1, opt="slope",unit="radians")
-<-aspect=terrain(g1, opt="aspect",unit="radians")
-<-plot(aspect)
-<-plot(slope)
-=======
-    read_excel("climate/climate_data.xlsx", col_names=TRUE)
-)
->>>>>>> 446cf762d1eed16341df5b2b2272f852e30f83db
+slope <- terrain(dem, opt="slope",unit="radians")
+aspect <- terrain(dem, opt="aspect",unit="radians")
+levelplot(aspect)
+levelplot(slope)
 
 
 ### land-use change raster stack
@@ -112,20 +100,20 @@ rs <- ObsLulcRasterStack(rr_list,
                    ##  land-use rasters; if we have climate,
                    ##  DEM, etc. then we have to give just
                    ##  the vector of years
-<-t=as.numeric(names(rr_list)))
+t=as.numeric(names(rr_list)))
 
-<- crosstab(stack(rr_list[[1]],rr_list[[2]]))
-<- crosstab(stack(rs[[1]],rs[[2]]))
+crosstab(stack(rr_list[[1]],rr_list[[2]]))
+crosstab(stack(rs[[1]],rs[[2]]))
 
-<-crossTabulate(rs,times=c(1987,2014))
+crossTabulate(rs,times=c(1987,2014))
 
 ## find attribute table
 ## attributes(x@data)$attributes
 
 ## this stuff doesn't work
-<- x <- rr_list[[1]]
-<- y <- rr_list[[2]]
-<- z <- x==3 & y!=3  ## places where erg was lost between 1987 and 1997 (i.e. nowhere)
+x <- rr_list[[1]]
+y <- rr_list[[2]]
+z <- x==3 & y!=3  ## places where erg was lost between 1987 and 1997 (i.e. nowhere)
 levelplot(z)
 summary(x)
 
@@ -165,24 +153,30 @@ r4 <- overlay(rr_list[[1]], rr_list[[6]],
 levelplot(r4)
 table(as.data.frame(r4)$layer)
 
-#slope and aspect
-m=raster("dem/Extract_dem11.tif")
-m1=aggregate(m,fact=2,fun=modal)
-k=terrain(m1, opt="slope", unit="radians", neighbors=8)
-plot(k)
-k=terrain(m1, opt="aspect", unit="radians", neighbors=8)
-k2=terrain(m1, opt="aspect", unit="radians", neighbors=8)
-plot(k2)
-#focal with matrix 3*3 with sum (default)
-library(sp)
-library(raster)
-fa=focal(a,matrix(1/9,nrow=3,ncol=3))
-#focal with matrix 3*3 with mode
-fa2=focal(a,matrix(1/9,nrow=3,ncol=3), fun=mode)
-#data fram of 1987 raster layer (recived error)
-as.data.frame(fa2,row.names="erg")
-Warning message:
-In as.data.frame.numeric (v, row.names = row.names, optional = optional,  :
-'row.names' is not a character vector of length 548856 -- omitting it. Will be an error!
-#the matrix value is NaN
-as.data.frame.matrix(fa2)
+##slope and aspect
+
+slope <- terrain(dem, opt="slope", unit="radians", neighbors=8)
+levelplot(slope)
+aspect <- terrain(dem, opt="aspect", unit="radians", neighbors=8)
+levelplot(aspect)
+
+
+a <- rr_list[[1]]
+##focal with matrix 3*3 with sum (default)
+## BMB: numeric operations on categorical rasters don't usually make sense
+prop <- focal(a,matrix(1/9,nrow=3,ncol=3))
+##focal with matrix 3*3 with modal (BMB: not mode!)
+prop2 <- focal(a,matrix(1,nrow=3,ncol=3), fun=modal)
+## BMB: 
+##data fram of 1987 raster layer (recived error)
+xx <- as.data.frame(rasterToPoints(prop2))
+## BMB: we've lost the categorical labels again ...
+table(xx$layer)
+
+## BMB::as.data.frame.matrix is not what we want;
+## we need the data in long format (one row per pixel)
+## the NaN values are there because they represent the
+## 'undefined' corners of the map
+
+xx2 <- as.data.frame.matrix(prop2)
+image(as.matrix(xx2)) ## rotated, ugly
