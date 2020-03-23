@@ -78,15 +78,15 @@ plot_grid(plotlist=plots)
 ## r <- fasterize(x, r, field = "dn")
 ## plot(r)
 ## spplot(r) ## ugly
-clim_data <- (
+<-clim_data <- (
 <<<<<<< HEAD
     read_excel("climate/climate data.xlsx", col_names=TRUE)
     ## convert Farsi numbers to Western ...
 mutate_if(contains_slash, make_number
 #raster maps          
-<-a=raster("1987R/1987raster.tif")
-<-b=raster("1997R/1997raster.tif")
-<-c=raster("2003R/2003raster.tif")
+<-raster("1987R/1987raster.tif")
+<-raster("1997R/1997raster.tif")
+<-raster("2003R/2003raster.tif")
 <-d=raster("2008R/2008raster.tif")
 <-e=raster("2014R/2014raster.tif")
 <-f=raster("2018R/2018raster.tif")
@@ -112,20 +112,20 @@ rs <- ObsLulcRasterStack(rr_list,
                    ##  land-use rasters; if we have climate,
                    ##  DEM, etc. then we have to give just
                    ##  the vector of years
-                   t=as.numeric(names(rr_list)))
+<-t=as.numeric(names(rr_list)))
 
-crosstab(stack(rr_list[[1]],rr_list[[2]]))
-crosstab(stack(rs[[1]],rs[[2]]))
+<- crosstab(stack(rr_list[[1]],rr_list[[2]]))
+<- crosstab(stack(rs[[1]],rs[[2]]))
 
-crossTabulate(rs,times=c(1987,2014))
+<-crossTabulate(rs,times=c(1987,2014))
 
 ## find attribute table
 ## attributes(x@data)$attributes
 
 ## this stuff doesn't work
-x <- rr_list[[1]]
-y <- rr_list[[2]]
-z <- x==3 & y!=3  ## places where erg was lost between 1987 and 1997 (i.e. nowhere)
+<- x <- rr_list[[1]]
+<- y <- rr_list[[2]]
+<- z <- x==3 & y!=3  ## places where erg was lost between 1987 and 1997 (i.e. nowhere)
 levelplot(z)
 summary(x)
 
@@ -173,7 +173,16 @@ plot(k)
 k=terrain(m1, opt="aspect", unit="radians", neighbors=8)
 k2=terrain(m1, opt="aspect", unit="radians", neighbors=8)
 plot(k2)
-#focal with matrix 3*3
+#focal with matrix 3*3 with sum (default)
+library(sp)
 library(raster)
 fa=focal(a,matrix(1/9,nrow=3,ncol=3))
-
+#focal with matrix 3*3 with mode
+fa2=focal(a,matrix(1/9,nrow=3,ncol=3), fun=mode)
+#data fram of 1987 raster layer (recived error)
+as.data.frame(fa2,row.names="erg")
+Warning message:
+In as.data.frame.numeric (v, row.names = row.names, optional = optional,  :
+'row.names' is not a character vector of length 548856 -- omitting it. Will be an error!
+#the matrix value is NaN
+as.data.frame.matrix(fa2)
