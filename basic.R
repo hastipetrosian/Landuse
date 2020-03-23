@@ -136,8 +136,10 @@ r3 <- overlay(rr_list[[3]], rr_list[[4]],
               fun = before_after)
 levelplot(r3)                      
 #slope and aspect
-k=terrain(m, opt="slope", unit="radians", neighbors=8)
+m=raster("dem/Extract_dem11.tif")
+m1=aggregate(m,fact=4,fun=modal)
+k=terrain(m1, opt="slope", unit="radians", neighbors=8)
 plot(k)
-k=terrain(m, opt="aspect", unit="radians", neighbors=8)
-k2=terrain(m, opt="aspect", unit="radians", neighbors=8)
+k=terrain(m1, opt="aspect", unit="radians", neighbors=8)
+k2=terrain(m1, opt="aspect", unit="radians", neighbors=8)
 plot(k2)
