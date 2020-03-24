@@ -1,14 +1,22 @@
 ## TO DO
 
-- Draw raster maps of land cover change?
-- Figure out how to compute neighbourhood values in R
-- Think about the appropriate scale on which to make predictions
+- clean up `basic.R` ! 
+    - try to make sure that variable names make sense 
+    - delete anything we're not going to use (you can keep a copy of everything anywhere you want as long as I don't have to look at it)
+    - either understand everything or put in comments with ????
+    
+- Draw raster maps of land cover change? (you can do this with the new code; try to make a single plot with `plot_grid` that shows the before/after plots
+- Figure out how to compute neighbourhood values in R (i.e. with `propfun <- function(x) mean(x==3)` and `focal()`)
+- Use `full_join()` to combine columns of aspect, slope, proportion of neighbourhood that is dune, gain/loss score
+
 - Would like to use something like the following predictors for probability of conversion to/from dune: 
      - terrain: altitude, slope, aspect (all computed from DEM)
      - fraction of (at least) dune vs non-dune neighboring cells within a range of scales
   
 - consider renaming climate variables to something easier to use in a model (no spaces, shorter names)
 
+
+## postpone
 
 - think about aggregation
    - if we do everything on the original (30 m) scale then we don't have to make decisions and we don't lose any information, but there might not be much useful information at this scale and the computation will be a lot more awkward (large data sets, slow computation ...) [let's go ahead and *not* aggregate for now]

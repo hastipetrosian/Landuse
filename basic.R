@@ -79,7 +79,7 @@ plot_grid(plotlist=plots)
 ## r <- fasterize(x, r, field = "dn")
 ## plot(r)
 ## spplot(r) ## ugly
-clim_data <-  read_excel("climate/climate data.xlsx", col_names=TRUE)
+clim_data <-  read_excel("climate/climate_data.xlsx", col_names=TRUE)
 
 ##aggregate fact=2
 ## BMB: modal aggregation usually doesn't make sense for numeric rasters
@@ -91,7 +91,7 @@ aspect <- terrain(dem, opt="aspect",unit="radians")
 levelplot(aspect)
 levelplot(slope)
 
-
+## FIXME: do we still need this stuff?
 ### land-use change raster stack
 ## ObsLulcRasterStack(rr_list)  ## doesn't know what to do
 rs <- ObsLulcRasterStack(rr_list,
@@ -137,24 +137,34 @@ levelplot(r2)
 dd <- as_tibble(as.data.frame(r2))
 table(dd$landuse)
 
-before_after <- function(x,y) {
-    2*as.numeric(x=="erg")+as.numeric(y=="erg")
+## too clever:
+##   as.numeric converts a logical variable to 0 or 1
+##   2*as.numeric(x=="erg")  -> 2 for erg, or 0 for not-erg
+##   as.numeric(y=="erg)     -> 1 for erg, or 0 for not-erg
+## so if x and y are both erg -> 3  ("both")
+## if x is erg and y is not   -> 2  ("lost")
+## if x is not-erg and y is erg -> 1 ("gained")
+## if neither is erg -> 0 ("neither")
+before_after <- function(x,y,code=3) {
+    2*as.numeric(x==code)+as.numeric(y==code)
 }
 
 ## 3=both, 2=before, 1=after, 0=neither
-before_after(c("erg","other"),c("other","erg"))
+before_after(c(3,10),c(10,3))
 ## test: work on re-categorizing ...
 ## BMB: not sure this works yet ...
-r3 <- overlay(rr_list[[3]], rr_list[[4]],
+r3 <- overlay(rr_list[["2003"]], rr_list[["2008"]],
               fun = before_after)
+
+## BMB: FIXME: make this categorical again, with
+##   0 -> "neither", 1 -> "gained", 2->"lost"
 levelplot(r3)
-r4 <- overlay(rr_list[[1]], rr_list[[6]],
-              fun = before_after)
-levelplot(r4)
-table(as.data.frame(r4)$layer)
+
+## make this into a long-format tibble
+change1 <- as_tibble(as.data.frame(rasterToPoints(r3)))
 
 ##slope and aspect
-
+## FIXME: this is a repeat from above.  We should clean up!
 slope <- terrain(dem, opt="slope", unit="radians", neighbors=8)
 levelplot(slope)
 aspect <- terrain(dem, opt="aspect", unit="radians", neighbors=8)
@@ -166,17 +176,49 @@ a <- rr_list[[1]]
 ## BMB: numeric operations on categorical rasters don't usually make sense
 prop <- focal(a,matrix(1/9,nrow=3,ncol=3))
 ##focal with matrix 3*3 with modal (BMB: not mode!)
+## using 1/9 as weights instead of 1 as weights gives weird answers
+## (it divides all of the numbers, which correspond to land-use types,
+## by 9)
+## I don't think  modal is what we actually want ...
 prop2 <- focal(a,matrix(1,nrow=3,ncol=3), fun=modal)
 ## BMB: 
-##data fram of 1987 raster layer (recived error)
-xx <- as.data.frame(rasterToPoints(prop2))
+##data frame of 1987 raster layer (recived error)
+xx <- as_tibble(as.data.frame(rasterToPoints(prop2)))
 ## BMB: we've lost the categorical labels again ...
+head(xx)
 table(xx$layer)
+str(xx$layer)
+## make it back into a categorical variable
+xx$layer <- factor(xx$layer,
+                   levels=as.numeric(landuse_cats), ## numeric values
+                   ## use labels from the land use categories
+                   labels=levels(landuse_cats)
+)
+str(xx$layer)
+table(xx$layer)
+
+xx_lost <- (full_join(xx,change1,by=c("x","y"))
+            ## keep only points where there is change 
+            ## %>% filter(layer.y %in% c(1,2))
+            %>% filter(layer.y %in% c(2,3))
+)
+xx_lost
+
 
 ## BMB::as.data.frame.matrix is not what we want;
 ## we need the data in long format (one row per pixel)
 ## the NaN values are there because they represent the
 ## 'undefined' corners of the map
 
+## don't do this! for illustration only; might as well leave it as a raster
 xx2 <- as.data.frame.matrix(prop2)
 image(as.matrix(xx2)) ## rotated, ugly
+
+## check warnings
+warnings()
+## we get these warnings:
+## 1: In min(x) : no non-missing arguments to min; returning Inf
+## when we try to do a levelplot() when all the values are the same
+## (for example, if we're looking at dune loss at the beginning of
+## the data set)
+
