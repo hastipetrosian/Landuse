@@ -79,7 +79,7 @@ plot_grid(plotlist=plots)
 ## r <- fasterize(x, r, field = "dn")
 ## plot(r)
 ## spplot(r) ## ugly
-clim_data <-  read_excel("climate/climate data.xlsx", col_names=TRUE)
+clim_data <-  read_excel("climate/climate_data.xlsx", col_names=TRUE)
 
 ##aggregate fact=2
 ## BMB: modal aggregation usually doesn't make sense for numeric rasters
@@ -119,7 +119,7 @@ summary(x)
 
 x2 <- rr_list[["2014"]]
 ## plots of erg and change
-levelplot(x==3)  ## erg in 1987
+a= ## erg in 1987
 levelplot(y==3)  ## erg in 1997
 levelplot(x==3 & y==3)  ## erg in both years
 levelplot(x!=3)       ## non-erg in 19878
@@ -131,7 +131,7 @@ levelplot(x==3 & x2!=3)
 a <- rr_list[[1]]
 levelplot(a)
 ## can't aggregate too much or we lose categories
-r2 <- make_categorical(aggregate(rr_list[[1]],fact=6,fun=modal),
+r2 <- make_categorical(gate(rr_list[[1]],fact=6,fun=modal),
                        rat=get_rat(rr_list[[1]]))
 levelplot(r2)
 dd <- as_tibble(as.data.frame(r2))
@@ -180,3 +180,131 @@ table(xx$layer)
 
 xx2 <- as.data.frame.matrix(prop2)
 image(as.matrix(xx2)) ## rotated, ugly
+> before_after <- function(x,y) {
+  +     2*as.numeric(x=="erg")+as.numeric(y=="erg")
+  + }
+> before_after(c("erg","other"),c("other","erg"))
+[1] 2 1
+> r3 <- overlay(rr_list[[3]], rr_list[[4]],
+                +               fun = before_after)
+> levelplot(r3)
+Warning messages:
+  1: In min(x) : no non-missing arguments to min; returning Inf
+2: In max(x) : no non-missing arguments to max; returning -Inf
+3: In min(x) : no non-missing arguments to min; returning Inf
+4: In max(x) : no non-missing arguments to max; returning -Inf
+> r4 <- overlay(rr_list[[1]], rr_list[[6]],
+                +               fun = before_after)
+> levelplot(r4)
+Warning messages:
+  1: In min(x) : no non-missing arguments to min; returning Inf
+2: In max(x) : no non-missing arguments to max; returning -Inf
+3: In min(x) : no non-missing arguments to min; returning Inf
+4: In max(x) : no non-missing arguments to max; returning -Inf
+> ergba=function(x,y){as.numeric(x=="erg")+as.numeric(y=="erg")}
+> a=rr_list[[1]]
+> a
+class      : RasterLayer 
+dimensions : 616, 891, 548856  (nrow, ncol, ncell)
+resolution : 50, 50  (x, y)
+extent     : 592280.5, 636830.5, 2827154, 2857954  (xmin, xmax, ymin, ymax)
+crs        : +proj=utm +zone=40 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0 
+source     : C:/Users/asus/Documents/R2/landuse-raster/1987R/1987raster.tif 
+names      : X1987raster 
+values     : 1, 10  (min, max)
+attributes :
+  ID          landuse
+from:  1 agriculture land
+to : 10 vegetation cover
+
+> b=rrlist[[2]]
+Error: object 'rrlist' not found
+> b=rr_list[[2]]
+> b
+class      : RasterLayer 
+dimensions : 616, 891, 548856  (nrow, ncol, ncell)
+resolution : 50, 50  (x, y)
+extent     : 592280.5, 636830.5, 2827154, 2857954  (xmin, xmax, ymin, ymax)
+crs        : +proj=utm +zone=40 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0 
+source     : C:/Users/asus/Documents/R2/landuse-raster/1997R/1997raster.tif 
+names      : X1997raster 
+values     : 1, 10  (min, max)
+attributes :
+  ID          landuse
+from:  1 agriculture land
+to : 10 vegetation cover
+
+> levelplot(a==3)
+> levelplot(b==3)
+> a1=levelplot(a==3)
+> b1=levelplot(b==3)
+> ergba=function(x,y,code=3){as.numeric(x==code)+as.numeric(y==code)}
+> overlay(a,b,fun=ergba)
+class      : RasterLayer 
+dimensions : 616, 891, 548856  (nrow, ncol, ncell)
+resolution : 50, 50  (x, y)
+extent     : 592280.5, 636830.5, 2827154, 2857954  (xmin, xmax, ymin, ymax)
+crs        : +proj=utm +zone=40 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0 
+source     : memory
+names      : layer 
+values     : 0, 2  (min, max)
+
+> ab=overlay(a,b,fun=ergba)
+> plot(ab)
+> c=rr_list[[3]]
+> c
+class      : RasterLayer 
+dimensions : 616, 891, 548856  (nrow, ncol, ncell)
+resolution : 50, 50  (x, y)
+extent     : 592280.5, 636830.5, 2827154, 2857954  (xmin, xmax, ymin, ymax)
+crs        : +proj=utm +zone=40 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0 
+source     : C:/Users/asus/Documents/R2/landuse-raster/2003R/2003raster.tif 
+names      : X2003raster 
+values     : 1, 11  (min, max)
+attributes :
+  ID          landuse
+from:  1 agriculture land
+to : 11     acquaculture
+
+> levelplot(c==3)
+> c1=levelplot(c==3)
+> plot(ab)
+> a1b1=overlay(a1,b1,fun=ergba)
+Error in (function (classes, fdef, mtable)  : 
+            unable to find an inherited method for function ‘overlay’ for signature ‘"trellis", "trellis"’
+          > bc=overlay(b,c,fun=ergba)
+          > plot(bc)
+          > ergba=function(x,y,code=3){2*as.numeric(x==code)+as.numeric(y==code)}
+          > ab=overlay(a,b,fun=ergba)
+          > plot(ab)
+          > bc=overlay(b,c,fun=ergba)
+          > plot(bc)
+          > d=rr_list[[4]]
+          > cd=overlay(c,d,fun=ergba)
+          > plot(cd)
+          > plot(bc)
+          > e=rr_list[[5]]
+          > de=overlay(d,e,fun=ergba)
+          > plot(de)
+          > f=rr_list[[6]]
+          > ef=overlay(e,f,fun=ergba)
+          > help("rename")
+          > rename(a,1987)
+          Error in UseMethod("rename_") : 
+            no applicable method for 'rename_' applied to an object of class "c('RasterLayer', 'Raster', 'RasterLayerOrNULL', 'BasicRaster')"
+          > View(a)
+          > View(a)
+          > View(a)
+          > file.rename(a,1987)
+          Error in file.rename(a, 1987) : invalid 'from' argument
+          > file.rename(from = a, to=1987)
+          Error in file.rename(from = a, to = 1987) : invalid 'from' argument
+          > help("file.rename")
+          > file.rename(from=a, to=1987)
+          Error in file.rename(from = a, to = 1987) : invalid 'from' argument
+          > file.rename("from=a", "to=1987")
+          [1] FALSE
+          > file.rename(from = a, to = 1987)
+          Error in file.rename(from = a, to = 1987) : invalid 'from' argument
+          > file.rename(from = "a", to = "1987")
+          [1] FALSE
