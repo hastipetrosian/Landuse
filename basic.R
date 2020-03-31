@@ -262,3 +262,7 @@ plot_grid(abchange,labels = "AUTO")
 Warning message:
 In as_grob.default(plot) :
 Cannot convert object of class RasterLayer into a grob.
+
+#focal (I have to compute neighburs value just aroun dunes?)
+af=focal(a==3, matrix(1/9,nrow=3,ncol=3), fun=modal)
+as_tibble(as.data.frame(rasterToPoints(af)))
