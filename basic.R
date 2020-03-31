@@ -91,7 +91,7 @@ aspect <- terrain(dem, opt="aspect",unit="radians")
 levelplot(aspect)
 levelplot(slope)
 
-
+## FIXME: do we still need this stuff?
 ### land-use change raster stack
 ## ObsLulcRasterStack(rr_list)  ## doesn't know what to do
 rs <- ObsLulcRasterStack(rr_list,
@@ -137,24 +137,34 @@ levelplot(r2)
 dd <- as_tibble(as.data.frame(r2))
 table(dd$landuse)
 
-before_after <- function(x,y) {
-    2*as.numeric(x=="erg")+as.numeric(y=="erg")
+## too clever:
+##   as.numeric converts a logical variable to 0 or 1
+##   2*as.numeric(x=="erg")  -> 2 for erg, or 0 for not-erg
+##   as.numeric(y=="erg)     -> 1 for erg, or 0 for not-erg
+## so if x and y are both erg -> 3  ("both")
+## if x is erg and y is not   -> 2  ("lost")
+## if x is not-erg and y is erg -> 1 ("gained")
+## if neither is erg -> 0 ("neither")
+before_after <- function(x,y,code=3) {
+    2*as.numeric(x==code)+as.numeric(y==code)
 }
 
 ## 3=both, 2=before, 1=after, 0=neither
-before_after(c("erg","other"),c("other","erg"))
+before_after(c(3,10),c(10,3))
 ## test: work on re-categorizing ...
 ## BMB: not sure this works yet ...
-r3 <- overlay(rr_list[[3]], rr_list[[4]],
+r3 <- overlay(rr_list[["2003"]], rr_list[["2008"]],
               fun = before_after)
+
+## BMB: FIXME: make this categorical again, with
+##   0 -> "neither", 1 -> "gained", 2->"lost"
 levelplot(r3)
-r4 <- overlay(rr_list[[1]], rr_list[[6]],
-              fun = before_after)
-levelplot(r4)
-table(as.data.frame(r4)$layer)
+
+## make this into a long-format tibble
+change1 <- as_tibble(as.data.frame(rasterToPoints(r3)))
 
 ##slope and aspect
-
+## FIXME: this is a repeat from above.  We should clean up!
 slope <- terrain(dem, opt="slope", unit="radians", neighbors=8)
 levelplot(slope)
 aspect <- terrain(dem, opt="aspect", unit="radians", neighbors=8)
@@ -166,20 +176,44 @@ a <- rr_list[[1]]
 ## BMB: numeric operations on categorical rasters don't usually make sense
 prop <- focal(a,matrix(1/9,nrow=3,ncol=3))
 ##focal with matrix 3*3 with modal (BMB: not mode!)
+## using 1/9 as weights instead of 1 as weights gives weird answers
+## (it divides all of the numbers, which correspond to land-use types,
+## by 9)
+## I don't think  modal is what we actually want ...
 prop2 <- focal(a,matrix(1,nrow=3,ncol=3), fun=modal)
 ## BMB: 
-##data fram of 1987 raster layer (recived error)
-xx <- as.data.frame(rasterToPoints(prop2))
+##data frame of 1987 raster layer (recived error)
+xx <- as_tibble(as.data.frame(rasterToPoints(prop2)))
 ## BMB: we've lost the categorical labels again ...
+head(xx)
 table(xx$layer)
+str(xx$layer)
+## make it back into a categorical variable
+xx$layer <- factor(xx$layer,
+                   levels=as.numeric(landuse_cats), ## numeric values
+                   ## use labels from the land use categories
+                   labels=levels(landuse_cats)
+)
+str(xx$layer)
+table(xx$layer)
+
+xx_lost <- (full_join(xx,change1,by=c("x","y"))
+            ## keep only points where there is change 
+            ## %>% filter(layer.y %in% c(1,2))
+            %>% filter(layer.y %in% c(2,3))
+)
+xx_lost
+
 
 ## BMB::as.data.frame.matrix is not what we want;
 ## we need the data in long format (one row per pixel)
 ## the NaN values are there because they represent the
 ## 'undefined' corners of the map
 
+## don't do this! for illustration only; might as well leave it as a raster
 xx2 <- as.data.frame.matrix(prop2)
 image(as.matrix(xx2)) ## rotated, ugly
+<<<<<<< HEAD
 > before_after <- function(x,y) {
   +     2*as.numeric(x=="erg")+as.numeric(y=="erg")
   + }
@@ -202,109 +236,25 @@ Warning messages:
 3: In min(x) : no non-missing arguments to min; returning Inf
 4: In max(x) : no non-missing arguments to max; returning -Inf
 > ergba=function(x,y){as.numeric(x=="erg")+as.numeric(y=="erg")}
-> a=rr_list[[1]]
-> a
-class      : RasterLayer 
-dimensions : 616, 891, 548856  (nrow, ncol, ncell)
-resolution : 50, 50  (x, y)
-extent     : 592280.5, 636830.5, 2827154, 2857954  (xmin, xmax, ymin, ymax)
-crs        : +proj=utm +zone=40 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0 
-source     : C:/Users/asus/Documents/R2/landuse-raster/1987R/1987raster.tif 
-names      : X1987raster 
-values     : 1, 10  (min, max)
-attributes :
-  ID          landuse
-from:  1 agriculture land
-to : 10 vegetation cover
 
-> b=rrlist[[2]]
-Error: object 'rrlist' not found
-> b=rr_list[[2]]
-> b
-class      : RasterLayer 
-dimensions : 616, 891, 548856  (nrow, ncol, ncell)
-resolution : 50, 50  (x, y)
-extent     : 592280.5, 636830.5, 2827154, 2857954  (xmin, xmax, ymin, ymax)
-crs        : +proj=utm +zone=40 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0 
-source     : C:/Users/asus/Documents/R2/landuse-raster/1997R/1997raster.tif 
-names      : X1997raster 
-values     : 1, 10  (min, max)
-attributes :
-  ID          landuse
-from:  1 agriculture land
-to : 10 vegetation cover
+# a=1987,b=1197,c=2003,d=2008,e=2014,f=2018
+a=rr_list[[1]]
+b=rr_list[[2]]
+c=rr_list[[3]]
+d=rr_list[[4]]
+e=rr_list[[5]]
+f=rr_list[[6]]
 
-> levelplot(a==3)
-> levelplot(b==3)
-> a1=levelplot(a==3)
-> b1=levelplot(b==3)
-> ergba=function(x,y,code=3){as.numeric(x==code)+as.numeric(y==code)}
-> overlay(a,b,fun=ergba)
-class      : RasterLayer 
-dimensions : 616, 891, 548856  (nrow, ncol, ncell)
-resolution : 50, 50  (x, y)
-extent     : 592280.5, 636830.5, 2827154, 2857954  (xmin, xmax, ymin, ymax)
-crs        : +proj=utm +zone=40 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0 
-source     : memory
-names      : layer 
-values     : 0, 2  (min, max)
-
-> ab=overlay(a,b,fun=ergba)
-> plot(ab)
-> c=rr_list[[3]]
-> c
-class      : RasterLayer 
-dimensions : 616, 891, 548856  (nrow, ncol, ncell)
-resolution : 50, 50  (x, y)
-extent     : 592280.5, 636830.5, 2827154, 2857954  (xmin, xmax, ymin, ymax)
-crs        : +proj=utm +zone=40 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0 
-source     : C:/Users/asus/Documents/R2/landuse-raster/2003R/2003raster.tif 
-names      : X2003raster 
-values     : 1, 11  (min, max)
-attributes :
-  ID          landuse
-from:  1 agriculture land
-to : 11     acquaculture
-
-> levelplot(c==3)
-> c1=levelplot(c==3)
-> plot(ab)
-> a1b1=overlay(a1,b1,fun=ergba)
-Error in (function (classes, fdef, mtable)  : 
-            unable to find an inherited method for function ‘overlay’ for signature ‘"trellis", "trellis"’
-          > bc=overlay(b,c,fun=ergba)
-          > plot(bc)
-          > ergba=function(x,y,code=3){2*as.numeric(x==code)+as.numeric(y==code)}
-          > ab=overlay(a,b,fun=ergba)
-          > plot(ab)
-          > bc=overlay(b,c,fun=ergba)
-          > plot(bc)
-          > d=rr_list[[4]]
-          > cd=overlay(c,d,fun=ergba)
-          > plot(cd)
-          > plot(bc)
-          > e=rr_list[[5]]
-          > de=overlay(d,e,fun=ergba)
-          > plot(de)
-          > f=rr_list[[6]]
-          > ef=overlay(e,f,fun=ergba)
-          > help("rename")
-          > rename(a,1987)
-          Error in UseMethod("rename_") : 
-            no applicable method for 'rename_' applied to an object of class "c('RasterLayer', 'Raster', 'RasterLayerOrNULL', 'BasicRaster')"
-          > View(a)
-          > View(a)
-          > View(a)
-          > file.rename(a,1987)
-          Error in file.rename(a, 1987) : invalid 'from' argument
-          > file.rename(from = a, to=1987)
-          Error in file.rename(from = a, to = 1987) : invalid 'from' argument
-          > help("file.rename")
-          > file.rename(from=a, to=1987)
-          Error in file.rename(from = a, to = 1987) : invalid 'from' argument
-          > file.rename("from=a", "to=1987")
-          [1] FALSE
-          > file.rename(from = a, to = 1987)
-          Error in file.rename(from = a, to = 1987) : invalid 'from' argument
-          > file.rename(from = "a", to = "1987")
-          [1] FALSE
+#Change in the erg, every two consecutive years
+change=function(x,y,code=3){2*as.numeric(x==code)+as.numeric(y==code)}
+abchange=overlay(a,b,fun=change)
+plot(abchange)
+bcchange=overlay(b,c,fun=change)
+plot(bcchange)
+cdchange=overlay(c,d,fun=change)         
+plot(cdchange)
+dechange=overlay(d,e,fun=change)
+plot(dechange)
+efchange=overlay(e,f,fun=change)
+plot(efchange)
+         

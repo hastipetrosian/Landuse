@@ -1,11 +1,11 @@
 ## get land use categories as global variable; assume these will stay stable
 ## stored as global variable (not necessarily a good idea but ...)
 
-## use last year (most categories)
+## use last year (this has all of the categories)
 year <- 2018
 dbf_fn <- paste0(year,"R/",year,"raster.tif.vat.dbf")
 dd <- foreign::read.dbf(dbf_fn)
-landuse_cats <- dd$descrip
+landuse_cats <- factor(dd$descrip,levels=dd$descrip)
 
 get_rat <- function(x) levels(x)[[1]]
 
