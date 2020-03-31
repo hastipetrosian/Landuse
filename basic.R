@@ -257,10 +257,8 @@ dechange=overlay(d,e,fun=change)
 plot(dechange)
 efchange=overlay(e,f,fun=change)
 plot(efchange)
-#PLOT_GRID(I think it used for vector maps?)
+#PLOT_GRID(I think it used for vector maps? I think I have to use grid.raster)
 plot_grid(abchange,labels = "AUTO")
 Warning message:
 In as_grob.default(plot) :
 Cannot convert object of class RasterLayer into a grob.
-> 
-         
