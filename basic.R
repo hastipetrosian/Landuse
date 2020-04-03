@@ -131,7 +131,7 @@ levelplot(x==3 & x2!=3)
 a <- rr_list[[1]]
 levelplot(a)
 ## can't aggregate too much or we lose categories
-r2 <- make_categorical(gate(rr_list[[1]],fact=6,fun=modal),
+r2 <- make_categorical(aggregate(rr_list[[1]],fact=6,fun=modal),
                        rat=get_rat(rr_list[[1]]))
 levelplot(r2)
 dd <- as_tibble(as.data.frame(r2))
@@ -213,29 +213,6 @@ xx_lost
 ## don't do this! for illustration only; might as well leave it as a raster
 xx2 <- as.data.frame.matrix(prop2)
 image(as.matrix(xx2)) ## rotated, ugly
-<<<<<<< HEAD
-> before_after <- function(x,y) {
-  +     2*as.numeric(x=="erg")+as.numeric(y=="erg")
-  + }
-> before_after(c("erg","other"),c("other","erg"))
-[1] 2 1
-> r3 <- overlay(rr_list[[3]], rr_list[[4]],
-                +               fun = before_after)
-> levelplot(r3)
-Warning messages:
-  1: In min(x) : no non-missing arguments to min; returning Inf
-2: In max(x) : no non-missing arguments to max; returning -Inf
-3: In min(x) : no non-missing arguments to min; returning Inf
-4: In max(x) : no non-missing arguments to max; returning -Inf
-> r4 <- overlay(rr_list[[1]], rr_list[[6]],
-                +               fun = before_after)
-> levelplot(r4)
-Warning messages:
-  1: In min(x) : no non-missing arguments to min; returning Inf
-2: In max(x) : no non-missing arguments to max; returning -Inf
-3: In min(x) : no non-missing arguments to min; returning Inf
-4: In max(x) : no non-missing arguments to max; returning -Inf
-> ergba=function(x,y){as.numeric(x=="erg")+as.numeric(y=="erg")}
 
 # a=1987,b=1197,c=2003,d=2008,e=2014,f=2018
 a=rr_list[[1]]
@@ -246,23 +223,39 @@ e=rr_list[[5]]
 f=rr_list[[6]]
 
 #Change in the erg, every two consecutive years
-change=function(x,y,code=3){2*as.numeric(x==code)+as.numeric(y==code)}
+change=function(x,y,code=3) {
+    2*as.numeric(x==code)+as.numeric(y==code)
+}
 abchange=overlay(a,b,fun=change)
-plot(abchange)
+levelplot(abchange)
 bcchange=overlay(b,c,fun=change)
-plot(bcchange)
+levelplot(bcchange)
 cdchange=overlay(c,d,fun=change)         
-plot(cdchange)
+levelplot(cdchange)
 dechange=overlay(d,e,fun=change)
-plot(dechange)
+levelplot(dechange)
 efchange=overlay(e,f,fun=change)
-plot(efchange)
-#PLOT_GRID(I think it used for vector maps? I think I have to use grid.raster)
-plot_grid(abchange,labels = "AUTO")
-Warning message:
-In as_grob.default(plot) :
-Cannot convert object of class RasterLayer into a grob.
+levelplot(efchange)
 
-#focal (I have to compute neighburs value just aroun dunes?)
+## BMB: use levelplot() to plot rasters rather than plot_grid:
+plot_ab <- levelplot(abchange)
+plot_cd <- levelplot(cdchange)
+
+## plot_grid is for arranging plots on the screen,
+## not for plotting individual rasters
+plot_grid(plot_ab,plot_cd)
+plot_grid(plot_ab,plot_cd,ncol=1)
+
+
+#focal (I have to compute neighbours value just around dunes?)
 af=focal(a==3, matrix(1/9,nrow=3,ncol=3), fun=modal)
-as_tibble(as.data.frame(rasterToPoints(af)))
+res <- as_tibble(as.data.frame(rasterToPoints(af)))
+print(res)
+hist(res$layer)
+## BMB: faster than computing modal
+af2 <- focal(a==3, matrix(1,nrow=3,ncol=3), fun=mean)
+res2 <- as_tibble(as.data.frame(rasterToPoints(af2)))
+hist(res2$layer)
+tt <- table(res2$layer)
+tt_nonzero <- table(res2$layer[res2$layer>0])
+plot(tt_nonzero)
