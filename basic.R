@@ -214,28 +214,9 @@ xx_lost
 xx2 <- as.data.frame.matrix(prop2)
 image(as.matrix(xx2)) ## rotated, ugly
 <<<<<<< HEAD
-> before_after <- function(x,y) {
-  +     2*as.numeric(x=="erg")+as.numeric(y=="erg")
-  + }
-> before_after(c("erg","other"),c("other","erg"))
-[1] 2 1
-> r3 <- overlay(rr_list[[3]], rr_list[[4]],
-                +               fun = before_after)
-> levelplot(r3)
-Warning messages:
-  1: In min(x) : no non-missing arguments to min; returning Inf
-2: In max(x) : no non-missing arguments to max; returning -Inf
-3: In min(x) : no non-missing arguments to min; returning Inf
-4: In max(x) : no non-missing arguments to max; returning -Inf
-> r4 <- overlay(rr_list[[1]], rr_list[[6]],
-                +               fun = before_after)
-> levelplot(r4)
-Warning messages:
-  1: In min(x) : no non-missing arguments to min; returning Inf
-2: In max(x) : no non-missing arguments to max; returning -Inf
-3: In min(x) : no non-missing arguments to min; returning Inf
-4: In max(x) : no non-missing arguments to max; returning -Inf
-> ergba=function(x,y){as.numeric(x=="erg")+as.numeric(y=="erg")}
+before_after <- function(x,y) {2*as.numeric(x=="erg")+as.numeric(y=="erg")}
+before_after(c("erg","other"),c("other","erg"))
+ergba=function(x,y){as.numeric(x=="erg")+as.numeric(y=="erg")}
 
 # a=1987,b=1197,c=2003,d=2008,e=2014,f=2018
 a=rr_list[[1]]
@@ -262,7 +243,26 @@ plot_grid(abchange,labels = "AUTO")
 Warning message:
 In as_grob.default(plot) :
 Cannot convert object of class RasterLayer into a grob.
-
-#focal (I have to compute neighburs value just aroun dunes?)
+plot_ab <- levelplot(abchange) 
+plot_ab
+plot_cd <- levelplot(cdchange)
+plot_cd
+plot_bc <- levelplot(bcchange)
+plot_bc
+plot_de <- levelplot(dechange)
+plot_de
+plot_ef <- levelplot(efchange)
+plot_ef
+#H-P: all plots are correct but plot grid result is rotated?
+plot_grid(plot_ab,plot_cd,ncol=1)
+plot_grid(plot_ab,plot_cd,plot_bc,plot_de,plot_ef) 
+#focal modal(I have to compute neighburs value just around dunes?)
 af=focal(a==3, matrix(1/9,nrow=3,ncol=3), fun=modal)
 as_tibble(as.data.frame(rasterToPoints(af)))
+#focal mean
+af=focal(a==3, matrix(1, nrow=3, ncol=3), fun=mean)
+##change rater to point A matrix with three columns: x, y, and v (value)
+af2=rasterToPoints(af)
+##tibble A data frame is simply a matrix, but can have columns with different types
+tibbleaf2=as_tibble(as.data.frame(af2))
+
