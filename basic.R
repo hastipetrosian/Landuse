@@ -131,7 +131,7 @@ levelplot(x==3 & x2!=3)
 a <- rr_list[[1]]
 levelplot(a)
 ## can't aggregate too much or we lose categories
-r2 <- make_categorical(gate(rr_list[[1]],fact=6,fun=modal),
+r2 <- make_categorical(aggregate(rr_list[[1]],fact=6,fun=modal),
                        rat=get_rat(rr_list[[1]]))
 levelplot(r2)
 dd <- as_tibble(as.data.frame(r2))
@@ -214,9 +214,12 @@ xx_lost
 xx2 <- as.data.frame.matrix(prop2)
 image(as.matrix(xx2)) ## rotated, ugly
 <<<<<<< HEAD
+<<<<<<< HEAD
 before_after <- function(x,y) {2*as.numeric(x=="erg")+as.numeric(y=="erg")}
 before_after(c("erg","other"),c("other","erg"))
 ergba=function(x,y){as.numeric(x=="erg")+as.numeric(y=="erg")}
+=======
+>>>>>>> 01e37f4b6b55d2a2ef55e1a77a6c1b85cba78815
 
 # a=1987,b=1197,c=2003,d=2008,e=2014,f=2018
 a=rr_list[[1]]
@@ -227,16 +230,19 @@ e=rr_list[[5]]
 f=rr_list[[6]]
 
 #Change in the erg, every two consecutive years
-change=function(x,y,code=3){2*as.numeric(x==code)+as.numeric(y==code)}
+change=function(x,y,code=3) {
+    2*as.numeric(x==code)+as.numeric(y==code)
+}
 abchange=overlay(a,b,fun=change)
-plot(abchange)
+levelplot(abchange)
 bcchange=overlay(b,c,fun=change)
-plot(bcchange)
+levelplot(bcchange)
 cdchange=overlay(c,d,fun=change)         
-plot(cdchange)
+levelplot(cdchange)
 dechange=overlay(d,e,fun=change)
-plot(dechange)
+levelplot(dechange)
 efchange=overlay(e,f,fun=change)
+<<<<<<< HEAD
 plot(efchange)
 #PLOT_GRID(I think it used for vector maps? I think I have to use grid.raster)
 plot_grid(abchange,labels = "AUTO")
@@ -261,8 +267,48 @@ af=focal(a==3, matrix(1/9,nrow=3,ncol=3), fun=modal)
 as_tibble(as.data.frame(rasterToPoints(af)))
 #focal mean
 af=focal(a==3, matrix(1, nrow=3, ncol=3), fun=mean)
+bf=focal(b==3, matrix(1, nrow=3, ncol=3), fun=mean)
+cf=focal(c==3, matrix(1, nrow=3, ncol=3), fun=mean)
+df=focal(d==3, matrix(1, nrow=3, ncol=3), fun=mean)
+ef=focal(e==3, matrix(1, nrow=3, ncol=3), fun=mean)
+ff=focal(f==3, matrix(1, nrow=3, ncol=3), fun=mean)
+
 ##change rater to point A matrix with three columns: x, y, and v (value)
 af2=rasterToPoints(af)
+bf2=rasterToPoints(bf)
+cf2=rasterToPoints(cf)
+df2=rasterToPoints(df)
+ef2=rasterToPoints(ef)
+ff2=rasterToPoints(ff)
+
 ##tibble A data frame is simply a matrix, but can have columns with different types
 tibbleaf2=as_tibble(as.data.frame(af2))
+tibblebf2=as_tibble(as.data.frame(bf2))
+tibblecf2=as_tibble(as.data.frame(cf2))
+tibbledf2=as_tibble(as.data.frame(df2))
+tibbleef2=as_tibble(as.data.frame(ef2))
+tibbleff2=as_tibble(as.data.frame(ff2))
 
+##histogram $:specefic
+hist(tibbleaf2$layer)
+hist(tibblebf2$layer)
+hist(tibblecf2$layer)
+hist(tibbledf2$layer)
+hist(tibbleef2$layer)
+hist(tibbleff2$layer)
+
+##table $:specific
+table(tibbleaf2$layer)
+table(tibblebf2$layer)
+table(tibblecf2$layer)
+table(tibbledf2$layer)
+table(tibbleef2$layer)
+table(tibbleff2$layer)
+
+##table without 0 value
+table(tibbleaf2$layer[tibbleaf2$layer>0]) 
+table(tibblebf2$layer[tibblebf2$layer>0])
+table(tibblecf2$layer[tibblecf2$layer>0])
+table(tibbledf2$layer[tibbledf2$layer>0])
+table(tibbleef2$layer[tibbleef2$layer>0])
+table(tibbleff2$layer[tibbleff2$layer>0])

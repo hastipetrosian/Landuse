@@ -3,11 +3,16 @@
 - clean up `basic.R` ! 
     - try to make sure that variable names make sense 
     - delete anything we're not going to use (you can keep a copy of everything anywhere you want as long as I don't have to look at it)
-    - either understand everything or put in comments with ????
+    - either understand everything or put in comments with ???? (include something like "## HP" with your questions so that we can see them)
     
 - Draw raster maps of land cover change? (you can do this with the new code; try to make a single plot with `plot_grid` that shows the before/after plots
 - Figure out how to compute neighbourhood values in R (i.e. with `propfun <- function(x) mean(x==3)` and `focal()`)
 - Use `full_join()` to combine columns of aspect, slope, proportion of neighbourhood that is dune, gain/loss score
+- Use `filter` to restrict this data frame to include only pixels that were dune beforehand
+- run a logistic regression with aspect, slope, proportion as predictors and gain or loss of dune as the response
+
+- do this for every pair of years
+
 
 - Would like to use something like the following predictors for probability of conversion to/from dune: 
      - terrain: altitude, slope, aspect (all computed from DEM)
