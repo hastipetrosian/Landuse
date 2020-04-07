@@ -180,7 +180,7 @@ prop <- focal(a,matrix(1/9,nrow=3,ncol=3))
 ## (it divides all of the numbers, which correspond to land-use types,
 ## by 9)
 ## I don't think  modal is what we actually want ...
-prop2 <- focal(a,matrix(1,nrow=3,ncol=3), fun=modal)
+## prop2 <- focal(a,matrix(1,nrow=3,ncol=3), fun=modal)
 ## BMB: 
 ##data frame of 1987 raster layer (recived error)
 xx <- as_tibble(as.data.frame(rasterToPoints(prop2)))
@@ -242,11 +242,7 @@ levelplot(dechange)
 efchange=overlay(e,f,fun=change)
 
 plot(efchange)
-#PLOT_GRID(I think it used for vector maps? I think I have to use grid.raster)
-plot_grid(abchange,labels = "AUTO")
-Warning message:
-In as_grob.default(plot) :
-Cannot convert object of class RasterLayer into a grob.
+
 plot_ab <- levelplot(abchange) 
 plot_ab
 plot_cd <- levelplot(cdchange)
@@ -260,9 +256,10 @@ plot_ef
 #H-P: all plots are correct but plot grid result is rotated?
 plot_grid(plot_ab,plot_cd,ncol=1)
 plot_grid(plot_ab,plot_cd,plot_bc,plot_de,plot_ef) 
-#focal modal(I have to compute neighburs value just around dunes?)
-af=focal(a==3, matrix(1/9,nrow=3,ncol=3), fun=modal)
-as_tibble(as.data.frame(rasterToPoints(af)))
+##focal modal(I have to compute neighburs value just around dunes?)
+## BMB: don't compute modal neighbourhoods!
+## af=focal(a==3, matrix(1/9,nrow=3,ncol=3), fun=modal)
+## as_tibble(as.data.frame(rasterToPoints(af)))
 #focal mean
 af=focal(a==3, matrix(1, nrow=3, ncol=3), fun=mean)
 bf=focal(b==3, matrix(1, nrow=3, ncol=3), fun=mean)
@@ -296,7 +293,7 @@ hist(tibbleef2$layer)
 hist(tibbleff2$layer)
 
 ##table $:specific
-kl                                             
+
 table(tibblebf2$layer)
 table(tibblecf2$layer)
 table(tibbledf2$layer)
@@ -312,15 +309,85 @@ table(tibbleef2$layer[tibbleef2$layer>0])
 table(tibbleff2$layer[tibbleff2$layer>0])
 
 ##tables of slope and aspect
-slope2=rasterToPoints(slope)
-aspect2=rasterToPoints(aspect)
+## data frames and tibbles look almost exactly like matrices and have
+## mostly the same contents but are different class objects
+## make them into tibbles explicitly
+## a 'tibble' is a fancy data frame, which is essentially a fancy matrix
+##  (matrices must be all the same type (e.g. all numeric values or all character
+##  values) but dfs and tibbles can have columns of different types
+##  (e.g. numeric, character, date, factor ...)
+slope2=as_tibble(rasterToPoints(slope))
+aspect2=as_tibble(rasterToPoints(aspect))
+
+## slope2=rasterToPoints(slope)
+## aspect2=rasterToPoints(aspect)
+
+## str is "STRucture"
+str(slope2)
+class(slope2) ## NOT a matrix
 
 ## full join for 1987 by aspect2,slope2, abchange2 and af2
-full_join(aspect2,slope2,by=NULL)
-#Error in UseMethod("full_join") : no applicable method for 'full_join' applied to an object of class "c('matrix', 'double', 'numeric')"
-full_join(aspect2,slope2,by="x")
-#Error in UseMethod("full_join") : no applicable method for 'full_join' applied to an object of class "c('matrix', 'double', 'numeric')"
+full_join(aspect2,slope2)
+## better to specify the joining variables explicitly
+comb_terrain <- full_join(aspect2,slope2,by=c("x","y"))
 
-##H-P:Because of receiving an error in full. join I used merge function, but I received an error: large size???
-merge(slope2,aspect2, by="x", all=TRUE)
-#Error: cannot allocate vector of size 495.0 Mb
+## map() is a way to run the same operation on all of the elements
+## of a list at the same time
+
+## want to run the overlay() function for every successive pair of
+##  land use maps
+## the map2() function runs a command on the elements of two lists
+
+rr_before <- rr_list[1:5]  ## this includes all but the last land use map
+rr_after  <- rr_list[2:6]  ## this includes all but the first land use map
+
+## the first element of rr_before is the 1987 map
+## the first element of rr_after is the 1997 map (i.e. the second map)
+## map2 applies to two lists so the 'placeholders' are .x and .y
+rr_changes <- map2(rr_before, rr_after, ~ overlay(.x,.y,fun=change))
+levelplot(rr_changes[[1]])
+
+## convert from raster to tibble (points)
+rr_changepoints <- map(rr_changes, ~as_tibble(rasterToPoints(.)))
+
+## map applies to only one list so the 'placeholder' is .
+rr_focal <- map(rr_list, ~ focal(.==3, matrix(1, nrow=3, ncol=3), fun=mean))
+levelplot(rr_focal[[1]])
+
+## now we want to combine:
+##   rr_changes (changes in landscape composition)
+##   rr_focal (neighbourhood composition)
+##   comb_terrain (local topography)
+## ... maybe other things
+
+
+rr_points <- map(rr_list, ~ as_tibble(rasterToPoints(.)))
+str(rr_points)
+
+## example:
+## rr_list is a list of raster objects (one for each land-use map)
+rr2 <- map(rr_points,
+           ## ~ (tilde) says "interpret the rest of this line as a command;
+           ## . (dot) will be where we substitute one of the items from the
+           ##   list
+           ~ full_join(., comb_terrain, by=c("x","y")))
+
+
+## what happens if we try to combine rr_changes with rr_points?
+## map2(rr_points, rr_changepoints, ~full_join(.x, .y, by=c("x","y")))
+length(rr_points)  ## all of our landuse maps, as tibbles (only 6)
+length(rr_changepoints) ## all of our change maps, as tibbles (only 5)
+
+rr_points2 <- rr_points[1:5] ## leave out the last map
+rr_points[-6]  ## equivalent, leave out element 6
+rr_points[-length(rr_points)]  ## equivalent, leave out element 6
+
+rr_comb2 <- map2(rr_points2, rr_changepoints, ~full_join(.x, .y, by=c("x","y")))
+
+## search for "purrr package map"
+
+## figure out how to do everything you want (i.e. combine all the different
+## pieces: change, topography, neighbourhood, climate?) with a single map
+## e.g. the 1987 - 1997 change
+## once you think it's working, figure out how to automate and do it for all
+##  of the rasters at once using map() and map2()
