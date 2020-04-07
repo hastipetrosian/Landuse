@@ -213,13 +213,11 @@ xx_lost
 ## don't do this! for illustration only; might as well leave it as a raster
 xx2 <- as.data.frame.matrix(prop2)
 image(as.matrix(xx2)) ## rotated, ugly
-<<<<<<< HEAD
-<<<<<<< HEAD
+ 
 before_after <- function(x,y) {2*as.numeric(x=="erg")+as.numeric(y=="erg")}
 before_after(c("erg","other"),c("other","erg"))
 ergba=function(x,y){as.numeric(x=="erg")+as.numeric(y=="erg")}
-=======
->>>>>>> 01e37f4b6b55d2a2ef55e1a77a6c1b85cba78815
+
 
 # a=1987,b=1197,c=2003,d=2008,e=2014,f=2018
 a=rr_list[[1]]
@@ -242,7 +240,7 @@ levelplot(cdchange)
 dechange=overlay(d,e,fun=change)
 levelplot(dechange)
 efchange=overlay(e,f,fun=change)
-<<<<<<< HEAD
+
 plot(efchange)
 #PLOT_GRID(I think it used for vector maps? I think I have to use grid.raster)
 plot_grid(abchange,labels = "AUTO")
@@ -298,17 +296,31 @@ hist(tibbleef2$layer)
 hist(tibbleff2$layer)
 
 ##table $:specific
-table(tibbleaf2$layer)
+kl                                             
 table(tibblebf2$layer)
 table(tibblecf2$layer)
 table(tibbledf2$layer)
 table(tibbleef2$layer)
 table(tibbleff2$layer)
 
-##table without 0 value
+##table without 0 value or at least one dune neighbours
 table(tibbleaf2$layer[tibbleaf2$layer>0]) 
 table(tibblebf2$layer[tibblebf2$layer>0])
 table(tibblecf2$layer[tibblecf2$layer>0])
 table(tibbledf2$layer[tibbledf2$layer>0])
 table(tibbleef2$layer[tibbleef2$layer>0])
 table(tibbleff2$layer[tibbleff2$layer>0])
+
+##tables of slope and aspect
+slope2=rasterToPoints(slope)
+aspect2=rasterToPoints(aspect)
+
+## full join for 1987 by aspect2,slope2, abchange2 and af2
+full_join(aspect2,slope2,by=NULL)
+#Error in UseMethod("full_join") : no applicable method for 'full_join' applied to an object of class "c('matrix', 'double', 'numeric')"
+full_join(aspect2,slope2,by="x")
+#Error in UseMethod("full_join") : no applicable method for 'full_join' applied to an object of class "c('matrix', 'double', 'numeric')"
+
+##H-P:Because of receiving an error in full. join I used merge function, but I received an error: large size???
+merge(slope2,aspect2, by="x", all=TRUE)
+#Error: cannot allocate vector of size 495.0 Mb
