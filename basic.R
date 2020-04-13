@@ -219,7 +219,7 @@ levelplot(rr_changes[[3]])
 levelplot(rr_changes[[4]])
 levelplot(rr_changes[[5]])
 
-##H-P: all plots are correct but plot grid result is rotated?
+##all plots are correct but plot grid result is rotated
 plot_grid(plot_ab,plot_cd,ncol=1)
 plot_grid(plot_ab,plot_cd,plot_bc,plot_de,plot_ef) 
 
