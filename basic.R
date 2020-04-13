@@ -16,41 +16,35 @@ library(sp)
 do_shape_files <- FALSE
 source("functions.R")
 
-
 ## check what's going on as you go through the code
 ## useful functions for more complicated objects:
 ##   names(.)
 ##   str(.)
 
-if (do_shape_files) {
+if (do_shape_files)
   ## all shape files:
   shapefiles <- list.files(pattern="*.shp$",recursive=TRUE)
-  ## dd_list <- lapply(v2shp, read_sf)
-  dd_list <- map(shapefiles, read_sf)  ## reading all of the files into a list
-  ## extract the first number from each file name
-  year_vec <- parse_number(shapefiles)
-  names(dd_list) <- year_vec
-  plot(dd_list[["2014"]])
+## dd_list <- lapply(v2shp, read_sf)
+dd_list <- map(shapefiles, read_sf)  ## reading all of the files into a list
+## extract the first number from each file name
+year_vec <- parse_number(shapefiles)
+names(dd_list) <- year_vec
+plot(dd_list[["2014"]])
   
-  ## draw all of the vector maps
-  op <- par(mfrow=c(2,3))   ## set up a 2x3 grid of plots
-  ## (2 rows, 3 columns)
-  map(dd_list,
-      ## . represents the current element in the list
-      ## key.pos and reset are necessary so we can plot all of the maps
-      ## together (see ?plot.sf)
-      ~ plot(.["descrip"],key.pos=NULL,reset=FALSE))
+## draw all of the vector maps
+op <- par(mfrow=c(2,3))   ## set up a 2x3 grid of plots
+## (2 rows, 3 columns)
+map(dd_list,
+## . represents the current element in the list
+## key.pos and reset are necessary so we can plot all of the maps
+## together (see ?plot.sf)
+ ~ plot(.["descrip"],key.pos=NULL,reset=FALSE))
   par(op)  ## restore old parameters
   
-  ## dd_list[[1]]["descrip"]
+## dd_list[[1]]["descrip"]
   
-  all_descrip <- map(dd_list, ~ sort(.["descrip"]$descrip))
-  sort(unique(unlist(all_descrip)))
-  
-  ## acquaculture -> aquaculture
-  
-  length(dd_list)  ## how many maps?
-}
+all_descrip <- map(dd_list, ~ sort(.["descrip"]$descrip))
+sort(unique(unlist(all_descrip)))
 
 ## only reading the landuse rasters
 rasterfiles <- list.files(pattern="*.tif$",recursive=TRUE)
@@ -61,6 +55,7 @@ years <- years[years>1900] ## leave out DEM file
 rr_list <- map(years, get_categorical_raster, list_cats=TRUE)  
 names(rr_list) <- years
 
+##dem
 dem <- raster("dem/Extract_dem11.tif")
 
 ## ?plot.raster : help on the 'plot' method for 'raster' objects
@@ -70,30 +65,9 @@ dem <- raster("dem/Extract_dem11.tif")
 plots <- map(rr_list,levelplot,colorkey=FALSE)
 plot_grid(plotlist=plots)
 
-## ?"levelplot-methods"
-
-
-## playing with rasterizing: not really necessary any more
-## x <- dd_list[[1]]
-## r <- raster(x,res=10)
-## x$dn <- as.numeric(as.factor(x$descrip))
-## r <- fasterize(x, r, field = "dn")
-## plot(r)
-## spplot(r) ## ugly
+##climate
 clim_data <-  read_excel("climate/climate_data.xlsx", col_names=TRUE)
 
-##aggregate fact=2
-## BMB: modal aggregation usually doesn't make sense for numeric rasters
-## dem_agg=aggregate(dem,fact=2,fun=modal)
-
-#slope and aspect
-slope <- terrain(dem, opt="slope",unit="radians")
-aspect <- terrain(dem, opt="aspect",unit="radians")
-levelplot(aspect)
-levelplot(slope)
-
-## FIXME: do we still need this stuff?
-### land-use change raster stack
 ## ObsLulcRasterStack(rr_list)  ## doesn't know what to do
 rs <- ObsLulcRasterStack(rr_list,
                    pattern="[0-9]+", ## use all numbers
@@ -103,40 +77,11 @@ rs <- ObsLulcRasterStack(rr_list,
                    ##  the vector of years
 t=as.numeric(names(rr_list)))
 
+##crosstab
 crosstab(stack(rr_list[[1]],rr_list[[2]]))
 crosstab(stack(rs[[1]],rs[[2]]))
-
 crossTabulate(rs,times=c(1987,2014))
 
-## find attribute table
-## attributes(x@data)$attributes
-
-## this stuff doesn't work
-x <- rr_list[[1]]
-y <- rr_list[[2]]
-z <- x==3 & y!=3  ## places where erg was lost between 1987 and 1997 (i.e. nowhere)
-levelplot(z)
-summary(x)
-
-x2 <- rr_list[["2014"]]
-## plots of erg and change
-a= ## erg in 1987
-levelplot(y==3)  ## erg in 1997
-levelplot(x==3 & y==3)  ## erg in both years
-levelplot(x!=3)       ## non-erg in 19878
-levelplot(x==3 & y!=3)  ## weird-looking because all zero (no loss of erg)
-levelplot(x!=3 & y==3)  ## gain of erg
-
-levelplot(x==3 & x2!=3)
-
-a <- rr_list[[1]]
-levelplot(a)
-## can't aggregate too much or we lose categories
-r2 <- make_categorical(aggregate(rr_list[[1]],fact=6,fun=modal),
-                       rat=get_rat(rr_list[[1]]))
-levelplot(r2)
-dd <- as_tibble(as.data.frame(r2))
-table(dd$landuse)
 
 ## too clever:
 ##   as.numeric converts a logical variable to 0 or 1
@@ -171,8 +116,6 @@ levelplot(slope)
 aspect <- terrain(dem, opt="aspect", unit="radians", neighbors=8)
 levelplot(aspect)
 
-
-a <- rr_list[[1]]
 ##focal with matrix 3*3 with sum (default)
 ## BMB: numeric operations on categorical rasters don't usually make sense
 prop <- focal(a,matrix(1/9,nrow=3,ncol=3))
@@ -231,10 +174,14 @@ f=rr_list[[6]]
 rr_points= map(rr_list, ~ as_tibble(rasterToPoints(.))) 
 
 ##change
+## this includes all but the last land use map
 ## this includes all but the last land use map  (2018)
+## the first element of rr_before is the 1987 map
+## the first element of rr_after is the 1997 map (i.e. the second map)
 rr_before=rr_list[1:5] 
 
-## this includes all but the firstland use map(1987) 
+## this includes all but the firstland use map(1987)
+## this includes all but the first land use map
 rr_after= rr_list[2:6]
 
 #Change in the erg, every two consecutive years
@@ -247,17 +194,15 @@ cdchange=overlay(c,d,fun=change)
 dechange=overlay(d,e,fun=change)
 efchange=overlay(e,f,fun=change)
 
-<<<<<<< HEAD
 #map2=Map over multiple inputs simultaneously.
+## the map2() function runs a command on the elements of two lists
 # .=all of the data with same length ~ =formula
+##H-P:I have received a error?
 rr_changes=map2(rr_before, rr_after, ~ overlay(.x,.y,fun=change)) 
 
 
 #PLOT_GRID
-=======
 plot(efchange)
-
->>>>>>> 9e809b091fbc9fcbbff2e198cbca5fccf55d1ddd
 plot_ab <- levelplot(abchange) 
 plot_ab
 plot_cd <- levelplot(cdchange)
@@ -277,43 +222,56 @@ levelplot(rr_changes[[5]])
 ##H-P: all plots are correct but plot grid result is rotated?
 plot_grid(plot_ab,plot_cd,ncol=1)
 plot_grid(plot_ab,plot_cd,plot_bc,plot_de,plot_ef) 
-<<<<<<< HEAD
 
-##focal mean
-=======
-##focal modal(I have to compute neighburs value just around dunes?)
-## BMB: don't compute modal neighbourhoods!
-## af=focal(a==3, matrix(1/9,nrow=3,ncol=3), fun=modal)
-## as_tibble(as.data.frame(rasterToPoints(af)))
-#focal mean
->>>>>>> 9e809b091fbc9fcbbff2e198cbca5fccf55d1ddd
+#focal mean,focal=0(no dune neighbour) 1(all the cells are dune)
 af=focal(a==3, matrix(1, nrow=3, ncol=3), fun=mean)
 bf=focal(b==3, matrix(1, nrow=3, ncol=3), fun=mean)
 cf=focal(c==3, matrix(1, nrow=3, ncol=3), fun=mean)
 df=focal(d==3, matrix(1, nrow=3, ncol=3), fun=mean)
 ef=focal(e==3, matrix(1, nrow=3, ncol=3), fun=mean)
 ff=focal(f==3, matrix(1, nrow=3, ncol=3), fun=mean)
+##H-P:I recived a error?
+rr_focal=Map(rr_list, ~ focal(.==3, matrix(1, nrow=3, ncol=3), fun=mean))
 
-rr_focal=map(rr_list, ~ focal(.==3, matrix(1, nrow=3, ncol=3), fun=mean)) 
-
+##point
 ##change rater to point A matrix with three columns: x, y, and v (value)
-##change raster to point
+## convert from raster to points
 ##map=Apply a function to each element of a vectoraf2=rasterToPoints(af)
+abchange2=rasterToPoints(abchange)
+bcchange2=rasterToPoints(bcchange)
+cdchange2=rasterToPoints(cdchange)
+dechange2=rasterToPoints(dechange)
+efchange2=rasterToPoints(efchange)
+
+af2=rasterToPoints(af)
 bf2=rasterToPoints(bf)
 cf2=rasterToPoints(cf)
 df2=rasterToPoints(df)
 ef2=rasterToPoints(ef)
 ff2=rasterToPoints(ff)
 
-rr_changepoints=map(rr_changes, ~as_tibble(rasterToPoints(.))) 
+##H-P:I have received a error?
+## map() is a way to run the same operation on all of the elements
+## of a list at the same time
+rr_changepoints <- map(rr_changes, ~as_tibble(rasterToPoints(.)))
 
-##tibble A data frame is simply a matrix, but can have columns with different types
+##tibble
+##make tbl=tibble A data frame is simply a matrix, but can have columns with different types
+tibbleabchange2=as_tibble(as.data.frame(abchange2))
+tibblebcchange2=as_tibble(as.data.frame(bcchange2))
+tibblecdchange2=as_tibble(as.data.frame(cdchange2))
+tibbledechange2=as_tibble(as.data.frame(dechange2))
+tibbleefchange2=as_tibble(as.data.frame(efchange2))
+
 tibbleaf2=as_tibble(as.data.frame(af2))
 tibblebf2=as_tibble(as.data.frame(bf2))
 tibblecf2=as_tibble(as.data.frame(cf2))
 tibbledf2=as_tibble(as.data.frame(df2))
 tibbleef2=as_tibble(as.data.frame(ef2))
 tibbleff2=as_tibble(as.data.frame(ff2))
+
+aspect2T=as_tibble(as.data.frame(aspect2))
+slope2T=as_tibble(as.data.frame(slope2))
 
 ##histogram $:specefic
 hist(tibbleaf2$layer)
@@ -323,13 +281,10 @@ hist(tibbledf2$layer)
 hist(tibbleef2$layer)
 hist(tibbleff2$layer)
 
-<<<<<<< HEAD
 ##table $:specific=make table
-table(tibbleaf2$layer)                                        
-=======
-##table $:specific
+table(tibbleaf2$layer) 
 
->>>>>>> 9e809b091fbc9fcbbff2e198cbca5fccf55d1ddd
+##table $:specific
 table(tibblebf2$layer)
 table(tibblecf2$layer)
 table(tibbledf2$layer)
@@ -346,106 +301,41 @@ table(tibbleef2$layer[tibbleef2$layer>0])
 table(tibbleff2$layer[tibbleff2$layer>0])
 
 ##tables of slope and aspect
-<<<<<<< HEAD
 slope2=rasterToPoints(slope)
 aspect2=rasterToPoints(aspect)
 tabas2=table(aspect2)
 tabslo2=table(slope2)
+## figure out how to do everything you want (i.e. combine all the different
+## pieces: change, topography, neighbourhood, climate?) with a single map
+## e.g. the 1987 - 1997 change
+## full join aspect2,slope2,possible with tbl format not table format
+##1987
+comaspectslope=full_join(aspect2T,slope2T,by=c("x","y"))
+compaf2sloas=full_join(comaspectslope,tibbleaf2,by=c("x","y"))
+compall=full_join(compaf2sloas, tibbleabchange2, by=c("x","y"))
 
-## full join for 1987 by aspect2,slope2, abchange2 and af2
-fullsloasp=full_join(tabslo2,tabas2,by=c("x","y"))
-
-
-rr_points2=map(rr_points,~ full_join(.,fullsloasp, by=c("x","y")))
-full_join(aspect2,slope2,by=NULL)
-#Error in UseMethod("full_join") : no applicable method for 'full_join' applied to an object of class "c('matrix', 'double', 'numeric')"
-full_join(aspect2,slope2,by="x")
-#Error in UseMethod("full_join") : no applicable method for 'full_join' applied to an object of class "c('matrix', 'double', 'numeric')"
-
-##H-P:Because of receiving an error in full. join I used merge function, but I received an error: large size???
-merge(slope2,aspect2, by="x", all=TRUE)
-#Error: cannot allocate vector of size 495.0 Mb
-=======
-## data frames and tibbles look almost exactly like matrices and have
-## mostly the same contents but are different class objects
-## make them into tibbles explicitly
-## a 'tibble' is a fancy data frame, which is essentially a fancy matrix
-##  (matrices must be all the same type (e.g. all numeric values or all character
-##  values) but dfs and tibbles can have columns of different types
-##  (e.g. numeric, character, date, factor ...)
-slope2=as_tibble(rasterToPoints(slope))
-aspect2=as_tibble(rasterToPoints(aspect))
-
-## slope2=rasterToPoints(slope)
-## aspect2=rasterToPoints(aspect)
 
 ## str is "STRucture"
 str(slope2)
+
+##class
 class(slope2) ## NOT a matrix
 
-## full join for 1987 by aspect2,slope2, abchange2 and af2
-full_join(aspect2,slope2)
-## better to specify the joining variables explicitly
-comb_terrain <- full_join(aspect2,slope2,by=c("x","y"))
+##lenght
+length(rr_points)  ## all of our landuse maps, as tibbles (only 6)
+length(rr_changepoints) ## all of our change maps, as tibbles (only 5)
 
-## map() is a way to run the same operation on all of the elements
-## of a list at the same time
-
-## want to run the overlay() function for every successive pair of
-##  land use maps
-## the map2() function runs a command on the elements of two lists
-
-rr_before <- rr_list[1:5]  ## this includes all but the last land use map
-rr_after  <- rr_list[2:6]  ## this includes all but the first land use map
-
-## the first element of rr_before is the 1987 map
-## the first element of rr_after is the 1997 map (i.e. the second map)
-## map2 applies to two lists so the 'placeholders' are .x and .y
-rr_changes <- map2(rr_before, rr_after, ~ overlay(.x,.y,fun=change))
-levelplot(rr_changes[[1]])
-
-## convert from raster to tibble (points)
-rr_changepoints <- map(rr_changes, ~as_tibble(rasterToPoints(.)))
-
-## map applies to only one list so the 'placeholder' is .
-rr_focal <- map(rr_list, ~ focal(.==3, matrix(1, nrow=3, ncol=3), fun=mean))
-levelplot(rr_focal[[1]])
-
-## now we want to combine:
-##   rr_changes (changes in landscape composition)
-##   rr_focal (neighbourhood composition)
-##   comb_terrain (local topography)
-## ... maybe other things
-
-
-rr_points <- map(rr_list, ~ as_tibble(rasterToPoints(.)))
-str(rr_points)
-
-## example:
 ## rr_list is a list of raster objects (one for each land-use map)
+comb_terrain <- full_join(aspect2,slope2,by=c("x","y"))
 rr2 <- map(rr_points,
            ## ~ (tilde) says "interpret the rest of this line as a command;
            ## . (dot) will be where we substitute one of the items from the
            ##   list
            ~ full_join(., comb_terrain, by=c("x","y")))
 
-
 ## what happens if we try to combine rr_changes with rr_points?
 ## map2(rr_points, rr_changepoints, ~full_join(.x, .y, by=c("x","y")))
-length(rr_points)  ## all of our landuse maps, as tibbles (only 6)
-length(rr_changepoints) ## all of our change maps, as tibbles (only 5)
-
-rr_points2 <- rr_points[1:5] ## leave out the last map
-rr_points[-6]  ## equivalent, leave out element 6
-rr_points[-length(rr_points)]  ## equivalent, leave out element 6
 
 rr_comb2 <- map2(rr_points2, rr_changepoints, ~full_join(.x, .y, by=c("x","y")))
 
 ## search for "purrr package map"
-
-## figure out how to do everything you want (i.e. combine all the different
-## pieces: change, topography, neighbourhood, climate?) with a single map
-## e.g. the 1987 - 1997 change
-## once you think it's working, figure out how to automate and do it for all
-##  of the rasters at once using map() and map2()
->>>>>>> 9e809b091fbc9fcbbff2e198cbca5fccf55d1ddd
