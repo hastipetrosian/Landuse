@@ -16,6 +16,7 @@ library(sp)
 do_shape_files <- FALSE
 source("functions.R")
 
+
 ## check what's going on as you go through the code
 ## useful functions for more complicated objects:
 ##   names(.)
@@ -226,27 +227,32 @@ c=rr_list[[3]]
 d=rr_list[[4]]
 e=rr_list[[5]]
 f=rr_list[[6]]
+##raster to point of all maps
+rr_points= map(rr_list, ~ as_tibble(rasterToPoints(.))) 
+
+##change
+## this includes all but the last land use map  (2018)
+rr_before=rr_list[1:5] 
+
+## this includes all but the firstland use map(1987) 
+rr_after= rr_list[2:6]
 
 #Change in the erg, every two consecutive years
 change=function(x,y,code=3) {
     2*as.numeric(x==code)+as.numeric(y==code)
 }
 abchange=overlay(a,b,fun=change)
-levelplot(abchange)
 bcchange=overlay(b,c,fun=change)
-levelplot(bcchange)
 cdchange=overlay(c,d,fun=change)         
-levelplot(cdchange)
 dechange=overlay(d,e,fun=change)
-levelplot(dechange)
 efchange=overlay(e,f,fun=change)
 
-plot(efchange)
-#PLOT_GRID(I think it used for vector maps? I think I have to use grid.raster)
-plot_grid(abchange,labels = "AUTO")
-Warning message:
-In as_grob.default(plot) :
-Cannot convert object of class RasterLayer into a grob.
+#map2=Map over multiple inputs simultaneously.
+# .=all of the data with same length ~ =formula
+rr_changes=map2(rr_before, rr_after, ~ overlay(.x,.y,fun=change)) 
+
+
+#PLOT_GRID
 plot_ab <- levelplot(abchange) 
 plot_ab
 plot_cd <- levelplot(cdchange)
@@ -257,13 +263,17 @@ plot_de <- levelplot(dechange)
 plot_de
 plot_ef <- levelplot(efchange)
 plot_ef
-#H-P: all plots are correct but plot grid result is rotated?
+levelplot(rr_changes[[1]])
+levelplot(rr_changes[[2]])
+levelplot(rr_changes[[3]])
+levelplot(rr_changes[[4]])
+levelplot(rr_changes[[5]])
+
+##H-P: all plots are correct but plot grid result is rotated?
 plot_grid(plot_ab,plot_cd,ncol=1)
 plot_grid(plot_ab,plot_cd,plot_bc,plot_de,plot_ef) 
-#focal modal(I have to compute neighburs value just around dunes?)
-af=focal(a==3, matrix(1/9,nrow=3,ncol=3), fun=modal)
-as_tibble(as.data.frame(rasterToPoints(af)))
-#focal mean
+
+##focal mean
 af=focal(a==3, matrix(1, nrow=3, ncol=3), fun=mean)
 bf=focal(b==3, matrix(1, nrow=3, ncol=3), fun=mean)
 cf=focal(c==3, matrix(1, nrow=3, ncol=3), fun=mean)
@@ -271,13 +281,18 @@ df=focal(d==3, matrix(1, nrow=3, ncol=3), fun=mean)
 ef=focal(e==3, matrix(1, nrow=3, ncol=3), fun=mean)
 ff=focal(f==3, matrix(1, nrow=3, ncol=3), fun=mean)
 
+rr_focal=map(rr_list, ~ focal(.==3, matrix(1, nrow=3, ncol=3), fun=mean)) 
+
 ##change rater to point A matrix with three columns: x, y, and v (value)
-af2=rasterToPoints(af)
+##change raster to point
+##map=Apply a function to each element of a vectoraf2=rasterToPoints(af)
 bf2=rasterToPoints(bf)
 cf2=rasterToPoints(cf)
 df2=rasterToPoints(df)
 ef2=rasterToPoints(ef)
 ff2=rasterToPoints(ff)
+
+rr_changepoints=map(rr_changes, ~as_tibble(rasterToPoints(.))) 
 
 ##tibble A data frame is simply a matrix, but can have columns with different types
 tibbleaf2=as_tibble(as.data.frame(af2))
@@ -295,15 +310,16 @@ hist(tibbledf2$layer)
 hist(tibbleef2$layer)
 hist(tibbleff2$layer)
 
-##table $:specific
-kl                                             
+##table $:specific=make table
+table(tibbleaf2$layer)                                        
 table(tibblebf2$layer)
 table(tibblecf2$layer)
 table(tibbledf2$layer)
 table(tibbleef2$layer)
 table(tibbleff2$layer)
 
-##table without 0 value or at least one dune neighbours
+
+##table without 0 value = at least one dune neighbours
 table(tibbleaf2$layer[tibbleaf2$layer>0]) 
 table(tibblebf2$layer[tibblebf2$layer>0])
 table(tibblecf2$layer[tibblecf2$layer>0])
@@ -314,8 +330,14 @@ table(tibbleff2$layer[tibbleff2$layer>0])
 ##tables of slope and aspect
 slope2=rasterToPoints(slope)
 aspect2=rasterToPoints(aspect)
+tabas2=table(aspect2)
+tabslo2=table(slope2)
 
 ## full join for 1987 by aspect2,slope2, abchange2 and af2
+fullsloasp=full_join(tabslo2,tabas2,by=c("x","y"))
+
+
+rr_points2=map(rr_points,~ full_join(.,fullsloasp, by=c("x","y")))
 full_join(aspect2,slope2,by=NULL)
 #Error in UseMethod("full_join") : no applicable method for 'full_join' applied to an object of class "c('matrix', 'double', 'numeric')"
 full_join(aspect2,slope2,by="x")
