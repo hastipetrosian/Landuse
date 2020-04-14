@@ -1,4 +1,11 @@
-# landuse 2018
+## copy this to run the whole file, or click on the Run / Source with echo button in RStudio
+## source("basic.R",echo=TRUE)
+## BMB: if you get an error (1) make sure that you get the error when you run everything
+##  from the beginning, in a clean session (restart R)
+## BMB: if you do get an error, put the specific error message into the comment
+## e.g. 'Error in sqrt("a") : non-numeric argument to mathematical function'
+
+## landuse 2018
 ## library(geosample)  ## 
 library(sf)
 library(rgeos)
@@ -132,17 +139,26 @@ before_after <- function(x,y) {2*as.numeric(x=="erg")+as.numeric(y=="erg")}
 before_after(c("erg","other"),c("other","erg"))
 ergba=function(x,y){as.numeric(x=="erg")+as.numeric(y=="erg")}
 
+## converts from raster -> matrix -> data frame -> tibble
+conv_tbl <- function(x,newname=NULL) {
+    x2 <- tibble(as.data.frame(rasterToPoints(x)))
+    if (!is.null(newname)) {
+        names(x2) <- c("x","y",newname)
+    }
+    return(x2)
+}
 
 ## BMB: PLEASE CLEAN THIS UP
 # a=1987,b=1197,c=2003,d=2008,e=2014,f=2018
-a=rr_list[[1]]
-b=rr_list[[2]]
-c=rr_list[[3]]
-d=rr_list[[4]]
-e=rr_list[[5]]
-f=rr_list[[6]]
-##raster to point of all maps
-rr_points= map(rr_list, ~ as_tibble(rasterToPoints(.))) 
+## a=rr_list[[1]]
+## b=rr_list[[2]]
+## c=rr_list[[3]]
+## d=rr_list[[4]]
+## e=rr_list[[5]]
+## f=rr_list[[6]]
+## ##raster to point of all maps
+## rr_points= map(rr_list, ~ as_tibble(rasterToPoints(.)))
+rr_tbl <- map(rr_list, conv_tbl, newname="landuse")
 
 ##change
 ## this includes all but the last land use map
@@ -150,7 +166,6 @@ rr_points= map(rr_list, ~ as_tibble(rasterToPoints(.)))
 ## the first element of rr_before is the 1987 map
 ## the first element of rr_after is the 1997 map (i.e. the second map)
 rr_before=rr_list[1:5] 
-
 ## this includes all but the firstland use map(1987)
 ## this includes all but the first land use map
 rr_after= rr_list[2:6]
@@ -160,102 +175,114 @@ change=function(x,y,code=3) {
     2*as.numeric(x==code)+as.numeric(y==code)
 }
 abchange=overlay(a,b,fun=change)
-bcchange=overlay(b,c,fun=change)
-cdchange=overlay(c,d,fun=change)         
-dechange=overlay(d,e,fun=change)
-efchange=overlay(e,f,fun=change)
+## bcchange=overlay(b,c,fun=change)
+## cdchange=overlay(c,d,fun=change)         
+## dechange=overlay(d,e,fun=change)
+## efchange=overlay(e,f,fun=change)
 
 #map2=Map over multiple inputs simultaneously.
 ## the map2() function runs a command on the elements of two lists
 # .=all of the data with same length ~ =formula
-##H-P:I have received a error?
-## BMB: this works for me (when running beginning to end)
+
+## this is a list of land use change rasters
+## equivalent to list(abchange, bcchange, cdchange, ... etc.)
 rr_changes=map2(rr_before, rr_after, ~ overlay(.x,.y,fun=change)) 
+identical(abchange, rr_changes[[1]])
 
+## FIXME: should we get rid of the histograms
+##  and legends?
 
+changeplots <- map(rr_changes, levelplot,
+                   margin=FALSE)
 #PLOT_GRID
-plot(efchange)
-plot_ab <- levelplot(abchange) 
-plot_ab
-plot_cd <- levelplot(cdchange)
-plot_cd
-plot_bc <- levelplot(bcchange)
-plot_bc
-plot_de <- levelplot(dechange)
-plot_de
-plot_ef <- levelplot(efchange)
-plot_ef
-levelplot(rr_changes[[1]])
-levelplot(rr_changes[[2]])
-levelplot(rr_changes[[3]])
-levelplot(rr_changes[[4]])
-levelplot(rr_changes[[5]])
+## plot(efchange)
+## plot_ab <- levelplot(abchange) 
+## plot_ab
+## plot_cd <- levelplot(cdchange)
+## plot_cd
+## plot_bc <- levelplot(bcchange)
+## plot_bc
+## plot_de <- levelplot(dechange)
+## plot_de
+## plot_ef <- levelplot(efchange)
+## plot_ef
+## levelplot(rr_changes[[1]])
+## levelplot(rr_changes[[2]])
+## levelplot(rr_changes[[3]])
+## levelplot(rr_changes[[4]])
+## levelplot(rr_changes[[5]])
 
 ##all plots are correct but plot grid result is rotated
-plot_grid(plot_ab,plot_cd,ncol=1)
-plot_grid(plot_ab,plot_cd,plot_bc,plot_de,plot_ef) 
+## plot_grid(plot_ab,plot_cd,ncol=1)
+## plot_grid(plot_ab,plot_cd,plot_bc,plot_de,plot_ef)
+
+plot_grid(plotlist=changeplots)
 
 #focal mean,focal=0(no dune neighbour) 1(all the cells are dune)
-af=focal(a==3, matrix(1, nrow=3, ncol=3), fun=mean)
-bf=focal(b==3, matrix(1, nrow=3, ncol=3), fun=mean)
-cf=focal(c==3, matrix(1, nrow=3, ncol=3), fun=mean)
-df=focal(d==3, matrix(1, nrow=3, ncol=3), fun=mean)
-ef=focal(e==3, matrix(1, nrow=3, ncol=3), fun=mean)
-ff=focal(f==3, matrix(1, nrow=3, ncol=3), fun=mean)
-##H-P:I recived a error?
+## af=focal(a==3, matrix(1, nrow=3, ncol=3), fun=mean)
+## bf=focal(b==3, matrix(1, nrow=3, ncol=3), fun=mean)
+## cf=focal(c==3, matrix(1, nrow=3, ncol=3), fun=mean)
+## df=focal(d==3, matrix(1, nrow=3, ncol=3), fun=mean)
+## ef=focal(e==3, matrix(1, nrow=3, ncol=3), fun=mean)
+## ff=focal(f==3, matrix(1, nrow=3, ncol=3), fun=mean)
 ## BMB: R is case sensitive, Map is different from map
-rr_focal=map(rr_list, ~ focal(.==3, matrix(1, nrow=3, ncol=3), fun=mean))
+rr_focal=map(rr_list,
+             ~ focal(.==3, matrix(1, nrow=3, ncol=3), fun=mean))
 
 ##point
 ##change raster to point A matrix with three columns: x, y, and v (value)
 ## convert from raster to points
 ##map=Apply a function to each element of a vectoraf2=rasterToPoints(af)
-abchange2=rasterToPoints(abchange)
-bcchange2=rasterToPoints(bcchange)
-cdchange2=rasterToPoints(cdchange)
-dechange2=rasterToPoints(dechange)
-efchange2=rasterToPoints(efchange)
 
-af2=rasterToPoints(af)
-bf2=rasterToPoints(bf)
-cf2=rasterToPoints(cf)
-df2=rasterToPoints(df)
-ef2=rasterToPoints(ef)
-ff2=rasterToPoints(ff)
+
+## abchange2=rasterToPoints(abchange)
+## bcchange2=rasterToPoints(bcchange)
+## cdchange2=rasterToPoints(cdchange)
+## dechange2=rasterToPoints(dechange)
+## efchange2=rasterToPoints(efchange)
+
+## converts each of the change rasters into a tibble
+rr_focal_tbl <-  map(rr_focal, conv_tbl, newname="prop_dune_nbrs")
+## RENAME HERE
+rr_change_tbl <- map(rr_changes, conv_tbl, newname="change")
+
+## af2=rasterToPoints(af)
+## bf2=rasterToPoints(bf)
+## cf2=rasterToPoints(cf)
+## df2=rasterToPoints(df)
+## ef2=rasterToPoints(ef)
+## ff2=rasterToPoints(ff)
 ##H-p:How I can make a data like rr-list for abchange2, bcchange2 ,...that show all of them together
-change_list <- map(?, ?, list_cats=TRUE) 
+## change_list <- map(?, ?, list_cats=TRUE)
+## BMB
 
-##H-P:I have received a error?
-## map() is a way to run the same operation on all of the elements
-## of a list at the same time
-## BMB: I didn't get an error. What error did you get?
-rr_changepoints <- map(rr_changes, ~as_tibble(rasterToPoints(.)))
+## BMB: these are the same as rr_focal_tbl and rr_change_tbl
 
 ##tibble
 ##make tbl=tibble A data frame is simply a matrix, but can have columns with different types
-tibbleabchange2=as_tibble(as.data.frame(abchange2))
-tibblebcchange2=as_tibble(as.data.frame(bcchange2))
-tibblecdchange2=as_tibble(as.data.frame(cdchange2))
-tibbledechange2=as_tibble(as.data.frame(dechange2))
-tibbleefchange2=as_tibble(as.data.frame(efchange2))
+## tibbleabchange2=as_tibble(as.data.frame(abchange2))
+## tibblebcchange2=as_tibble(as.data.frame(bcchange2))
+## tibblecdchange2=as_tibble(as.data.frame(cdchange2))
+## tibbledechange2=as_tibble(as.data.frame(dechange2))
+## tibbleefchange2=as_tibble(as.data.frame(efchange2))
 
-tibbleaf2=as_tibble(as.data.frame(af2))
-tibblebf2=as_tibble(as.data.frame(bf2))
-tibblecf2=as_tibble(as.data.frame(cf2))
-tibbledf2=as_tibble(as.data.frame(df2))
-tibbleef2=as_tibble(as.data.frame(ef2))
-tibbleff2=as_tibble(as.data.frame(ff2))
+## tibbleaf2=as_tibble(as.data.frame(af2))
+## tibblebf2=as_tibble(as.data.frame(bf2))
+## tibblecf2=as_tibble(as.data.frame(cf2))
+## tibbledf2=as_tibble(as.data.frame(df2))
+## tibbleef2=as_tibble(as.data.frame(ef2))
+## tibbleff2=as_tibble(as.data.frame(ff2))
 
 ## BMB: moved this here, otherwise it won't run
 ##tables of slope and aspect
 ## BMB: these need to be tibbles or data frames to work with full_join() later
 ## unfortunately this has to be done in exactly this order
 
-conv_tbl <- function(x) tibble(as.data.frame(rasterToPoints(x)))
+
 slope2=conv_tbl(slope)
 aspect2=conv_tbl(aspect)
-tabas2=table(aspect2)
-tabslo2=table(slope2)
+## tabas2=table(aspect2)
+## tabslo2=table(slope2)
 
 ##histogram $:specefic
 hist(tibbleaf2$layer)
@@ -265,6 +292,12 @@ hist(tibbledf2$layer)
 hist(tibbleef2$layer)
 hist(tibbleff2$layer)
 
+map(rr_focal_tbl, ~ table(.$layer))
+par(mfrow=c(2,3)) ## 2 rows x 3 cols
+map(rr_focal_tbl, ~ hist(.$layer))
+## tables without zeros
+map(rr_focal_tbl, ~ table(.$layer[.$layer>0]))
+    
 ##table $:specific=make table
 table(tibbleaf2$layer) 
 
@@ -274,7 +307,6 @@ table(tibblecf2$layer)
 table(tibbledf2$layer)
 table(tibbleef2$layer)
 table(tibbleff2$layer)
-
 
 ##table without 0 value = at least one dune neighbours
 table(tibbleaf2$layer[tibbleaf2$layer>0]) 
@@ -289,19 +321,32 @@ table(tibbleff2$layer[tibbleff2$layer>0])
 ## e.g. the 1987 - 1997 change
 ## full join aspect2,slope2,possible with tbl format not table format
 ##1987
-<<<<<<< HEAD
-comaspectslope=full_join(aspect2T,slope2T,by=c("x","y"))
-combaf2sloas=full_join(comaspectslope,tibbleaf2,by=c("x","y"))
-comball1987=full_join(compaf2sloas, tibbleabchange2, by=c("x","y"))
+
+
+## BMB: merge conflict here?
+## comaspectslope=full_join(aspect2T,slope2T,by=c("x","y"))
+##combaf2sloas=full_join(comaspectslope,tibbleaf2,by=c("x","y"))
+## comball1987=full_join(compaf2sloas, tibbleabchange2, by=c("x","y"))
 
 ##H-P:should I change comball1987 to show just dune cells?
 
-=======
 comaspectslope=full_join(aspect2,slope2,by=c("x","y"))
-compaf2sloas=full_join(comaspectslope,tibbleaf2,by=c("x","y"))
-compall=full_join(compaf2sloas, tibbleabchange2, by=c("x","y"))
->>>>>>> cca819e802777be85aaf34e926232d64f7dbc59f
+compaf2sloas=full_join(comaspectslope,rr_focal_tbl[["1987"]],by=c("x","y"))
 
+names(compaf2sloas)
+## how many NAs are in each row? every row has either 2 NAs (aspect and slope) or 1 NA (change)
+table(rowSums(is.na(compaf2sloas)))
+## inner_join() keeps only rows where x and y are present in both data sets
+##  see how many rows we have left when we do that ...
+nrow(inner_join(comaspectslope,rr_focal_tbl[["1987"]],by=c("x","y")))
+## check whether DEM and aspect match
+nrow(inner_join(conv_tbl(dem),aspect2,by=c("x","y")))  ## yes
+## check whether DEM and original land use raster match
+nrow(inner_join(conv_tbl(dem),conv_tbl(rr_list[[1]]), by=c("x","y")))  ## no
+
+## x and y values are not matching up!
+compall=full_join(compaf2sloas, rr_change_tbl[["1987"]], by=c("x","y"))
+names(compall)
 
 ## str is "STRucture"
 str(slope2)
@@ -310,22 +355,33 @@ str(slope2)
 class(slope2) ## NOT a matrix
 
 ##lenght
-length(rr_points)  ## all of our landuse maps, as tibbles (only 6)
-length(rr_changepoints) ## all of our change maps, as tibbles (only 5)
+length(rr_tbl)  ## all of our landuse maps, as tibbles (only 6)
+length(rr_change_tbl) ## all of our change maps, as tibbles (only 5)
 
+## rename the single column in each landuse tibble
+rr_tbl <- map(rr_tbl, ~setNames(.,c("x","y","landuse")))
 ## rr_list is a list of raster objects (one for each land-use map)
 comb_terrain <- full_join(aspect2,slope2,by=c("x","y"))
-rr_points2 <- map(rr_points,
+## original land use values combined with slope and aspect
+rr_points2 <- map(rr_tbl,
            ## ~ (tilde) says "interpret the rest of this line as a command;
            ## . (dot) will be where we substitute one of the items from the
            ##   list
            ~ full_join(., comb_terrain, by=c("x","y")))
 
+## combine with focal map and rename
+rr_points3 <- map2(rr_points2, rr_focal_tbl,
+                   ~ full_join(.x, .y, by=c("x","y")))
+
+names(rr_points3[[1]])
 ## what happens if we try to combine rr_changes with rr_points?
 ## map2(rr_points, rr_changepoints, ~full_join(.x, .y, by=c("x","y")))
+length(rr_points3) ## 6 landscapes
+length(rr_change_tbl) ## 5 land-use change maps
 
 ## leave out last map because we don't have changes for it
-rr_points3 <- rr_points2[-length(rr_points2)]
-rr_comb2 <- map2(rr_points3, rr_changepoints, ~full_join(.x, .y, by=c("x","y")))
+rr_points4 <- rr_points3[-length(rr_points3)] ## drop the last landscape
+rr_comb2 <- map2(rr_points4, rr_change_tbl, ~full_join(.x, .y, by=c("x","y")))
 
+names(rr_comb2[[1]])
 ## search for "purrr package map"

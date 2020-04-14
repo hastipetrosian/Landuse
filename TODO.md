@@ -8,9 +8,10 @@
 - Draw raster maps of land cover change? (you can do this with the new code; try to make a single plot with `plot_grid` that shows the before/after plots
 - Figure out how to compute neighbourhood values in R (i.e. with `propfun <- function(x) mean(x==3)` and `focal()`)
 - Use `full_join()` to combine columns of aspect, slope, proportion of neighbourhood that is dune, gain/loss score
-- Use `filter` to restrict this data frame to include only pixels that were dune beforehand
+- fix the DEM coordinates
+- consider whether to use a 3x3 or larger neighbourhood when computing focal/prop dune nbrs
+- Use `drop_na` to get rid of rows with NA values and `filter` to restrict this data frame to include only pixels that were dune beforehand
 - run a logistic regression with aspect, slope, proportion as predictors and gain or loss of dune as the response
-
 - do this for every pair of years
 
 
