@@ -1,11 +1,10 @@
 # landuse 2018
-library(geosample)
+## library(geosample)  ## 
 library(sf)
 library(rgeos)
 library(readxl)
 library(raster)
 library(tidyverse) ## includes purrr, readr, dplyr, ...
-library(readxl)
 library(fasterize)  ## may need to install this
 library(rasterVis)
 library(foreign)
@@ -16,7 +15,7 @@ library(sp)
 do_shape_files <- FALSE
 source("functions.R")
 
-## all shape files(vectors):
+## all shape files(vectors):s
 shapefiles <- list.files(pattern="*.shp$",recursive=TRUE)
 
 ## dd_list <- lapply(v2shp, read_sf)
@@ -87,7 +86,8 @@ levelplot(aspect)
 
 ##focal with matrix 3*3 with sum (default)
 ## BMB: numeric operations on categorical rasters don't usually make sense
-prop <- focal(a,matrix(1/9,nrow=3,ncol=3))
+## ERROR
+## prop <- focal(a,matrix(1/9,nrow=3,ncol=3))
 ##focal with matrix 3*3 with modal (BMB: not mode!)
 ## using 1/9 as weights instead of 1 as weights gives weird answers
 ## (it divides all of the numbers, which correspond to land-use types,
@@ -96,26 +96,27 @@ prop <- focal(a,matrix(1/9,nrow=3,ncol=3))
 ## prop2 <- focal(a,matrix(1,nrow=3,ncol=3), fun=modal)
 ## BMB: 
 ##data frame of 1987 raster layer (recived error)
-xx <- as_tibble(as.data.frame(rasterToPoints(prop2)))
+## ERROR
+## xx <- as_tibble(as.data.frame(rasterToPoints(prop2)))
 ## BMB: we've lost the categorical labels again ...
-head(xx)
-table(xx$layer)
-str(xx$layer)
+## head(xx)
+## table(xx$layer)
+##str(xx$layer)
 ## make it back into a categorical variable
-xx$layer <- factor(xx$layer,
-                   levels=as.numeric(landuse_cats), ## numeric values
-                   ## use labels from the land use categories
-                   labels=levels(landuse_cats)
-)
-str(xx$layer)
-table(xx$layer)
+##xx$layer <- factor(xx$layer,
+##                   levels=as.numeric(landuse_cats), ## numeric values
+##                   ## use labels from the land use categories
+##                   labels=levels(landuse_cats)
+##)
+## str(xx$layer)
+## table(xx$layer)
 
-xx_lost <- (full_join(xx,change1,by=c("x","y"))
-            ## keep only points where there is change 
-            ## %>% filter(layer.y %in% c(1,2))
-            %>% filter(layer.y %in% c(2,3))
-)
-xx_lost
+## xx_lost <- (full_join(xx,change1,by=c("x","y"))
+##             ## keep only points where there is change 
+##             ## %>% filter(layer.y %in% c(1,2))
+##             %>% filter(layer.y %in% c(2,3))
+## )
+## xx_lost
 
 
 ## BMB::as.data.frame.matrix is not what we want;
@@ -124,14 +125,15 @@ xx_lost
 ## 'undefined' corners of the map
 
 ## don't do this! for illustration only; might as well leave it as a raster
-xx2 <- as.data.frame.matrix(prop2)
-image(as.matrix(xx2)) ## rotated, ugly
+## xx2 <- as.data.frame.matrix(prop2)
+## image(as.matrix(xx2)) ## rotated, ugly
  
 before_after <- function(x,y) {2*as.numeric(x=="erg")+as.numeric(y=="erg")}
 before_after(c("erg","other"),c("other","erg"))
 ergba=function(x,y){as.numeric(x=="erg")+as.numeric(y=="erg")}
 
 
+## BMB: PLEASE CLEAN THIS UP
 # a=1987,b=1197,c=2003,d=2008,e=2014,f=2018
 a=rr_list[[1]]
 b=rr_list[[2]]
@@ -167,6 +169,7 @@ efchange=overlay(e,f,fun=change)
 ## the map2() function runs a command on the elements of two lists
 # .=all of the data with same length ~ =formula
 ##H-P:I have received a error?
+## BMB: this works for me (when running beginning to end)
 rr_changes=map2(rr_before, rr_after, ~ overlay(.x,.y,fun=change)) 
 
 
@@ -200,10 +203,11 @@ df=focal(d==3, matrix(1, nrow=3, ncol=3), fun=mean)
 ef=focal(e==3, matrix(1, nrow=3, ncol=3), fun=mean)
 ff=focal(f==3, matrix(1, nrow=3, ncol=3), fun=mean)
 ##H-P:I recived a error?
-rr_focal=Map(rr_list, ~ focal(.==3, matrix(1, nrow=3, ncol=3), fun=mean))
+## BMB: R is case sensitive, Map is different from map
+rr_focal=map(rr_list, ~ focal(.==3, matrix(1, nrow=3, ncol=3), fun=mean))
 
 ##point
-##change rater to point A matrix with three columns: x, y, and v (value)
+##change raster to point A matrix with three columns: x, y, and v (value)
 ## convert from raster to points
 ##map=Apply a function to each element of a vectoraf2=rasterToPoints(af)
 abchange2=rasterToPoints(abchange)
@@ -222,6 +226,7 @@ ff2=rasterToPoints(ff)
 ##H-P:I have received a error?
 ## map() is a way to run the same operation on all of the elements
 ## of a list at the same time
+## BMB: I didn't get an error. What error did you get?
 rr_changepoints <- map(rr_changes, ~as_tibble(rasterToPoints(.)))
 
 ##tibble
@@ -239,8 +244,16 @@ tibbledf2=as_tibble(as.data.frame(df2))
 tibbleef2=as_tibble(as.data.frame(ef2))
 tibbleff2=as_tibble(as.data.frame(ff2))
 
-aspect2T=as_tibble(as.data.frame(aspect2))
-slope2T=as_tibble(as.data.frame(slope2))
+## BMB: moved this here, otherwise it won't run
+##tables of slope and aspect
+## BMB: these need to be tibbles or data frames to work with full_join() later
+## unfortunately this has to be done in exactly this order
+
+conv_tbl <- function(x) tibble(as.data.frame(rasterToPoints(x)))
+slope2=conv_tbl(slope)
+aspect2=conv_tbl(aspect)
+tabas2=table(aspect2)
+tabslo2=table(slope2)
 
 ##histogram $:specefic
 hist(tibbleaf2$layer)
@@ -269,17 +282,12 @@ table(tibbledf2$layer[tibbledf2$layer>0])
 table(tibbleef2$layer[tibbleef2$layer>0])
 table(tibbleff2$layer[tibbleff2$layer>0])
 
-##tables of slope and aspect
-slope2=rasterToPoints(slope)
-aspect2=rasterToPoints(aspect)
-tabas2=table(aspect2)
-tabslo2=table(slope2)
 ## figure out how to do everything you want (i.e. combine all the different
 ## pieces: change, topography, neighbourhood, climate?) with a single map
 ## e.g. the 1987 - 1997 change
 ## full join aspect2,slope2,possible with tbl format not table format
 ##1987
-comaspectslope=full_join(aspect2T,slope2T,by=c("x","y"))
+comaspectslope=full_join(aspect2,slope2,by=c("x","y"))
 compaf2sloas=full_join(comaspectslope,tibbleaf2,by=c("x","y"))
 compall=full_join(compaf2sloas, tibbleabchange2, by=c("x","y"))
 
@@ -296,7 +304,7 @@ length(rr_changepoints) ## all of our change maps, as tibbles (only 5)
 
 ## rr_list is a list of raster objects (one for each land-use map)
 comb_terrain <- full_join(aspect2,slope2,by=c("x","y"))
-rr2 <- map(rr_points,
+rr_points2 <- map(rr_points,
            ## ~ (tilde) says "interpret the rest of this line as a command;
            ## . (dot) will be where we substitute one of the items from the
            ##   list
@@ -305,6 +313,8 @@ rr2 <- map(rr_points,
 ## what happens if we try to combine rr_changes with rr_points?
 ## map2(rr_points, rr_changepoints, ~full_join(.x, .y, by=c("x","y")))
 
-rr_comb2 <- map2(rr_points2, rr_changepoints, ~full_join(.x, .y, by=c("x","y")))
+## leave out last map because we don't have changes for it
+rr_points3 <- rr_points2[-length(rr_points2)]
+rr_comb2 <- map2(rr_points3, rr_changepoints, ~full_join(.x, .y, by=c("x","y")))
 
 ## search for "purrr package map"
