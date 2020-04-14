@@ -222,6 +222,8 @@ cf2=rasterToPoints(cf)
 df2=rasterToPoints(df)
 ef2=rasterToPoints(ef)
 ff2=rasterToPoints(ff)
+##H-p:How I can make a data like rr-list for abchange2, bcchange2 ,...that show all of them together
+change_list <- map(?, ?, list_cats=TRUE) 
 
 ##H-P:I have received a error?
 ## map() is a way to run the same operation on all of the elements
