@@ -280,8 +280,11 @@ tabslo2=table(slope2)
 ## full join aspect2,slope2,possible with tbl format not table format
 ##1987
 comaspectslope=full_join(aspect2T,slope2T,by=c("x","y"))
-compaf2sloas=full_join(comaspectslope,tibbleaf2,by=c("x","y"))
-compall=full_join(compaf2sloas, tibbleabchange2, by=c("x","y"))
+combaf2sloas=full_join(comaspectslope,tibbleaf2,by=c("x","y"))
+comball1987=full_join(compaf2sloas, tibbleabchange2, by=c("x","y"))
+
+##H-P:should I change comball1987 to show just dune cells?
+
 
 
 ## str is "STRucture"
