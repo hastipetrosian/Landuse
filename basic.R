@@ -1,12 +1,4 @@
-## copy this to run the whole file, or click on the Run / Source with echo button in RStudio
-## source("basic.R",echo=TRUE)
-## BMB: if you get an error (1) make sure that you get the error when you run everything
-##  from the beginning, in a clean session (restart R)
-## BMB: if you do get an error, put the specific error message into the comment
-## e.g. 'Error in sqrt("a") : non-numeric argument to mathematical function'
 
-## landuse 2018
-## library(geosample)  ## 
 library(sf)
 library(rgeos)
 library(readxl)
@@ -25,21 +17,15 @@ source("functions.R")
 ## all shape files(vectors):s
 shapefiles <- list.files(pattern="*.shp$",recursive=TRUE)
 
-## dd_list <- lapply(v2shp, read_sf)
 ## reading all of the files into a list
 dd_list <- map(shapefiles, read_sf)
 
-## extract the 2014 number from
-## . represents the current element in the list
-## key.pos and reset are necessary so we can plot all of the maps
-## together (see ?plot.sf)each file name
-year_vec <- parse_number(shapefiles)
+##years of shapefile
 names(dd_list) <- year_vec
-plot(dd_list[["2014"]])
-  
+
 ## set up a 2x3 grid of plots
 ## (2 rows, 3 columns)
-op <- par(mfrow=c(2,3))  
+op <- par(mfrow=c(3,3))  
 
 ## draw all of the vector maps
 map(dd_list,~ plot(.["descrip"],key.pos=NULL,reset=FALSE))
