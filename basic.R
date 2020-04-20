@@ -20,11 +20,8 @@ shapefiles <- list.files(pattern="*.shp$",recursive=TRUE)
 ## reading all of the files into a list
 dd_list <- map(shapefiles, read_sf)
 
-##years of shapefile
-names(dd_list) <- year_vec
-
-## set up a 2x3 grid of plots
-## (2 rows, 3 columns)
+## set up a 3x3 grid of plots
+## (3 rows, 3 columns)
 op <- par(mfrow=c(3,3))  
 
 ## draw all of the vector maps
@@ -42,7 +39,7 @@ years <- years[years>1900] ## leave out DEM file
 ## rr_list
 ##reading all of the files into a list
 rr_list <- map(years, get_categorical_raster, list_cats=TRUE)  
-names(rr_list) <- years
+names(rr_list)
 
 ##dem
 dem <- raster("dem/Extract_dem11.tif")
@@ -57,13 +54,12 @@ plot_grid(plotlist=plots)
 clim_data <-  read_excel("climate/climate_data.xlsx", col_names=TRUE)
 
 ## ObsLulcRasterStack(rr_list)  ## doesn't know what to do
-rs <- ObsLulcRasterStack(rr_list,
-                   pattern="[0-9]+", ## use all numbers
-                   ## this only works if we only have the
-                   ##  land-use rasters; if we have climate,
-                   ##  DEM, etc. then we have to give just
-                   ##  the vector of years
-t=as.numeric(names(rr_list)))
+## this only works if we only have the
+##  land-use rasters; if we have climate,
+##  DEM, etc. then we have to give just
+##  the vector of years
+## use all numbers
+rs <- ObsLulcRasterStack(rr_list,pattern="[0-9]+",t=as.numeric(names(rr_list)))
 
 ##crosstab
 crosstab(stack(rr_list[[1]],rr_list[[2]]))
@@ -333,7 +329,20 @@ nrow(inner_join(conv_tbl(dem),conv_tbl(rr_list[[1]]), by=c("x","y")))  ## no
 ## x and y values are not matching up!
 compall=full_join(compaf2sloas, rr_change_tbl[["1987"]], by=c("x","y"))
 names(compall)
-
+##H-P:for matching map there are two ways:
+##first=introduce a vector map (name is border) and crop rasters with it
+##I have recives an error
+border=read_sf("border/border.shp")
+crop(a,border)
+#Error in (function (classes, fdef, mtable)  : 
+            unable to find an inherited method for function ‘crop’ for signature ‘"list"’
+##second=change extent of rasters map with dem extent
+##I have recives a same error
+extent=extent(dem)            
+setExtent(a,extent,keepres = TRUE)
+#Error in (function (classes, fdef, mtable)  : 
+                        unable to find an inherited method for function ‘xres’ for signature ‘"list"’
+                      >             
 ## str is "STRucture"
 str(slope2)
 
