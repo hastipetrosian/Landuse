@@ -24,6 +24,8 @@ change <- function(x,y,code=3) {
 ## converts from raster -> matrix -> data frame -> tibble
 conv_tbl <- function(x,newname=NULL) {
     x2 <- tibble(as.data.frame(rasterToPoints(x)))
+    ## fix column names (why??)
+    names(x2)[1:2] <- c("x","y")
     if (!is.null(newname)) {
         names(x2) <- c("x","y",newname)
     }
