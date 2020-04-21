@@ -21,6 +21,7 @@
   
 - consider renaming climate variables to something easier to use in a model (no spaces, shorter names)
 
+- figure out how to count the number of NA values in a raster and confirm that the difference between the DEM and the land use maps when converted from raster to points to tibble is exactly explained by the number of NAs in each object
 
 ## postpone
 

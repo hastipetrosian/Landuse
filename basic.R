@@ -1,4 +1,3 @@
-
 library(sf)
 library(rgeos)
 library(readxl)
@@ -10,6 +9,26 @@ library(foreign)
 library(cowplot)
 library(lulcc)
 library(sp)
+
+##change during time in erg cells 
+
+##function with two mode(x==erg, y=other, not + together=2 before be erg)
+##(x=other=0+1=1 after being erg)
+## before_after(c("erg","other"),c("other","erg"))
+#function Change in the erg, every two consecutive years
+change <- function(x,y,code=3) {
+    2*as.numeric(x==code)+as.numeric(y==code)
+}
+
+
+## converts from raster -> matrix -> data frame -> tibble
+conv_tbl <- function(x,newname=NULL) {
+    x2 <- tibble(as.data.frame(rasterToPoints(x)))
+    if (!is.null(newname)) {
+        names(x2) <- c("x","y",newname)
+    }
+    return(x2)
+}
 
 do_shape_files <- FALSE
 source("functions.R")
@@ -38,12 +57,52 @@ years <- years[years>1900] ## leave out DEM file
 
 ## rr_list
 ##reading all of the files into a list
-rr_list <- map(years, get_categorical_raster, list_cats=TRUE)  
-names(rr_list)
+rr_list <- map(years, get_categorical_raster, list_cats=TRUE)
+names(rr_list) <- years  ## set the raster names equal to the years
+
 
 ##dem
 dem <- raster("dem/Extract_dem11.tif")
+## https://gis.stackexchange.com/questions/154276/reprojecting-raster-from-lat-lon-to-utm-in-r
+## dem_reproj <- projectRaster(dem, crs=crs(rr_list[[1]]))
+demR <- projectRaster(dem, rr_list[[1]])
 
+## extent_dem <- extent(dem)
+
+## cropping/extent adjustment; this isn't necessary/doesn't do what we want
+## rr_crop_list <- map(rr_list, ~setExtent(., extent_dem))
+## dem_crop <- crop(dem,extent(rr_list[[1]]))
+## border <- read_sf("border/border.shp")
+## rr_crop_list2 <- map(rr_list, ~crop(., border))
+## extent(border)
+## extent(rr_list[[1]])
+## identical(extent(rr_crop_list[[1]]), extent(dem))
+## head(sort(conv_tbl(rr_crop_list[[1]])$x),2)
+
+## compute slope and aspect
+slope <- terrain(demR, opt="slope", unit="radians", neighbors=8)
+levelplot(slope)
+aspect <- terrain(demR, opt="aspect", unit="radians", neighbors=8)
+levelplot(aspect)
+
+## there are more rows in the DEM than in the slope
+## ? we can't compute slope on the edges
+nrow(conv_tbl(demR))
+nrow(conv_tbl(slope))
+
+##converts slope and aspect rasters into a tibble
+slope_tbl  <- conv_tbl(slope)
+aspect_tbl <- conv_tbl(aspect)
+comb_terrain <- full_join(aspect_tbl,slope_tbl,by=c("x","y"))
+
+## try to match up terrain (derived from DEM) with first landuse map; do the x and y match?
+tmp <- conv_tbl(rr_list[["1987"]])
+compaf2sloas=full_join(comb_terrain, tmp, by=c("x","y"))
+nrow(compaf2sloas)
+nrow(comb_terrain)
+nrow(tmp)
+## we have about the same number of rows in landuse and terrain and combination, but not exactly
+##  ??? different numbers of NAs ???
 
 ## draw all of the raster maps
 ## (2 rows, 3 columns)
@@ -56,27 +115,7 @@ clim_data <-  read_excel("climate/climate_data.xlsx", col_names=TRUE)
 ##crosstab
 crosstab(stack(rr_list[[1]],rr_list[[2]]))
 
-##slope and aspect
-slope <- terrain(dem, opt="slope", unit="radians", neighbors=8)
-levelplot(slope)
-aspect <- terrain(dem, opt="aspect", unit="radians", neighbors=8)
-levelplot(aspect)
 
-##change during time in erg cells 
-##before-after function
-before_after <- function(x,y) {2*as.numeric(x=="erg")+as.numeric(y=="erg")}
-##function with two mode(x==erg, y=other, not + together=2 before be erg)
-##(x=other=0+1=1 after be erg)
-before_after(c("erg","other"),c("other","erg"))
-
-## converts from raster -> matrix -> data frame -> tibble
-conv_tbl <- function(x,newname=NULL) {
-    x2 <- tibble(as.data.frame(rasterToPoints(x)))
-    if (!is.null(newname)) {
-        names(x2) <- c("x","y",newname)
-    }
-    return(x2)
-}
 ##use function data frame to all raster data
 ##H-p:I got an error?
 ##Error during wrapup: 'names' attribute [3] must be the same length as the vector [1]
@@ -86,17 +125,11 @@ rr_tbl <- map(rr_list, conv_tbl, newname="landuse")
 rr_before=rr_list[1:5] 
 rr_after= rr_list[2:6]
 
-#function Change in the erg, every two consecutive years
-change=function(x,y,code=3) {
-    2*as.numeric(x==code)+as.numeric(y==code)
-}
-
 rr_changes=map2(rr_before, rr_after, ~ overlay(.x,.y,fun=change))
 
 #plot of changes
 
-changeplots <- map(rr_changes, levelplot,
-                   margin=FALSE)
+changeplots <- map(rr_changes, levelplot, margin=FALSE)
 #PLOT_GRID:all plots together
 plot_grid(plotlist=changeplots)
 
@@ -119,47 +152,18 @@ rr_focal=map(rr_list,
 ##names' attribute [3] must be the same length as the vector [1]
 rr_focal_tbl <-  map(rr_focal, conv_tbl, newname="prop_dune_nbrs")
 
-##converts slope and aspect rasters into a tibble
-slope2=conv_tbl(slope)
-aspect2=conv_tbl(aspect)
-
 
 ##histogram $:specefic
 par(mfrow=c(2,3)) ## 2 rows x 3 cols
 ##H-P:I got an error?
 ##Error in hist.default(.$layer) : 'x' must be numeric In addition: Warning message:
 ##Unknown or uninitialised column: 'layer'. 
-map(rr_focal_tbl,~ hist(.$layer))
+map(rr_focal_tbl,~ hist(.$prop_dune_nbrs))
 
 ## tables without zeros
-map(rr_focal_tbl, ~ table(.$layer[.$layer>0]))
+map(rr_focal_tbl, ~ table(.$prop_dune_nbrs[.$prop_dune_nbrs>0]))
     
-
-##H-p:I got an error?
-##Error: `by` can't contain join column `x`, `y` which is missing from LHS
-
-comb_terrain <- full_join(aspect2,slope2,by=c("x","y"))
-compaf2sloas=full_join(comb_terrain,rr_focal_tbl[["1987"]],by=c("x","y"))
-
-## x and y values are not matching up!
-compall=full_join(compaf2sloas, rr_change_tbl[["1987"]], by=c("x","y"))
-names(compall)
-
-##H-P:for matching map there are two ways:
-##first=introduce a vector map (name is border) and crop rasters with it
-##I got an error
-border=read_sf("border/border.shp")
-crop(a,border)
-#Error in (function (classes, fdef, mtable)  : 
-##unable to find an inherited method for function ‘crop’ for signature ‘"list"’
-##second=change extent of rasters map with dem extent
-##I got a same error
-extent=extent(dem)            
-setExtent(a,extent,keepres = TRUE)
-#Error in (function (classes, fdef, mtable)  : 
-##unable to find an inherited method for function ‘xres’ for signature ‘"list"’>             
-
-##lenght
+##length
 length(rr_tbl)  ## all of our landuse maps, as tibbles (only 6)
 length(rr_change_tbl) ## all of our change maps, as tibbles (only 5)
 
