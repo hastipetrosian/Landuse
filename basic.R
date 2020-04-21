@@ -78,7 +78,7 @@ conv_tbl <- function(x,newname=NULL) {
     return(x2)
 }
 ##use function data frame to all raster data
-##H-p:I got an error
+##H-p:I got an error?
 ##Error during wrapup: 'names' attribute [3] must be the same length as the vector [1]
 rr_tbl <- map(rr_list, conv_tbl, newname="landuse")
 
@@ -102,7 +102,7 @@ plot_grid(plotlist=changeplots)
 
 ## converts each of the before and after change rasters into a tibble
 ## RENAME HERE
-##H-p:I got an error
+##H-p:I got an error?
 ##Error in attr(x, "names") <- as.character(value) : 
 ##'names' attribute [3] must be the same length as the vector [1]
 rr_change_tbl <- map(rr_changes, conv_tbl, newname="change")
@@ -114,7 +114,7 @@ rr_focal=map(rr_list,
 
 ## converts each of the neighbers rasters into a tibble
 ## RENAME HERE
-##H-p:I got an error
+##H-p:I got an error?
 ## Error in attr(x, "names") <- as.character(value) : 
 ##names' attribute [3] must be the same length as the vector [1]
 rr_focal_tbl <-  map(rr_focal, conv_tbl, newname="prop_dune_nbrs")
@@ -126,7 +126,7 @@ aspect2=conv_tbl(aspect)
 
 ##histogram $:specefic
 par(mfrow=c(2,3)) ## 2 rows x 3 cols
-##H-P:I got an error
+##H-P:I got an error?
 ##Error in hist.default(.$layer) : 'x' must be numeric In addition: Warning message:
 ##Unknown or uninitialised column: 'layer'. 
 map(rr_focal_tbl,~ hist(.$layer))
@@ -137,55 +137,57 @@ map(rr_focal_tbl, ~ table(.$layer[.$layer>0]))
 
 ##H-p:I got an error?
 ##Error: `by` can't contain join column `x`, `y` which is missing from LHS
-comaspectslope=full_join(aspect2,slope2,by=c("x","y"))
-compaf2sloas=full_join(comaspectslope,rr_focal_tbl[["1987"]],by=c("x","y"))
+
+comb_terrain <- full_join(aspect2,slope2,by=c("x","y"))
+compaf2sloas=full_join(comb_terrain,rr_focal_tbl[["1987"]],by=c("x","y"))
 
 ## x and y values are not matching up!
 compall=full_join(compaf2sloas, rr_change_tbl[["1987"]], by=c("x","y"))
 names(compall)
+
 ##H-P:for matching map there are two ways:
 ##first=introduce a vector map (name is border) and crop rasters with it
 ##I got an error
 border=read_sf("border/border.shp")
 crop(a,border)
 #Error in (function (classes, fdef, mtable)  : 
-            unable to find an inherited method for function ‘crop’ for signature ‘"list"’
+##unable to find an inherited method for function ‘crop’ for signature ‘"list"’
 ##second=change extent of rasters map with dem extent
 ##I got a same error
 extent=extent(dem)            
 setExtent(a,extent,keepres = TRUE)
 #Error in (function (classes, fdef, mtable)  : 
-                        unable to find an inherited method for function ‘xres’ for signature ‘"list"’
-                      >             
+##unable to find an inherited method for function ‘xres’ for signature ‘"list"’>             
 
 ##lenght
 length(rr_tbl)  ## all of our landuse maps, as tibbles (only 6)
 length(rr_change_tbl) ## all of our change maps, as tibbles (only 5)
 
-## rename the single column in each landuse tibble
+## rename the single column in each original landuse tibble
 rr_tbl <- map(rr_tbl, ~setNames(.,c("x","y","landuse")))
-## rr_list is a list of raster objects (one for each land-use map)
-comb_terrain <- full_join(aspect2,slope2,by=c("x","y"))
-## original land use values combined with slope and aspect
+
+## 1-original land use values combined with slope and aspect(comb_terrain)
 rr_points2 <- map(rr_tbl,
            ## ~ (tilde) says "interpret the rest of this line as a command;
            ## . (dot) will be where we substitute one of the items from the
            ##   list
            ~ full_join(., comb_terrain, by=c("x","y")))
 
-## combine with focal map and rename
+## 2-combine with neighburs value- focal map and rename
 rr_points3 <- map2(rr_points2, rr_focal_tbl,
                    ~ full_join(.x, .y, by=c("x","y")))
 
 names(rr_points3[[1]])
-## what happens if we try to combine rr_changes with rr_points?
-## map2(rr_points, rr_changepoints, ~full_join(.x, .y, by=c("x","y")))
-length(rr_points3) ## 6 landscapes
-length(rr_change_tbl) ## 5 land-use change maps
 
+## 6 landscapes
+length(rr_points3) 
+## 5 land-use change maps
+length(rr_change_tbl)
+
+##rr_points4= what happens if we try to combine rr_changes-tbl with rr_points3?
+## drop the last landscape
 ## leave out last map because we don't have changes for it
-rr_points4 <- rr_points3[-length(rr_points3)] ## drop the last landscape
+rr_points4 <- rr_points3[-length(rr_points3)] 
 rr_comb2 <- map2(rr_points4, rr_change_tbl, ~full_join(.x, .y, by=c("x","y")))
 
 names(rr_comb2[[1]])
-## search for "purrr package map"
