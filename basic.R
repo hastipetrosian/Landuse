@@ -195,3 +195,8 @@ length(rr_change_tbl)
 ## leave out last map because we don't have changes for it
 rr_points4 <- rr_points3[-length(rr_points3)] 
 rr_points5 <- map2(rr_points4, rr_change_tbl, ~full_join(.x, .y, by=c("x","y")))
+
+##H-p=About logistic regression I think  we should to consider change columnit in two separate columns as before and after dune, and then for example in before column considers 1 for the cells that before were dune after column considers 1 for the cells that after are dune. 
+##Then run two separate logistic regressions that one shows the relation between in depended variables and cells that change to dune and one shows the relation between in depended variable and cell that are no longer dune.
+##x=binary column
+##glm(x~ slope+aspect+prop_dune_nbrs, data = rr_points5, family = "binomial")
