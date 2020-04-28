@@ -9,13 +9,21 @@ library(foreign)
 library(cowplot)
 library(lulcc)
 library(sp)
+library(broom)
+library(dotwhisker)
+library(ggplot2)
 
 ##change during time in erg cells 
 
 ##function with two mode(x==erg, y=other, not + together=2 before be erg)
-##(x=other=0+1=1 after being erg)
-## before_after(c("erg","other"),c("other","erg"))
-#function Change in the erg, every two consecutive years
+## Change in erg over two consecutive maps
+## code=3 corresponds to erg
+## x=before, y=after
+## not-erg=0, erg=1
+## 0: not-erg before and after (no gain)
+## 1: not-erg before, erg after (gain)
+## 2: erg before, not-erg after (loss)
+## 3: erg before and after (no loss)
 change <- function(x,y,code=3) {
     2*as.numeric(x==code)+as.numeric(y==code)
 }
@@ -110,7 +118,7 @@ comb_terrain <- full_join(aspect_tbl,slope_tbl,by=c("x","y"))
 ## try to match up terrain (derived from DEM) with first 1987 landuse map; do the x and y match?
 tmp <- conv_tbl(rr_list[["1987"]])
 combaf2sloas=full_join(comb_terrain, tmp, by=c("x","y"))
-nrow(compaf2sloas)
+nrow(combaf2sloas)
 nrow(comb_terrain)
 nrow(tmp)
 ## we have about the same number of rows in landuse and terrain and combination, but not exactly
@@ -200,3 +208,39 @@ rr_points5 <- map2(rr_points4, rr_change_tbl, ~full_join(.x, .y, by=c("x","y")))
 ##Then run two separate logistic regressions that one shows the relation between in depended variables and cells that change to dune and one shows the relation between in depended variable and cell that are no longer dune.
 ##x=binary column
 ##glm(x~ slope+aspect+prop_dune_nbrs, data = rr_points5, family = "binomial")
+
+
+dd <- (rr_points5[["1987"]]
+    ## only want points that were erg before
+    ## only values that have aspect data
+    %>% drop_na(aspect)
+    ## don't need these columns any more
+    %>% select(-c(x,y))
+)
+
+## ANALYSIS 1: analyzing
+
+dd_loss <- (dd
+    ## if change==3 we had erg both before
+    ##  and after, so this is 0 for 'no change'
+    ## otherwise 1 for 'lost erg'
+    %>% filter(change %in% c(2,3))
+    %>% mutate(change=ifelse(change==3,0,1))
+)
+
+dd_gain <- (dd
+    ## if change==3 we had erg both before
+    ##  and after, so this is 0 for 'no change'
+    ## otherwise 1 for 'lost erg'
+    %>% filter(change %in% c(0,1))
+)
+
+## you could add proportion of nearby vegetation
+
+table(dd$landuse)
+logist1 <- glm(change~ slope+aspect+prop_dune_nbrs, data = dd_loss, family = "binomial")
+summary(logist1)
+## note this is a plot of *standardized* coefficients
+dwplot(logist1)+geom_vline(xintercept=0,lty=2)
+
+## look at nnet::multinom function to fit multinomial response model
