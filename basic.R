@@ -21,7 +21,7 @@ change <- function(x,y,code=3) {
 }
 
 
-## converts from raster -> matrix -> data frame -> tibble
+## converts from raster -> point matrix -> data frame -> tibble
 conv_tbl <- function(x,newname=NULL) {
     x2 <- tibble(as.data.frame(rasterToPoints(x)))
     ## fix column names (why??)
@@ -50,26 +50,34 @@ map(dd_list,~ plot(.["descrip"],key.pos=NULL,reset=FALSE))
 
 ## dd_list[[1]]["descrip"]
 all_descrip <- map(dd_list, ~ sort(.["descrip"]$descrip))
+
+##list the descrip of maps withoiut any repeat(unique) 
 sort(unique(unlist(all_descrip)))
 
 ## only reading the landuse rasters
 rasterfiles <- list.files(pattern="*.tif$",recursive=TRUE)
+
+## reading landuse raster file,leave out DEM file
 years <- parse_number(rasterfiles)
 years <- years[years>1900] ## leave out DEM file
 
 ## rr_list
-##reading all of the files into a list
+##reading all of the raster files into a list with classess
 rr_list <- map(years, get_categorical_raster, list_cats=TRUE)
-names(rr_list) <- years  ## set the raster names equal to the years
 
+## set the raster names equal to the years
+names(rr_list) <- years 
 
 ##dem
 dem <- raster("dem/Extract_dem11.tif")
+
 ## https://gis.stackexchange.com/questions/154276/reprojecting-raster-from-lat-lon-to-utm-in-r
 ## dem_reproj <- projectRaster(dem, crs=crs(rr_list[[1]]))
+##change project system of dem to landuse raster 1987
 demR <- projectRaster(dem, rr_list[[1]])
 
-## extent_dem <- extent(dem)
+## for finding max and min x and y
+extent_dem <- extent(dem)
 
 ## cropping/extent adjustment; this isn't necessary/doesn't do what we want
 ## rr_crop_list <- map(rr_list, ~setExtent(., extent_dem))
@@ -95,11 +103,13 @@ nrow(conv_tbl(slope))
 ##converts slope and aspect rasters into a tibble
 slope_tbl  <- conv_tbl(slope)
 aspect_tbl <- conv_tbl(aspect)
+dem_tbl <- conv_tbl(demR)
+
 comb_terrain <- full_join(aspect_tbl,slope_tbl,by=c("x","y"))
 
-## try to match up terrain (derived from DEM) with first landuse map; do the x and y match?
+## try to match up terrain (derived from DEM) with first 1987 landuse map; do the x and y match?
 tmp <- conv_tbl(rr_list[["1987"]])
-compaf2sloas=full_join(comb_terrain, tmp, by=c("x","y"))
+combaf2sloas=full_join(comb_terrain, tmp, by=c("x","y"))
 nrow(compaf2sloas)
 nrow(comb_terrain)
 nrow(tmp)
@@ -109,6 +119,8 @@ nrow(tmp)
 ## draw all of the raster maps
 ## (2 rows, 3 columns)
 plots <- map(rr_list,levelplot,colorkey=FALSE)
+
+##draw all plots in one sheet
 plot_grid(plotlist=plots)
 
 ##climate
@@ -119,26 +131,21 @@ crosstab(stack(rr_list[[1]],rr_list[[2]]))
 
 
 ##use function data frame to all raster data
-##H-p:I got an error?
-##Error during wrapup: 'names' attribute [3] must be the same length as the vector [1]
 rr_tbl <- map(rr_list, conv_tbl, newname="landuse")
 
-##change
+##change(0=no dune,1=after dune,2=before dune,3=before and after dune)
 rr_before=rr_list[1:5] 
 rr_after= rr_list[2:6]
 
 rr_changes=map2(rr_before, rr_after, ~ overlay(.x,.y,fun=change))
 
 #plot of changes
-
 changeplots <- map(rr_changes, levelplot, margin=FALSE)
 #PLOT_GRID:all plots together
 plot_grid(plotlist=changeplots)
 
 ## converts each of the before and after change rasters into a tibble
 ## RENAME HERE
-##H-p:I got an error?
-##Error in attr(x, "names") <- as.character(value) : 
 ##'names' attribute [3] must be the same length as the vector [1]
 rr_change_tbl <- map(rr_changes, conv_tbl, newname="change")
 
@@ -149,17 +156,10 @@ rr_focal=map(rr_list,
 
 ## converts each of the neighbers rasters into a tibble
 ## RENAME HERE
-##H-p:I got an error?
-## Error in attr(x, "names") <- as.character(value) : 
-##names' attribute [3] must be the same length as the vector [1]
 rr_focal_tbl <-  map(rr_focal, conv_tbl, newname="prop_dune_nbrs")
 
-
-##histogram $:specefic
+##histogram
 par(mfrow=c(2,3)) ## 2 rows x 3 cols
-##H-P:I got an error?
-##Error in hist.default(.$layer) : 'x' must be numeric In addition: Warning message:
-##Unknown or uninitialised column: 'layer'. 
 map(rr_focal_tbl,~ hist(.$prop_dune_nbrs))
 
 ## tables without zeros
@@ -194,6 +194,4 @@ length(rr_change_tbl)
 ## drop the last landscape
 ## leave out last map because we don't have changes for it
 rr_points4 <- rr_points3[-length(rr_points3)] 
-rr_comb2 <- map2(rr_points4, rr_change_tbl, ~full_join(.x, .y, by=c("x","y")))
-
-names(rr_comb2[[1]])
+rr_points5 <- map2(rr_points4, rr_change_tbl, ~full_join(.x, .y, by=c("x","y")))
