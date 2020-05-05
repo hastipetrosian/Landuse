@@ -183,7 +183,7 @@ rr_points2 <- map(rr_tbl,
 rr_points3 <- map2(rr_points2, rr_focal_tbl,
                    ~ full_join(.x, .y, by=c("x","y")))
 
-names(rr_points3[[1]])
+rr-poinames(rr_points3[[1]])
 
 ## 6 landscapes
 length(rr_points3) 
@@ -200,3 +200,14 @@ rr_points5 <- map2(rr_points4, rr_change_tbl, ~full_join(.x, .y, by=c("x","y")))
 ##Then run two separate logistic regressions that one shows the relation between in depended variables and cells that change to dune and one shows the relation between in depended variable and cell that are no longer dune.
 ##x=binary column
 ##glm(x~ slope+aspect+prop_dune_nbrs, data = rr_points5, family = "binomial")
+
+
+##H-P:For the first staff if I have to done it based on the previous code (for example for buildup area) I have to do follow steps:
+    
+rr_focalbuild=map(rr_list,~ focal(.==12, matrix(1, nrow=3, ncol=3), fun=mean))
+rr_focal_tblbuild <- map(rr_focalbuild, conv_tbl, newname="prop_build_nbrs")
+rr_points33 <- map2(rr_points3, rr_focal_tblbuild, ~ full_join(.x, .y, by=c("x","y")))
+
+##in this way when I used.==12, just consider buildup area without regarding to ergs, but I think I should to find a way that consider neighbors values(vegetation, buildup area, erg) just around erg cells(3 separate classes just around ergs.
+                                                                                                                                                                                                           
+
