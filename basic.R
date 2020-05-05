@@ -29,10 +29,13 @@ change <- function(x,y,code=3) {
 
 
 ## converts from raster -> point matrix -> data frame -> tibble
-conv_tbl <- function(x,newname=NULL) {
+conv_tbl <- function(x,newname=NULL,rescale=NA) {
     x2 <- tibble(as.data.frame(rasterToPoints(x)))
     ## fix column names (why??)
     names(x2)[1:2] <- c("x","y")
+    if (!is.na(rescale)) {
+        x2[,3] <- x2[,3]/rescale
+    }
     if (!is.null(newname)) {
         names(x2) <- c("x","y",newname)
     }
@@ -156,21 +159,29 @@ plot_grid(plotlist=changeplots)
 ##'names' attribute [3] must be the same length as the vector [1]
 rr_change_tbl <- map(rr_changes, conv_tbl, newname="change")
 
-#neighburs,focal mean,focal=0(no dune neighbour) 1(all the cells are dune)
-rr_focal=map(rr_list,
-             ~ focal(.==3, matrix(1, nrow=3, ncol=3), fun=mean))
+##neighburs,focal mean,focal=0(no dune neighbour) 1(all the cells are dune)
+
+
+w <- matrix(1, nrow=3, ncol=3)
+w[2,2] <- 0   ## center cell doesn't count!
+rr_focal <- map(rr_list, ~ focal(.==3, w, sum))
+
+levelplot(rr_focal[[1]])
 
 
 ## converts each of the neighbers rasters into a tibble
-## RENAME HERE
-rr_focal_tbl <-  map(rr_focal, conv_tbl, newname="prop_dune_nbrs")
+## and divide sum of nbrs by 8 to get proportion
+rr_focal_tbl <-  map(rr_focal, conv_tbl, newname="prop_erg_nbrs", rescale=8)
 
+## FIXME: do the same thing for prop_build_nbrs
+
+tt <- table(rr_focal_tbl[[1]]$prop_erg_nbrs)
 ##histogram
 par(mfrow=c(2,3)) ## 2 rows x 3 cols
-map(rr_focal_tbl,~ hist(.$prop_dune_nbrs))
+map(rr_focal_tbl,~ hist(.$prop_erg_nbrs))
 
 ## tables without zeros
-map(rr_focal_tbl, ~ table(.$prop_dune_nbrs[.$prop_dune_nbrs>0]))
+map(rr_focal_tbl, ~ table(.$prop_erg_nbrs[.$prop_erg_nbrs>0]))
     
 ##length
 length(rr_tbl)  ## all of our landuse maps, as tibbles (only 6)
@@ -202,8 +213,21 @@ length(rr_change_tbl)
 rr_points4 <- rr_points3[-length(rr_points3)] 
 rr_points5 <- map2(rr_points4, rr_change_tbl, ~full_join(.x, .y, by=c("x","y")))
 
+##H-P:For the first staff if I have to done it based on the previous code (for example for buildup area) I have to do follow steps:
 
-dd <- (rr_points5[["1987"]]
+rr_focalbuild=map(rr_list,~ focal(.==12, w, fun=sum))
+rr_focal_tblbuild <- map(rr_focalbuild, conv_tbl, newname="prop_build_nbrs", rescale=8)
+## we don't need the last one (because there's no change to compare it to)
+rr_focal_tblbuild1 <- rr_focal_tblbuild[-length(rr_focal_tblbuild)]
+
+## xx <- rr_focal_tblbuild1[["2014"]]
+## table(xx$prop_build_nbrs)
+
+rr_points6 <- map2(rr_points5, rr_focal_tblbuild1, ~ full_join(.x, .y, by=c("x","y")))
+
+##in this way when I used.==12, just consider buildup area without regarding to ergs, but I think I should to find a way that consider neighbors values(vegetation, buildup area, erg) just around erg cells(3 separate classes just around ergs.
+
+dd <- (rr_points6[["2014"]]
     ## only want points that were erg before
     ## only values that have aspect data
     %>% drop_na(aspect)
@@ -221,6 +245,8 @@ dd_loss <- (dd
     %>% mutate(change=ifelse(change==3,0,1))
 )
 
+table(dd_loss$prop_build_nbrs)
+
 dd_gain <- (dd
     ## if change==3 we had erg both before
     ##  and after, so this is 0 for 'no change'
@@ -231,16 +257,9 @@ dd_gain <- (dd
 ## you could add proportion of nearby vegetation
 
 table(dd$landuse)
-logist1 <- glm(change~ slope+aspect+prop_dune_nbrs, data = dd_loss, family = "binomial")
+logist1 <- glm(change~ slope+aspect+prop_erg_nbrs, data = dd_loss, family = "binomial")
 summary(logist1)
 
 
 ## look at nnet::multinom function to fit multinomial response model
 
-##H-P:For the first staff if I have to done it based on the previous code (for example for buildup area) I have to do follow steps:
-
-rr_focalbuild=map(rr_list,~ focal(.==12, matrix(1, nrow=3, ncol=3), fun=mean))
-rr_focal_tblbuild <- map(rr_focalbuild, conv_tbl, newname="prop_build_nbrs")
-rr_points33 <- map2(rr_points3, rr_focal_tblbuild, ~ full_join(.x, .y, by=c("x","y")))
-
-##in this way when I used.==12, just consider buildup area without regarding to ergs, but I think I should to find a way that consider neighbors values(vegetation, buildup area, erg) just around erg cells(3 separate classes just around ergs.

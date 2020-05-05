@@ -57,3 +57,10 @@ nbr_prop_mangrove nbr_prop_riverbed ...
 * find wind data and think about spatial and temporal scales we would need to use it sensibly
 * OPTIONAL: think about multinomial models (nnet::multinomial)
 * OPTIONAL: think about deriving directional neighbourhood information
+
+## 2020 May 5
+
+* read Schielzeth's paper, think about scaling and log-odds and stuff; the `dotwhisker` package might be useful
+* go through with improved neighbourhood calculations, calculate prop of other land-use types
+* ?? add wind data to repository, calculate *average* wind direction over the entire intervals between maps
+* calculate neighbourhood indices based on downwind/upwind directions
