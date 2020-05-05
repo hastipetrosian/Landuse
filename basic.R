@@ -9,13 +9,20 @@ library(foreign)
 library(cowplot)
 library(lulcc)
 library(sp)
+library(broom)
+library(ggplot2)
 
 ##change during time in erg cells 
 
 ##function with two mode(x==erg, y=other, not + together=2 before be erg)
-##(x=other=0+1=1 after being erg)
-## before_after(c("erg","other"),c("other","erg"))
-#function Change in the erg, every two consecutive years
+## Change in erg over two consecutive maps
+## code=3 corresponds to erg
+## x=before, y=after
+## not-erg=0, erg=1
+## 0: not-erg before and after (no gain)
+## 1: not-erg before, erg after (gain)
+## 2: erg before, not-erg after (loss)
+## 3: erg before and after (no loss)
 change <- function(x,y,code=3) {
     2*as.numeric(x==code)+as.numeric(y==code)
 }
@@ -110,7 +117,7 @@ comb_terrain <- full_join(aspect_tbl,slope_tbl,by=c("x","y"))
 ## try to match up terrain (derived from DEM) with first 1987 landuse map; do the x and y match?
 tmp <- conv_tbl(rr_list[["1987"]])
 combaf2sloas=full_join(comb_terrain, tmp, by=c("x","y"))
-nrow(compaf2sloas)
+nrow(combaf2sloas)
 nrow(comb_terrain)
 nrow(tmp)
 ## we have about the same number of rows in landuse and terrain and combination, but not exactly
@@ -183,7 +190,6 @@ rr_points2 <- map(rr_tbl,
 rr_points3 <- map2(rr_points2, rr_focal_tbl,
                    ~ full_join(.x, .y, by=c("x","y")))
 
-rr-poinames(rr_points3[[1]])
 
 ## 6 landscapes
 length(rr_points3) 
@@ -196,18 +202,45 @@ length(rr_change_tbl)
 rr_points4 <- rr_points3[-length(rr_points3)] 
 rr_points5 <- map2(rr_points4, rr_change_tbl, ~full_join(.x, .y, by=c("x","y")))
 
-##H-p=About logistic regression I think  we should to consider change columnit in two separate columns as before and after dune, and then for example in before column considers 1 for the cells that before were dune after column considers 1 for the cells that after are dune. 
-##Then run two separate logistic regressions that one shows the relation between in depended variables and cells that change to dune and one shows the relation between in depended variable and cell that are no longer dune.
-##x=binary column
-##glm(x~ slope+aspect+prop_dune_nbrs, data = rr_points5, family = "binomial")
 
+dd <- (rr_points5[["1987"]]
+    ## only want points that were erg before
+    ## only values that have aspect data
+    %>% drop_na(aspect)
+    ## don't need these columns any more
+    %>% select(-c(x,y))
+)
+
+## ANALYSIS 1: analyzing
+
+dd_loss <- (dd
+    ## if change==3 we had erg both before
+    ##  and after, so this is 0 for 'no change'
+    ## otherwise 1 for 'lost erg'
+    %>% filter(change %in% c(2,3))
+    %>% mutate(change=ifelse(change==3,0,1))
+)
+
+dd_gain <- (dd
+    ## if change==3 we had erg both before
+    ##  and after, so this is 0 for 'no change'
+    ## otherwise 1 for 'lost erg'
+    %>% filter(change %in% c(0,1))
+)
+
+## you could add proportion of nearby vegetation
+
+table(dd$landuse)
+logist1 <- glm(change~ slope+aspect+prop_dune_nbrs, data = dd_loss, family = "binomial")
+summary(logist1)
+
+
+## look at nnet::multinom function to fit multinomial response model
 
 ##H-P:For the first staff if I have to done it based on the previous code (for example for buildup area) I have to do follow steps:
-    
+
 rr_focalbuild=map(rr_list,~ focal(.==12, matrix(1, nrow=3, ncol=3), fun=mean))
 rr_focal_tblbuild <- map(rr_focalbuild, conv_tbl, newname="prop_build_nbrs")
 rr_points33 <- map2(rr_points3, rr_focal_tblbuild, ~ full_join(.x, .y, by=c("x","y")))
 
 ##in this way when I used.==12, just consider buildup area without regarding to ergs, but I think I should to find a way that consider neighbors values(vegetation, buildup area, erg) just around erg cells(3 separate classes just around ergs.
-                                                                                                                                                                                                           
-

@@ -49,3 +49,11 @@ nbr_prop_mangrove nbr_prop_riverbed ...
 
   where we have a column for the proportion of every other land type
 (for simplicity we could start out with only prop_erg ?)
+
+## 2020 April 28
+
+* add columns for proportions of other landscape types (as described above), add these to the analysis
+* look at the outputs of the logistic regressions and tell me what they mean; be prepared to explain every number
+* find wind data and think about spatial and temporal scales we would need to use it sensibly
+* OPTIONAL: think about multinomial models (nnet::multinomial)
+* OPTIONAL: think about deriving directional neighbourhood information
