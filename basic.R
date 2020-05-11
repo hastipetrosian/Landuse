@@ -247,7 +247,7 @@ rr_points8 <- map2(rr_points7, rr_focal_tblriveg1, ~ full_join(.x,.y, by=c("x","
 rr_points9 <- map2(rr_points8, rr_focal_tblset1, ~ full_join(.x,.y, by=c("x","y")))
 rr_points10 <- map2(rr_points9, rr_focal_tblagri1, ~ full_join(.x,.y, by=c("x","y")))
 
-##
+##dd
 dd <- (rr_points10[["2014"]]
     ## only want points that were erg before
     ## only values that have aspect data
