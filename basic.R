@@ -213,21 +213,37 @@ length(rr_change_tbl)
 rr_points4 <- rr_points3[-length(rr_points3)] 
 rr_points5 <- map2(rr_points4, rr_change_tbl, ~full_join(.x, .y, by=c("x","y")))
 
-##H-P:For the first staff if I have to done it based on the previous code (for example for buildup area) I have to do follow steps:
-
+##buildup area
 rr_focalbuild=map(rr_list,~ focal(.==12, w, fun=sum))
 rr_focal_tblbuild <- map(rr_focalbuild, conv_tbl, newname="prop_build_nbrs", rescale=8)
 ## we don't need the last one (because there's no change to compare it to)
 rr_focal_tblbuild1 <- rr_focal_tblbuild[-length(rr_focal_tblbuild)]
 
-## xx <- rr_focal_tblbuild1[["2014"]]
+##vegetation
+rr_focalveg=map(rr_list,~ focal(.==10, w, fun=sum))
+rr_focal_tblveg <- map(rr_focalveg, conv_tbl, newname="prop_veg_nbrs", rescale=8)
+rr_focal_tblveg1=rr_focal_tblveg[-length(rr_focal_tblveg)]
+
+##river bed vegetation
+rr_focalriveg=map(rr_list,~ focal(.==7, w, fun=sum))
+rr_focal_tblriveg <- map(rr_focalriveg, conv_tbl, newname="prop_riveg_nbrs", rescale=8)
+rr_focal_tblriveg1=rr_focal_tblriveg[-length(rr_focal_tblriveg)]
+
+##settlement
+rr_focalset=map(rr_list,~ focal(.==9, w, fun=sum))
+rr_focal_tblset <- map(rr_focalset, conv_tbl, newname="prop_settle_nbrs", rescale=8)
+rr_focal_tblset1=rr_focal_tblset[-length(rr_focal_tblset)]
+
+
 ## table(xx$prop_build_nbrs)
-
+## xx <- rr_focal_tblbuild1[["2014"]]
 rr_points6 <- map2(rr_points5, rr_focal_tblbuild1, ~ full_join(.x, .y, by=c("x","y")))
+rr_points7 <- map2(rr_points6, rr_focal_tblveg1, ~ full_join(.x,.y, by=c("x","y")))
+rr_points8 <- map2(rr_points7, rr_focal_tblriveg1, ~ full_join(.x,.y, by=c("x","y")))
+rr_points9 <- map2(rr_points8, rr_focal_tblset1, ~ full_join(.x,.y, by=c("x","y")))
 
-##in this way when I used.==12, just consider buildup area without regarding to ergs, but I think I should to find a way that consider neighbors values(vegetation, buildup area, erg) just around erg cells(3 separate classes just around ergs.
-
-dd <- (rr_points6[["2014"]]
+##
+dd <- (rr_points8[["2014"]]
     ## only want points that were erg before
     ## only values that have aspect data
     %>% drop_na(aspect)
@@ -236,7 +252,7 @@ dd <- (rr_points6[["2014"]]
 )
 
 ## ANALYSIS 1: analyzing
-
+##just consider the cells that are now erg-without2=before
 dd_loss <- (dd
     ## if change==3 we had erg both before
     ##  and after, so this is 0 for 'no change'
@@ -247,17 +263,11 @@ dd_loss <- (dd
 
 table(dd_loss$prop_build_nbrs)
 
-dd_gain <- (dd
-    ## if change==3 we had erg both before
-    ##  and after, so this is 0 for 'no change'
-    ## otherwise 1 for 'lost erg'
-    %>% filter(change %in% c(0,1))
-)
 
 ## you could add proportion of nearby vegetation
 
 table(dd$landuse)
-logist1 <- glm(change~ slope+aspect+prop_erg_nbrs, data = dd_loss, family = "binomial")
+logist1 <- glm(change~ slope+aspect+prop_erg_nbrs+prop_veg_nbrs+prop_build_nbrs+prop_riveg_nbrs+prop_settle_nbrs, data = dd_loss, family = "binomial")
 summary(logist1)
 
 
