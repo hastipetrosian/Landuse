@@ -234,6 +234,10 @@ rr_focalset=map(rr_list,~ focal(.==9, w, fun=sum))
 rr_focal_tblset <- map(rr_focalset, conv_tbl, newname="prop_settle_nbrs", rescale=8)
 rr_focal_tblset1=rr_focal_tblset[-length(rr_focal_tblset)]
 
+##agriculture
+rr_focalagri=map(rr_list,~ focal(.==1, w, fun=sum))
+rr_focal_tblagri <- map(rr_focalagri, conv_tbl, newname="prop_agri_nbrs", rescale=8)
+rr_focal_tblagri1=rr_focal_tblagri[-length(rr_focal_tblagri)]
 
 ## table(xx$prop_build_nbrs)
 ## xx <- rr_focal_tblbuild1[["2014"]]
@@ -241,9 +245,10 @@ rr_points6 <- map2(rr_points5, rr_focal_tblbuild1, ~ full_join(.x, .y, by=c("x",
 rr_points7 <- map2(rr_points6, rr_focal_tblveg1, ~ full_join(.x,.y, by=c("x","y")))
 rr_points8 <- map2(rr_points7, rr_focal_tblriveg1, ~ full_join(.x,.y, by=c("x","y")))
 rr_points9 <- map2(rr_points8, rr_focal_tblset1, ~ full_join(.x,.y, by=c("x","y")))
+rr_points10 <- map2(rr_points9, rr_focal_tblagri1, ~ full_join(.x,.y, by=c("x","y")))
 
 ##
-dd <- (rr_points8[["2014"]]
+dd <- (rr_points10[["2014"]]
     ## only want points that were erg before
     ## only values that have aspect data
     %>% drop_na(aspect)
@@ -262,12 +267,13 @@ dd_loss <- (dd
 )
 
 table(dd_loss$prop_build_nbrs)
-
-
-## you could add proportion of nearby vegetation
-
+table(dd_loss$prop_settle_nbrs)
 table(dd$landuse)
-logist1 <- glm(change~ slope+aspect+prop_erg_nbrs+prop_veg_nbrs+prop_build_nbrs+prop_riveg_nbrs+prop_settle_nbrs, data = dd_loss, family = "binomial")
+
+##logistic
+
+
+logist1 <- glm(change~ slope+aspect+prop_erg_nbrs+prop_veg_nbrs+prop_build_nbrs+prop_riveg_nbrs+prop_settle_nbrs+prop_agri_nbrs, data = dd_loss, family = "binomial")
 summary(logist1)
 
 
