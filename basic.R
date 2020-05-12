@@ -10,7 +10,8 @@ library(cowplot)
 library(lulcc)
 library(sp)
 library(broom)
-library(ggplot2)
+library(ggplot2); theme_set(theme_bw())
+library(dotwhisker)
 
 ##change during time in erg cells 
 
@@ -247,35 +248,78 @@ rr_points8 <- map2(rr_points7, rr_focal_tblriveg1, ~ full_join(.x,.y, by=c("x","
 rr_points9 <- map2(rr_points8, rr_focal_tblset1, ~ full_join(.x,.y, by=c("x","y")))
 rr_points10 <- map2(rr_points9, rr_focal_tblagri1, ~ full_join(.x,.y, by=c("x","y")))
 
-##dd
-dd <- (rr_points10[["2014"]]
-    ## only want points that were erg before
-    ## only values that have aspect data
-    %>% drop_na(aspect)
-    ## don't need these columns any more
-    %>% select(-c(x,y))
-)
+## running everything for one set of changes
 
-## ANALYSIS 1: analyzing
-##just consider the cells that are now erg-without2=before
-dd_loss <- (dd
-    ## if change==3 we had erg both before
-    ##  and after, so this is 0 for 'no change'
-    ## otherwise 1 for 'lost erg'
-    %>% filter(change %in% c(2,3))
-    %>% mutate(change=ifelse(change==3,0,1))
-)
+run_logist_regression <- function(dd=rr_points10[["2014"]],
+                                  scale=FALSE) {
+    dd <- (dd
+        ## only want points that were erg before
+        ## only values that have aspect data
+        %>% drop_na(aspect)
+        ## don't need these columns any more
+        %>% select(-c(x,y))
+    )
 
-table(dd_loss$prop_build_nbrs)
-table(dd_loss$prop_settle_nbrs)
-table(dd$landuse)
+    ## ANALYSIS 1: analyzing
+    ##just consider the cells that are now erg-without2=before
+    dd_loss <- (dd
+        ## if change==3 we had erg both before
+        ##  and after, so this is 0 for 'no change'
+        ## otherwise 1 for 'lost erg'
+        %>% filter(change %in% c(2,3))
+        %>% mutate(change=ifelse(change==3,0,1))
+    )
+    ## table(dd_loss$prop_build_nbrs)
+    ## table(dd_loss$prop_settle_nbrs)
+    ## table(dd$landuse)
+    
+    ##logistic
 
-##logistic
+    print(table(dd_loss$change))
+    ## logist1 <- glm(change~ slope+aspect+prop_erg_nbrs+prop_veg_nbrs+prop_build_nbrs+prop_riveg_nbrs+prop_settle_nbrs+prop_agri_nbrs, data = dd_loss, family = "binomial")
+    ## . = everything
 
+    predvars <- dd_loss[,setdiff(names(dd_loss),c("landuse","change"))]
+    if (scale) {
+        sdvec <- 2*sapply(predvars,sd,na.rm=TRUE)
+        predvars <- scale(predvars,
+                          center=TRUE,
+                          scale=sdvec)
+        ## all-zero or constant columns will mess things up
+        okvars <- colSums(!is.na(predvars))
+        predvars <- predvars[,okvars>0]
+    }
+    dd_loss <- data.frame(change=dd_loss$change, predvars)
+    logist1 <- glm(change~ . , data = dd_loss, family = "binomial")
+    return(logist1)
+    
+}
 
-logist1 <- glm(change~ slope+aspect+prop_erg_nbrs+prop_veg_nbrs+prop_build_nbrs+prop_riveg_nbrs+prop_settle_nbrs+prop_agri_nbrs, data = dd_loss, family = "binomial")
+logist1 <- run_logist_regression()
 summary(logist1)
+logist1S <- run_logist_regression(scale=TRUE)
 
 
+## leave the first set of changes out
+## since we only lose 4/18K pixels
+logist_list <- map(rr_points10[-1], run_logist_regression) ## do all fits at once
+
+## draw the plots
+plot1 <- dwplot(logist_list)
+plot1 + scale_x_continuous(limits=c(NA,10))
+## zoom in
+plot1 + scale_x_continuous(limits=c(-3,3)) + geom_vline(lty=2,xintercept=0)
+
+## scaled by 2SD by default
+dwplot(logist1) + geom_vline(lty=2,xintercept=0)
+## or we can turn that off
+dwplot(logist1, by_2sd=FALSE)
+
+tidy(logist1,conf.int=TRUE)
+## map_dfr() runs the function on each item in the list
+##  and combines the results into a data frame
+param_tab <- purrr::map_dfr(logist_list,tidy,.id="year",
+                            conf.int=TRUE) %>% arrange(term)
+View(param_tab)
 ## look at nnet::multinom function to fit multinomial response model
 
