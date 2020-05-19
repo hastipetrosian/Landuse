@@ -323,3 +323,10 @@ param_tab <- purrr::map_dfr(logist_list,tidy,.id="year",
 View(param_tab)
 ## look at nnet::multinom function to fit multinomial response model
 
+
+###
+library(raster)
+library(purrr)
+years <- c(1987,1997,2003,2008,2014,2018)
+fn <- sprintf("Average_temperature/%dAT.tif",years)
+AT_list <- map(fn, raster)
