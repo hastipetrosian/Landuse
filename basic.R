@@ -327,6 +327,20 @@ View(param_tab)
 ###
 library(raster)
 library(purrr)
+library(cowplot)
 years <- c(1987,1997,2003,2008,2014,2018)
 fn <- sprintf("Average_temperature/%dAT.tif",years)
 AT_list <- map(fn, raster)
+ATplots <- map(AT_list, levelplot, margin=FALSE)
+#PLOT_GRID:all plots together
+plot_grid(plotlist=ATplots)
+
+## experimenting with temperature
+
+x <- 1:365
+y <- 26 + 10*cos(2*pi*x/365)  ## average temperatures from 16 to 36 C
+plot(x,y)
+mean(y) ## 26
+## standard error
+sd(y)/sqrt(365)
+## [1] 0.37

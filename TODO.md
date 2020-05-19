@@ -64,3 +64,13 @@ nbr_prop_mangrove nbr_prop_riverbed ...
 * go through with improved neighbourhood calculations, calculate prop of other land-use types
 * ?? add wind data to repository, calculate *average* wind direction over the entire intervals between maps
 * calculate neighbourhood indices based on downwind/upwind directions
+
+## 2020 May 19
+
+- finish precipitation
+- make sure x,y coordinates for climate rasters line up with DEM/landuse values
+- calculate standard errors as well as annual means for temperature at each station; provide these values in a CSV file (mean and SE for each year)
+- figure out how to calculate change in temp and precip between time points (follow examples for land use change), integrate these into the logistic regression
+
+- kriging in R: https://rpubs.com/nabilabd/118172
+- https://mgimond.github.io/Spatial/interpolation-in-r.html
