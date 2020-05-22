@@ -332,12 +332,15 @@ years <- c(1987,1997,2003,2008,2014,2018)
 
 ##change name of included map
 fn <- sprintf("Average_temperature/%dAT.tif",years)
-fnpr<- sprintf("precipitation/%dpr.tif",years)
+pr<- sprintf("precipitation/%dpr.tif",years)
 
 AT_list <- map(fn, raster)
-PR_list <- map(fnpr,~ raster)
+##H-P:Error in .local(.Object, ...) : 
+##Error in .rasterObjectFromFile(x, band = band, objecttype = "RasterLayer",  : 
+##Cannot create a RasterLayer object from this file. (file does not exist)
+PR_list <- map(pr, raster)
 
-ATplots <- map(AT_list, levelplot, margin=FALSE)
+pr_ATplots <- map(AT_list, levelplot, margin=FALSE)
 PRplots <- map(pr_list,~levelplot, margin=FALSE)
 #PLOT_GRID:all plots together
 plot_grid(plotlist=ATplots)
