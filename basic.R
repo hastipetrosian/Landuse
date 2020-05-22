@@ -335,9 +335,13 @@ fn <- sprintf("Average_temperature/%dAT.tif",years)
 fnpr<- sprintf("precipitation/%dpr.tif",years)
 
 AT_list <- map(fn, raster)
+PR_list <- map(fnpr,~ raster)
+
 ATplots <- map(AT_list, levelplot, margin=FALSE)
+PRplots <- map(pr_list,~levelplot, margin=FALSE)
 #PLOT_GRID:all plots together
 plot_grid(plotlist=ATplots)
+plot_grid(plotlist=PRplots)
 
 ## experimenting with temperature
 
