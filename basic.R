@@ -329,7 +329,11 @@ library(raster)
 library(purrr)
 library(cowplot)
 years <- c(1987,1997,2003,2008,2014,2018)
+
+##change name of included map
 fn <- sprintf("Average_temperature/%dAT.tif",years)
+fnpr<- sprintf("precipitation/%dpr.tif",years)
+
 AT_list <- map(fn, raster)
 ATplots <- map(AT_list, levelplot, margin=FALSE)
 #PLOT_GRID:all plots together
