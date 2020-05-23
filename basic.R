@@ -334,17 +334,24 @@ years <- c(1987,1997,2003,2008,2014,2018)
 fn <- sprintf("Average_temperature/%dAT.tif",years)
 pr<- sprintf("precipitation/%dpr.tif",years)
 
+##make raster lyerfrom other kinds of classes
 AT_list <- map(fn, raster)
-##H-P:Error in .local(.Object, ...) : 
-##Error in .rasterObjectFromFile(x, band = band, objecttype = "RasterLayer",  : 
-##Cannot create a RasterLayer object from this file. (file does not exist)
 PR_list <- map(pr, raster)
 
-pr_ATplots <- map(AT_list, levelplot, margin=FALSE)
-PRplots <- map(pr_list,~levelplot, margin=FALSE)
+##make plot
+ATplots <- map(AT_list, levelplot, margin=FALSE)
+PRplots <- map(PR_list, levelplot, margin=FALSE)
+
 #PLOT_GRID:all plots together
 plot_grid(plotlist=ATplots)
 plot_grid(plotlist=PRplots)
+
+pr_before=PR_list[1:5]
+pr_after=PR_list[2:6]
+pr_changes=map2(pr_before, pr_after, ~ overlay(.x,.y,fun=diff_raster))
+differ=function(x,y){differ=y-x}
+pr_changes=map2(pr_before, pr_after, ~ overlay(.x,.y,fun=diff))
+pr_changes
 
 ## experimenting with temperature
 
