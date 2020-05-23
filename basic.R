@@ -75,6 +75,10 @@ years <- years[years>1900] ## leave out DEM file
 ## rr_list
 ##reading all of the raster files into a list with classess
 rr_list <- map(years, get_categorical_raster, list_cats=TRUE)
+##H-P:Because of other raster maps (precepitaion and average temperature) the lenght of rrlist became 18 and then I got an error in full join
+##would you please help me to just add land use maps in rr_list
+length(rr_list)=18
+
 
 
 ## set the raster names equal to the years
