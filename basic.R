@@ -76,6 +76,7 @@ years <- years[years>1900] ## leave out DEM file
 ##reading all of the raster files into a list with classess
 rr_list <- map(years, get_categorical_raster, list_cats=TRUE)
 
+
 ## set the raster names equal to the years
 names(rr_list) <- years 
 
@@ -247,7 +248,7 @@ rr_points7 <- map2(rr_points6, rr_focal_tblveg1, ~ full_join(.x,.y, by=c("x","y"
 rr_points8 <- map2(rr_points7, rr_focal_tblriveg1, ~ full_join(.x,.y, by=c("x","y")))
 rr_points9 <- map2(rr_points8, rr_focal_tblset1, ~ full_join(.x,.y, by=c("x","y")))
 rr_points10 <- map2(rr_points9, rr_focal_tblagri1, ~ full_join(.x,.y, by=c("x","y")))
-
+rr_points11 <- map2(rr_points10, pr_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
 ## running everything for one set of changes
 
 run_logist_regression <- function(dd=rr_points10[["2014"]],
@@ -345,13 +346,12 @@ PRplots <- map(PR_list, levelplot, margin=FALSE)
 #PLOT_GRID:all plots together
 plot_grid(plotlist=ATplots)
 plot_grid(plotlist=PRplots)
-
+##1997-1987=+ 2003-1197=- 2008-2003=+ 2014-2008=-
 pr_before=PR_list[1:5]
 pr_after=PR_list[2:6]
-pr_changes=map2(pr_before, pr_after, ~ overlay(.x,.y,fun=diff_raster))
-differ=function(x,y){differ=y-x}
+differ=function(x,y){differ=x-y}
 pr_changes=map2(pr_before, pr_after, ~ overlay(.x,.y,fun=diff))
-pr_changes
+pr_change_tbl <- map(pr_changes, conv_tbl, newname="precipchange")
 
 ## experimenting with temperature
 
