@@ -350,12 +350,18 @@ PRplots <- map(PR_list, levelplot, margin=FALSE)
 #PLOT_GRID:all plots together
 plot_grid(plotlist=ATplots)
 plot_grid(plotlist=PRplots)
+
 ##1997-1987=+ 2003-1197=- 2008-2003=+ 2014-2008=-
 pr_before=PR_list[1:5]
 pr_after=PR_list[2:6]
 differ=function(x,y){differ=x-y}
 pr_changes=map2(pr_before, pr_after, ~ overlay(.x,.y,fun=diff))
 pr_change_tbl <- map(pr_changes, conv_tbl, newname="precipchange")
+
+at_before=AT_list[1:5]
+at_after=AT_list[2:6]
+at_changes=map2(at_before, at_after, ~ overlay(.x,.y,fun=diff))
+at_change_tbl <- map(at_changes, conv_tbl, newname="averagetemchange")
 
 ## experimenting with temperature
 
