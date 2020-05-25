@@ -75,10 +75,10 @@ years <- years[years>1900] ## leave out DEM file
 ## rr_list
 ##reading all of the raster files into a list with classess
 rr_list <- map(years, get_categorical_raster, list_cats=TRUE)
+
 ##H-P:Because of other raster maps (precepitaion and average temperature) the lenght of rrlist became 18 and then I got an error in full join
 ##would you please help me to just add land use maps in rr_list
 length(rr_list)=18
-
 
 
 ## set the raster names equal to the years
@@ -336,20 +336,23 @@ library(cowplot)
 years <- c(1987,1997,2003,2008,2014,2018)
 
 ##change name of included map
-fn <- sprintf("Average_temperature/%dAT.tif",years)
-pr<- sprintf("precipitation/%dpr.tif",years)
+at <- sprintf("Average_temperature/%dAT.tif",years)
+pr <- sprintf("precipitation/%dPR.tif",years)
+ws <- sprintf("wind/%dW.tif",years) 
 
 ##make raster lyerfrom other kinds of classes
-AT_list <- map(fn, raster)
+AT_list <- map(at, raster)
 PR_list <- map(pr, raster)
+WS_list <- map(ws, raster)
 
 ##make plot
 ATplots <- map(AT_list, levelplot, margin=FALSE)
 PRplots <- map(PR_list, levelplot, margin=FALSE)
-
+WSplots <- map(WS_list, levelplot, margin=FALSE)
 #PLOT_GRID:all plots together
 plot_grid(plotlist=ATplots)
 plot_grid(plotlist=PRplots)
+plot_grid(plotlist=WSplots)
 
 ##1997-1987=+ 2003-1197=- 2008-2003=+ 2014-2008=-
 pr_before=PR_list[1:5]
@@ -362,6 +365,11 @@ at_before=AT_list[1:5]
 at_after=AT_list[2:6]
 at_changes=map2(at_before, at_after, ~ overlay(.x,.y,fun=diff))
 at_change_tbl <- map(at_changes, conv_tbl, newname="averagetemchange")
+
+ws_before=WS_list[1:5]
+ws_after=WS_list[2:6]
+ws_changes=map2(ws_before, ws_after, ~ overlay(.x,.y,fun=diff))
+ws_change_tbl <- map(ws_changes, conv_tbl, newname="windchange")
 
 ## experimenting with temperature
 
