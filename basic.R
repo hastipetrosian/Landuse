@@ -71,18 +71,19 @@ rasterfiles <- list.files(pattern="*.tif$",recursive=TRUE)
 ## reading landuse raster file,leave out DEM file
 years <- parse_number(rasterfiles)
 years <- years[years>1900] ## leave out DEM file
+years2= unique(years)
 
 ## rr_list
 ##reading all of the raster files into a list with classess
-rr_list <- map(years, get_categorical_raster, list_cats=TRUE)
+rr_list <- map(years2, get_categorical_raster, list_cats=TRUE)
 
-##H-P:Because of other raster maps (precepitaion and average temperature) the lenght of rrlist became 18 and then I got an error in full join
+##H-P:Because of other raster maps (precepitaion and average temperature) the lenght of rrlist became 24 and then I got an error in full join
 ##would you please help me to just add land use maps in rr_list
-length(rr_list)=18
+length(rr_list)=24
 
 
 ## set the raster names equal to the years
-names(rr_list) <- years 
+names(rr_list) <- years2 
 
 ##dem
 dem <- raster("dem/Extract_dem11.tif")
@@ -253,9 +254,11 @@ rr_points8 <- map2(rr_points7, rr_focal_tblriveg1, ~ full_join(.x,.y, by=c("x","
 rr_points9 <- map2(rr_points8, rr_focal_tblset1, ~ full_join(.x,.y, by=c("x","y")))
 rr_points10 <- map2(rr_points9, rr_focal_tblagri1, ~ full_join(.x,.y, by=c("x","y")))
 rr_points11 <- map2(rr_points10, pr_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
+rr_points12 <- map2(rr_points11, at_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
+rr_points13 <- map2(rr_points12, ws_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
 ## running everything for one set of changes
 
-run_logist_regression <- function(dd=rr_points10[["2014"]],
+run_logist_regression <- function(dd=rr_points13[["2014"]],
                                   scale=FALSE) {
     dd <- (dd
         ## only want points that were erg before
@@ -307,7 +310,7 @@ logist1S <- run_logist_regression(scale=TRUE)
 
 ## leave the first set of changes out
 ## since we only lose 4/18K pixels
-logist_list <- map(rr_points10[-1], run_logist_regression) ## do all fits at once
+logist_list <- map(rr_points13[-1], run_logist_regression) ## do all fits at once
 
 ## draw the plots
 plot1 <- dwplot(logist_list)
