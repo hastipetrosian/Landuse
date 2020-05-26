@@ -305,7 +305,7 @@ logist1 <- run_logist_regression()
 summary(logist1)
     logist1S <- run_logist_regression(scale=TRUE)
 logist1_linear <- run_logist_regression(poly_xy_degree=1)
-
+coef(logist1_linear)
 
 ## leave the first set of changes out
 ## since we only lose 4/18K pixels
