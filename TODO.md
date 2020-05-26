@@ -74,3 +74,9 @@ nbr_prop_mangrove nbr_prop_riverbed ...
 
 - kriging in R: https://rpubs.com/nabilabd/118172
 - https://mgimond.github.io/Spatial/interpolation-in-r.html
+
+
+## 2020 May 26
+
+- still a little concerned about the kriging maps, and the fact that they're derived from only 3 points. Can we find any other information on spatial patterns of wind/precip/etc. in this area to cross-check these maps, at least qualitatively?
+- try linear and quadratic trend surface models and see if this makes a big difference.  Do these fight with the climatic effects?

@@ -43,3 +43,19 @@ contains_slash <- function(x) {
 make_number <- function(x) {
   as.numeric(stringr::str_replace(x,"/","."))
 }
+
+
+## converts from raster -> point matrix -> data frame -> tibble
+conv_tbl <- function(x,newname=NULL,rescale=NA) {
+    x2 <- tibble(as.data.frame(rasterToPoints(x)))
+    ## fix column names (why??)
+    names(x2)[1:2] <- c("x","y")
+    if (!is.na(rescale)) {
+        x2[,3] <- x2[,3]/rescale
+    }
+    if (!is.null(newname)) {
+        names(x2) <- c("x","y",newname)
+    }
+    return(x2)
+}
+

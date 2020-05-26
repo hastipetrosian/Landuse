@@ -29,20 +29,6 @@ change <- function(x,y,code=3) {
 }
 
 
-## converts from raster -> point matrix -> data frame -> tibble
-conv_tbl <- function(x,newname=NULL,rescale=NA) {
-    x2 <- tibble(as.data.frame(rasterToPoints(x)))
-    ## fix column names (why??)
-    names(x2)[1:2] <- c("x","y")
-    if (!is.na(rescale)) {
-        x2[,3] <- x2[,3]/rescale
-    }
-    if (!is.null(newname)) {
-        names(x2) <- c("x","y",newname)
-    }
-    return(x2)
-}
-
 do_shape_files <- FALSE
 source("functions.R")
 
@@ -71,7 +57,7 @@ rasterfiles <- list.files(pattern="*.tif$",recursive=TRUE)
 ## reading landuse raster file,leave out DEM file
 years <- parse_number(rasterfiles)
 years <- years[years>1900] ## leave out DEM file
-years2= unique(years)
+years2 <- unique(years)
 
 ## rr_list
 ##reading all of the raster files into a list with classess
@@ -79,7 +65,7 @@ rr_list <- map(years2, get_categorical_raster, list_cats=TRUE)
 
 ##H-P:Because of other raster maps (precepitaion and average temperature) the lenght of rrlist became 24 and then I got an error in full join
 ##would you please help me to just add land use maps in rr_list
-length(rr_list)=24
+### length(rr_list)=24
 
 
 ## set the raster names equal to the years
@@ -246,6 +232,8 @@ rr_focalagri=map(rr_list,~ focal(.==1, w, fun=sum))
 rr_focal_tblagri <- map(rr_focalagri, conv_tbl, newname="prop_agri_nbrs", rescale=8)
 rr_focal_tblagri1=rr_focal_tblagri[-length(rr_focal_tblagri)]
 
+load("climate.RData") ## get climate data
+
 ## table(xx$prop_build_nbrs)
 ## xx <- rr_focal_tblbuild1[["2014"]]
 rr_points6 <- map2(rr_points5, rr_focal_tblbuild1, ~ full_join(.x, .y, by=c("x","y")))
@@ -253,19 +241,23 @@ rr_points7 <- map2(rr_points6, rr_focal_tblveg1, ~ full_join(.x,.y, by=c("x","y"
 rr_points8 <- map2(rr_points7, rr_focal_tblriveg1, ~ full_join(.x,.y, by=c("x","y")))
 rr_points9 <- map2(rr_points8, rr_focal_tblset1, ~ full_join(.x,.y, by=c("x","y")))
 rr_points10 <- map2(rr_points9, rr_focal_tblagri1, ~ full_join(.x,.y, by=c("x","y")))
+## combine climate data (loaded them in from climate.RData)
 rr_points11 <- map2(rr_points10, pr_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
 rr_points12 <- map2(rr_points11, at_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
 rr_points13 <- map2(rr_points12, ws_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
 ## running everything for one set of changes
 
 run_logist_regression <- function(dd=rr_points13[["2014"]],
-                                  scale=FALSE) {
+                                  scale=FALSE,
+                                  poly_xy_degree=NA) {
     dd <- (dd
         ## only want points that were erg before
         ## only values that have aspect data
         %>% drop_na(aspect)
-        ## don't need these columns any more
-        %>% select(-c(x,y))
+        ## don't need x,y columns any more
+        ## (we may not want to use them in the logistic regression, and the formula
+        ##  response ~ . includes *everything* in the data set as part of the model
+        %>% mutate_at(c("x","y"), ~ . / 1000 ) ## CHECK: are these now kms?
     )
 
     ## ANALYSIS 1: analyzing
@@ -298,14 +290,21 @@ run_logist_regression <- function(dd=rr_points13[["2014"]],
         predvars <- predvars[,okvars>0]
     }
     dd_loss <- data.frame(change=dd_loss$change, predvars)
-    logist1 <- glm(change~ . , data = dd_loss, family = "binomial")
+    if (is.na(poly_xy_degree)) {
+        form <- change ~ . - x - y
+    } else {
+        ## poly_xy_degree = 1  ->  linear model in x and y
+        ## poly_xy_degree = 2  ->  quadratic model in x and y
+        form <- change ~ . - x - y + poly(x,y,degree=poly_xy_degree)
+    }
+    logist1 <- glm(form , data = dd_loss, family = "binomial")
     return(logist1)
-    
 }
 
 logist1 <- run_logist_regression()
 summary(logist1)
-logist1S <- run_logist_regression(scale=TRUE)
+    logist1S <- run_logist_regression(scale=TRUE)
+logist1_linear <- run_logist_regression(poly_xy_degree=1)
 
 
 ## leave the first set of changes out
@@ -331,55 +330,3 @@ param_tab <- purrr::map_dfr(logist_list,tidy,.id="year",
 View(param_tab)
 ## look at nnet::multinom function to fit multinomial response model
 
-
-###
-library(raster)
-library(purrr)
-library(cowplot)
-years <- c(1987,1997,2003,2008,2014,2018)
-
-##change name of included map
-at <- sprintf("Average_temperature/%dAT.tif",years)
-pr <- sprintf("precipitation/%dPR.tif",years)
-ws <- sprintf("wind/%dW.tif",years) 
-
-##make raster lyerfrom other kinds of classes
-AT_list <- map(at, raster)
-PR_list <- map(pr, raster)
-WS_list <- map(ws, raster)
-
-##make plot
-ATplots <- map(AT_list, levelplot, margin=FALSE)
-PRplots <- map(PR_list, levelplot, margin=FALSE)
-WSplots <- map(WS_list, levelplot, margin=FALSE)
-#PLOT_GRID:all plots together
-plot_grid(plotlist=ATplots)
-plot_grid(plotlist=PRplots)
-plot_grid(plotlist=WSplots)
-
-##1997-1987=+ 2003-1197=- 2008-2003=+ 2014-2008=-
-pr_before=PR_list[1:5]
-pr_after=PR_list[2:6]
-differ=function(x,y){differ=x-y}
-pr_changes=map2(pr_before, pr_after, ~ overlay(.x,.y,fun=diff))
-pr_change_tbl <- map(pr_changes, conv_tbl, newname="precipchange")
-
-at_before=AT_list[1:5]
-at_after=AT_list[2:6]
-at_changes=map2(at_before, at_after, ~ overlay(.x,.y,fun=diff))
-at_change_tbl <- map(at_changes, conv_tbl, newname="averagetemchange")
-
-ws_before=WS_list[1:5]
-ws_after=WS_list[2:6]
-ws_changes=map2(ws_before, ws_after, ~ overlay(.x,.y,fun=diff))
-ws_change_tbl <- map(ws_changes, conv_tbl, newname="windchange")
-
-## experimenting with temperature
-
-x <- 1:365
-y <- 26 + 10*cos(2*pi*x/365)  ## average temperatures from 16 to 36 C
-plot(x,y)
-mean(y) ## 26
-## standard error
-sd(y)/sqrt(365)
-## [1] 0.37
