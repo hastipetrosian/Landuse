@@ -64,13 +64,10 @@ years2 <- unique(years)
 ##reading all of the raster files into a list with classess
 rr_list <- map(years2 , get_categorical_raster, list_cats=TRUE)
 
-##H-P:Because of other raster maps (precepitaion and average temperature) the lenght of rrlist became 24 and then I got an error in full join
-##would you please help me to just add land use maps in rr_list
-### length(rr_list)=24
-
-
 ## set the raster names equal to the years
 names(rr_list) <- years2 
+
+levels(rr_list[[1]])
 
 ##dem
 dem <- raster("dem/Extract_dem11.tif")
@@ -142,9 +139,19 @@ rr_before=rr_list[1:5]
 rr_after= rr_list[2:6]
 
 rr_changes=map2(rr_before, rr_after, ~ overlay(.x,.y,fun=change))
+## see ?raster::factor
+rat <- data.frame(ID=1:4,
+                  changes =c("neither","gain","loss","both"),
+                  code <- c(0,1,2,3))
+## 0: not-erg before and after (no gain)
+## 1: not-erg before, erg after (gain)
+## 2: erg before, not-erg after (loss)
+## 3: erg before and after (no loss)
+setLevels <- function(x,l=rat) { x <- x+1; levels(x) <- list(l); x }
+rr_changes_f=map(rr_changes, setLevels)
 
 #plot of changes
-changeplots <- map(rr_changes, levelplot, margin=FALSE)
+changeplots <- map(rr_changes_f, levelplot, margin=FALSE)
 #PLOT_GRID:all plots together
 plot_grid(plotlist=changeplots)
 
@@ -253,12 +260,15 @@ rr_points12 <- map2(rr_points11, pr_change_tbl, ~ full_join(.x,.y, by=c("x","y")
 rr_points13 <- map2(rr_points12, at_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
 rr_points14 <- map2(rr_points13, ws_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
 
+map(rr_points14,
+    ~table(is.na(.$aspect), is.na(.$prop_veg_nbrs)))
+
 ## running everything for one set of changes
 
-run_logist_regression <- function(dd=rr_points14[["2014"]],
+run_logist_regression <- function(dd=rr_points14[["2008"]],
                                   scale=FALSE,
                                   poly_xy_degree=NA) {
-    dd <- (dd
+    dd2 <- (dd
         ## only want points that were erg before
         ## only values that have aspect data
         %>% drop_na(aspect)
@@ -270,7 +280,7 @@ run_logist_regression <- function(dd=rr_points14[["2014"]],
 
     ## ANALYSIS 1: analyzing
     ##just consider the cells that are now erg-without2=before
-    dd_loss <- (dd
+    dd_loss <- (dd2
         ## if change==3 we had erg both before
         ##  and after, so this is 0 for 'no change'
         ## otherwise 1 for 'lost erg'
@@ -319,7 +329,8 @@ coef(logist1_linear)
 
 ## leave the first set of changes out
 ## since we only lose 4/18K pixels
-logist_list <- map(rr_points14[-1], run_logist_regression) ## do all fits at once
+## leave last set of changes out because ???
+logist_list <- map(rr_points14[2:4], run_logist_regression) ## do all fits at once
 
 ## draw the plots
 plot1 <- dwplot(logist_list)
