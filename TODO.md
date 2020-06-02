@@ -80,3 +80,15 @@ nbr_prop_mangrove nbr_prop_riverbed ...
 
 - still a little concerned about the kriging maps, and the fact that they're derived from only 3 points. Can we find any other information on spatial patterns of wind/precip/etc. in this area to cross-check these maps, at least qualitatively?
 - try linear and quadratic trend surface models and see if this makes a big difference.  Do these fight with the climatic effects?
+
+## 2020 June 2
+
+* read about 'complete separation' (logistic regression) [this is a problem that happens sometimes when doing logistic regression]
+
+* include variable "change in built up area" as a predictor; how exactly are you going to compute that variable?  BE CAREFUL not to make circular predictions, i.e. to put something in the model that's information from the later period that is strongly correlated with the value of the focal pixel.  For example, if you computed the fraction of the *entire* neighborhood (including the focal pixel) that was built up, then it would always be larger if the focal pixel went from erg to built-up area ...
+
+suppose a 3x3 neighbourhood is all erg in 2014. If the 8 cells around the focal pixel are built-up area in 2018, it's probably inevitable that the focal pixel is also built-up (i.e. erg loss). But that's not actually circular. 
+
+Do it and let's see!
+
+* try linear and quadratic trend surface models and see if this makes a big difference.  Do these fight with the climatic effects?

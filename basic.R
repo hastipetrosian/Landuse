@@ -12,6 +12,8 @@ library(sp)
 library(broom)
 library(ggplot2); theme_set(theme_bw())
 library(dotwhisker)
+library(future)
+library(furrr)
 
 ##change during time in erg cells 
 
@@ -257,7 +259,8 @@ rr_points14 <- map2(rr_points13, ws_change_tbl, ~ full_join(.x,.y, by=c("x","y")
 
 run_logist_regression <- function(dd=rr_points14[["2014"]],
                                   scale=FALSE,
-                                  poly_xy_degree=NA) {
+                                  poly_xy_degree=NA,
+                                  direction="gain") {
     dd <- (dd
         ## only want points that were erg before
         ## only values that have aspect data
@@ -270,24 +273,34 @@ run_logist_regression <- function(dd=rr_points14[["2014"]],
 
     ## ANALYSIS 1: analyzing
     ##just consider the cells that are now erg-without2=before
-    dd_loss <- (dd
-        ## if change==3 we had erg both before
-        ##  and after, so this is 0 for 'no change'
-        ## otherwise 1 for 'lost erg'
-        %>% filter(change %in% c(2,3))
-        %>% mutate(change=ifelse(change==3,0,1))
-    )
-    ## table(dd_loss$prop_build_nbrs)
-    ## table(dd_loss$prop_settle_nbrs)
+    if (direction=="loss") {
+        dd_change <- (dd
+            ## if change==3 we had erg both before
+            ##  and after, so this is 0 for 'no change'
+            ## otherwise 1 for 'lost erg'
+            %>% filter(change %in% c(2,3))
+            %>% mutate(change=ifelse(change==3,0,1))
+        )
+    } else {  ## gain
+        dd_change <- (dd
+            ## if change==3 we had erg both before
+            ##  and after, so this is 0 for 'no change'
+            ## otherwise 1 for 'lost erg'
+            %>% filter(change %in% c(0,1))
+            %>% mutate(change=ifelse(change==0,0,1))
+        )
+    }
+    ## table(dd_change$prop_build_nbrs)
+    ## table(dd_change$prop_settle_nbrs)
     ## table(dd$landuse)
     
     ##logistic
 
-    print(table(dd_loss$change))
-    ## logist1 <- glm(change~ slope+aspect+prop_erg_nbrs+prop_veg_nbrs+prop_build_nbrs+prop_riveg_nbrs+prop_settle_nbrs+prop_agri_nbrs, data = dd_loss, family = "binomial")
+    print(table(dd_change$change))
+    ## logist1 <- glm(change~ slope+aspect+prop_erg_nbrs+prop_veg_nbrs+prop_build_nbrs+prop_riveg_nbrs+prop_settle_nbrs+prop_agri_nbrs, data = dd_change, family = "binomial")
     ## . = everything
-
-    predvars <- dd_loss[,setdiff(names(dd_loss),c("landuse","change"))]
+    
+    predvars <- dd_change[,setdiff(names(dd_change),c("landuse","change"))]
     if (scale) {
         sdvec <- 2*sapply(predvars,sd,na.rm=TRUE)
         predvars <- scale(predvars,
@@ -297,7 +310,7 @@ run_logist_regression <- function(dd=rr_points14[["2014"]],
         okvars <- colSums(!is.na(predvars))
         predvars <- predvars[,okvars>0]
     }
-    dd_loss <- data.frame(change=dd_loss$change, predvars)
+    dd_change <- data.frame(change=dd_change$change, predvars)
     if (is.na(poly_xy_degree)) {
         form <- change ~ . - x - y
     } else {
@@ -305,15 +318,26 @@ run_logist_regression <- function(dd=rr_points14[["2014"]],
         ## poly_xy_degree = 2  ->  quadratic model in x and y
         form <- change ~ . - x - y + poly(x,y,degree=poly_xy_degree)
     }
-    logist1 <- glm(form , data = dd_loss, family = "binomial")
+    logist1 <- glm(form , data = dd_change, family = "binomial")
     return(logist1)
 }
-## H-P: Dear Professor Bolker whould you please help me: I revised all raster maps and change in repository and then I recevied an Error in family$linkfun(mustart) :
-## Argument mu must be a nonempty numeric vector I dont know whats happend I have checked internet and I couldent find why this error occured
  
-logist1 <- run_logist_regression()
+logist1L <- run_logist_regression(direction="loss")
+
+logist1 <- run_logist_regression()  ## default is gain
+## glm.fit: fitted probabilities numerically 0 or 1 occurred
+##  means we (probably) have *complete separation* (one variable completely explains everything)
+##  does mean that the standard errors come out ridiculously large
+##  simple way to get confidence intervals estimate +/- 1.96 std errors
+##  BUT that is not as good as 'profile confidence intervals', which is what
+##   confint() computes, and when we have complete separation (and therefore the
+##   SEs are ridiculous) it doesn't work right at all.
+##   So we have to do confint(), and wait for it to finish ...
+
 summary(logist1)
-    logist1S <- run_logist_regression(scale=TRUE)
+## running with scale=TRUE takes a little longer
+logist1S <- run_logist_regression(scale=TRUE)
+
 logist1_linear <- run_logist_regression(poly_xy_degree=1)
 coef(logist1_linear)
 
@@ -332,10 +356,20 @@ dwplot(logist1) + geom_vline(lty=2,xintercept=0)
 ## or we can turn that off
 dwplot(logist1, by_2sd=FALSE)
 
-tidy(logist1,conf.int=TRUE)
+## extract parameters
+tidy(logist1)  ## estimate, SE, Z-statistic, p-value
+
+## takes a while because of the confidence interval calculation
+system.time(tidy(tt1 <- logist1,conf.int=TRUE))
+print(tt1)
+
+## run jobs on 3 cores at once
+plan(multiprocess(workers=3))
+
 ## map_dfr() runs the function on each item in the list
 ##  and combines the results into a data frame
-param_tab <- purrr::map_dfr(logist_list,tidy,.id="year",
+## this is going to take about 10-12 minutes to run
+param_tab <- furrr::future_map_dfr(logist_list,tidy,.id="year",
                             conf.int=TRUE) %>% arrange(term)
 View(param_tab)
 ## look at nnet::multinom function to fit multinomial response model
