@@ -235,10 +235,6 @@ rr_focalagri=map(rr_list,~ focal(.==1, w, fun=sum))
 rr_focal_tblagri <- map(rr_focalagri, conv_tbl, newname="prop_agri_nbrs", rescale=8)
 rr_focal_tblagri1=rr_focal_tblagri[-length(rr_focal_tblagri)]
 
-##bareland
-rr_focalbare=map(rr_list,~ focal(.==2, w, fun=sum))
-rr_focal_tblbare <- map(rr_focalbare, conv_tbl, newname="prop_bare_nbrs", rescale=8)
-rr_focal_tblbare1=rr_focal_tblbare[-length(rr_focal_tblbare)]
 
 load("climate.RData") ## get climate data
 
@@ -249,15 +245,15 @@ rr_points7 <- map2(rr_points6, rr_focal_tblveg1, ~ full_join(.x,.y, by=c("x","y"
 rr_points8 <- map2(rr_points7, rr_focal_tblriveg1, ~ full_join(.x,.y, by=c("x","y")))
 rr_points9 <- map2(rr_points8, rr_focal_tblset1, ~ full_join(.x,.y, by=c("x","y")))
 rr_points10 <- map2(rr_points9, rr_focal_tblagri1, ~ full_join(.x,.y, by=c("x","y")))
-rr_points11 <- map2(rr_points10, rr_focal_tblbare1, ~ full_join(.x,.y, by=c("x","y")))
+
 ## combine climate data (loaded them in from climate.RData)
-rr_points12 <- map2(rr_points11, pr_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
-rr_points13 <- map2(rr_points12, at_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
-rr_points14 <- map2(rr_points13, ws_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
+rr_points11 <- map2(rr_points10, pr_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
+rr_points12 <- map2(rr_points11, at_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
+rr_points13 <- map2(rr_points12, ws_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
 
 ## running everything for one set of changes
 
-run_logist_regression <- function(dd=rr_points14[["2014"]],
+run_logist_regression <- function(dd=rr_points13[["2014"]],
                                   scale=FALSE,
                                   poly_xy_degree=NA,
                                   direction="gain") {
@@ -343,7 +339,7 @@ coef(logist1_linear)
 
 ## leave the first set of changes out
 ## since we only lose 4/18K pixels
-logist_list <- map(rr_points14[-1], run_logist_regression) ## do all fits at once
+logist_list <- map(rr_points13[-1], run_logist_regression) ## do all fits at once
 
 ## draw the plots
 plot1 <- dwplot(logist_list)
