@@ -334,27 +334,39 @@ summary(logist1)
 ## running with scale=TRUE takes a little longer
 logist1S <- run_logist_regression(scale=TRUE)
 
+##The 1-degree polynomial is a simple linear regression
 logist1_linear <- run_logist_regression(poly_xy_degree=1)
+##coef is a generic function which extracts model coefficients 
 coef(logist1_linear)
+summary(logist1_linear)
 
 ## leave the first set of changes out
 ## since we only lose 4/18K pixels
 logist_list <- map(rr_points13[-1], run_logist_regression) ## do all fits at once
 
 ## draw the plots
+##dwplot is a function for quickly and easily generating plots of regression models 
 plot1 <- dwplot(logist_list)
-plot1 + scale_x_continuous(limits=c(NA,10))
+
+##change scale
+##limit:modify the axis limits 
+##geoms add reference lines (sometimes called rules) to a plot, either horizontal, vertical(v), or diagonal
+plot1 + scale_x_continuous(limits=c(NA,10))+ geom_vline(lty=2,xintercept=0)
 ## zoom in
 plot1 + scale_x_continuous(limits=c(-3,3)) + geom_vline(lty=2,xintercept=0)
 
-## scaled by 2SD by default
+## extract parameters
+## extract table data by tidy
+tidy(logist1)  ## estimate, SE, Z-statistic, p-value
+
+??## scaled by 2SD by default
 dwplot(logist1) + geom_vline(lty=2,xintercept=0)
 ## or we can turn that off
 dwplot(logist1, by_2sd=FALSE)
 
-## extract parameters
-tidy(logist1)  ## estimate, SE, Z-statistic, p-value
 
+
+??
 ## takes a while because of the confidence interval calculation
 system.time(tidy(tt1 <- logist1,conf.int=TRUE))
 print(tt1)
