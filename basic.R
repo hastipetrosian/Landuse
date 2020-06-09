@@ -389,3 +389,6 @@ View(param_tab)
 ## look at nnet::multinom function to fit multinomial response model
 map(rr_points14,~table(is.na(.$slope), is.na(.$prop_veg_nbrs)))
 
+##VIF
+library(car)
+vif(logist1)
