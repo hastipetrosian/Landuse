@@ -339,6 +339,15 @@ logist1S <- run_logist_regression(scale=TRUE)
 ## since we only lose 4/18K pixels
 logist_list <- map(rr_points13[-1], run_logist_regression) ## do all fits at once
 
+logist_quad_list <- map(rr_points13[-1], run_logist_regression, poly_xy_degree=2)
+## this will be unscaled; we could also add scale=TRUE to get the scaled version
+
+## this should compute tidy() for each logistic regression, including confidence intervals (slow!)
+tidy_quad_list <- map(logist_quad_list, tidy, conf.int=TRUE)
+## but SEE BELOW: map_dfr() instead of map(); future_map_dfr() instead of map()
+
+save("logist_quad_list", "tidy_quad_list", file="saved_logist_fits.RData")
+
 ## draw the plots
 ##dwplot is a function for quickly and easily generating plots of regression models 
 plot1 <- dwplot(logist_list)
@@ -382,6 +391,7 @@ plan(multiprocess(workers=3))
 ## map_dfr() runs the function on each item in the list
 ##  and combines the results into a data frame
 ## this is going to take about 10-12 minutes to run
+## future_map_dfr does the same thing, but runs on multiple cores (if you tell it to)
 param_tab <- furrr::future_map_dfr(logist_list,tidy,.id="year",
                             conf.int=TRUE) %>% arrange(term)
 View(param_tab)
@@ -392,3 +402,8 @@ map(rr_points14,~table(is.na(.$slope), is.na(.$prop_veg_nbrs)))
 ##VIF
 library(car)
 vif(logist1)
+
+dwplot(logist1,logist1_linear,logist1_quadratic)
+
+library(bbmle)
+AICtab(logist1,logist1_linear,logist1_quadratic)

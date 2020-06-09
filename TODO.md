@@ -92,3 +92,69 @@ suppose a 3x3 neighbourhood is all erg in 2014. If the 8 cells around the focal 
 Do it and let's see!
 
 * try linear and quadratic trend surface models and see if this makes a big difference.  Do these fight with the climatic effects?
+
+Morrissey, Michael B. ; Ruxton, G. D. “Multiple Regression Is Not Multiple Regressions: The Meaning of Multiple Regression and the Non-Problem of Collinearity.” Philosophy, Theory, and Practice in Biology 10 (2018). http://dx.doi.org/10.3998/ptpbio.16039257.0010.003.
+
+Akaike Information Criterion (AIC)
+one way of choosing a model; it's equal to -2*(log likelihood) + 2*(number of parameters)
+*penalized* goodness-of-fit measure
+
+lower AIC is better
+dAIC = "delta AIC" or difference from the best AIC
+
+<2 units difference is "close to equivalent"
+>10 units difference is "extremely different"
+
+you should *definitely* use the quadratic model
+
+Something else to work on:
+
+* The confidence interval calculation is slow for logistic regressions with big data sets
+* The data sets are much bigger now that we're looking at gain instead of loss, because
+'gain' uses all the pixels that were *not* erg in the previous yeat
+* So the CI interval calculation is slow
+* So ... we want to run the confidence interval calculations once and save the answers
+
+* Run tidy(., conf.int=TRUE) on quadratic models for every pair of years (if there's enough data),
+both scaled (scale=TRUE in run_logist_regression()) and unscaled (scale=FALSE)
+
+you can use map() to do this  (read the end of basic.R)
+
+save the results as two lists (one a list of scaled tidy things, one a list of unscaled
+tidy things)
+
+push the results to the repository
+
+
+
+
+
+
+---
+"linear model" means the response is a linear function of the *predictor* variables,
+but we can create multiple predictor variables from a single *input* variable.
+Input variables are variables in your data set.
+
+For example: let's say latitude is an input variable
+
+NPP = a + b*latitude    "NPP is a linear function of latitude"
+NPP = a + b*latitude+c*latitude^2  "NPP is a quadratic (nonlinear) function of latitude"
+but this is still a LINEAR MODEL in terms of the parameters (a,b,c).  Suppose we make a new
+variable called latitude_squared
+
+NPP = a + b*latitude + c*latitude_squared
+
+this is a linear combination of the two variables
+mathematically, we could look at the derivative of the expression with respect to the parameters
+
+d(NPP)/da = 1
+d^2(NPP)/(da^2) = 0
+
+d(NPP)/dc = latitude_squared
+d^2(NPP)/(dc^2) = 0
+
+NONLINEAR statistical model if I decided to fit
+
+NPP = a*latitude^b
+
+then I can't do this in a linear regression or a logistic regression ...
