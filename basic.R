@@ -324,6 +324,7 @@ logistlost <- run_logist_regression(direction="loss")
 ##logist1=logistgain
 ## default is gain
 ##without direction
+##H-P: Error: cannot allocate vector of size 25.6 Mb
 logistgain <- run_logist_regression()  
 
 ## glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -334,19 +335,17 @@ logistgain <- run_logist_regression()
 ##   confint() computes, and when we have complete separation (and therefore the
 ##   SEs are ridiculous) it doesn't work right at all.
 ##   So we have to do confint(), and wait for it to finish ...
-
 summary(logistgain)
+
 ## running with scale=TRUE takes a little longer
 ##scale=normalized data
 ##logist1=logistgain
 logistgainS <- run_logist_regression(scale=TRUE)
 
-
 ## leave the first set of changes out
 ## since we only lose 4/18K pixels
-##H-P:one error:Error: cannot allocate vector of size 2.2 Mb
-## There are 5 logistic regression model but just calculate 3 of them
 logist_list <- map(rr_points13, run_logist_regression) ## do all fits at once
+
 
 ## draw the plots
 ##dwplot is a function for quickly and easily generating plots of regression models 
@@ -383,15 +382,17 @@ logistloss_quadratic <- run_logist_regression(poly_xy_degree=2, direction="loss"
 summary(logistloss_quadratic)
 tidy(logistloss_quadratic)
 
-##quadratic list
-##H-P:Error: Can't convert a `glm/lm` object to function?
+##quadratic list,Scale=False
+##H-P:error: glm.fit: fitted probabilities numerically 0 or 1 occurred 
 ##gain
-logist_quadratic_list <- map(rr_points13, logistgain_quadratic)
-param_tabqudratic <- furrr::future_map_dfr(logist_quadraric_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
+logistgain_quadratic_list <- map(rr_points13, run_logist_regression(poly_xy_degree=2))
+save(logistgain_quadratic_list, file="logisquadratic")
+param_tabqudratic <- furrr::future_map_dfr(logistgain_quadratic_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
 View(param_tabqudratic)
-##H-P:Error: Can't convert a `glm/lm` object to function
+
+##H-P:2 Errors 1: glm.fit: algorithm did not converge  and glm.fit: fitted probabilities numerically 0 or 1 occurred
 ##loss
-logistloss_quadratic_list <- map(rr_points13, logistloss_quadratic)
+logistloss_quadratic_list <- map(rr_points13, run_logist_regression(poly_xy_degree=2, direction="loss"))
 param_tablossqudratic <- furrr::future_map_dfr(logistloss_quadraric_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
 View(param_tablossqudratic)
 
@@ -419,8 +420,8 @@ View(param_tab)
 map(rr_points14,~table(is.na(.$slope), is.na(.$prop_veg_nbrs)))
 
 
+##quadratic list,Scale=TRUE
 
-##SCALE=TRUE (NO=1)
 run_logist_regression2 <- function(dd=rr_points13[["2014"]],
                                   scale=TRUE,
                                   poly_xy_degree=NA,
@@ -487,21 +488,27 @@ run_logist_regression2 <- function(dd=rr_points13[["2014"]],
 }
 ##H-P:Error: cannot allocate vector of size 36.3 Mb
 ##gain
-logistgain_quadratic1=run_logist_regression2(poly_xy_degree=2)
-summary(logistgain_quadratic1)
-tidy(logistgain_quadratic1)
+
+logistgain_quadraticS=run_logist_regression2(poly_xy_degree=2)
+summary(logistgain_quadraticS)
+tidy(logistgain_quadraticS)
 
 ##H-P:Error: Can't convert a `glm/lm` object to function
-logistgain_quadratic_list1 <- map(rr_points13, logistgain_quadratic1)
-param_tabgainqudratic1 <- furrr::future_map_dfr(logistgain_quadraric_list1,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
-View(param_tabgainqudratic1)
+logistgain_quadratic_listS <- map(rr_points13, run_logist_regression2(poly_xy_degree=2))
+
+param_tabgainqudraticS <- furrr::future_map_dfr(logistgain_quadratic_listS,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
+View(param_tabgainqudraticS)
 
 ##Loss
-logistloss_quadratic1=run_logist_regression2(poly_xy_degree=2,direction="loss")
-summary(logistloss_quadratic1)
-tidy(logistloss_quadratic1)
+logistloss_quadraticS=run_logist_regression2(poly_xy_degree=2,direction="loss")
+summary(logistloss_quadraticS)
+tidy(logistloss_quadraticS)
 
 ##H-P:Error: Can't convert a `glm/lm` object to function
-logistloss_quadratic_list1 <- map(rr_points13, logistloss_quadratic1)
-param_tablossqudratic1 <- furrr::future_map_dfr(logistloss_quadraric_list1,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
-View(param_tablossqudratic1)
+logistloss_quadratic_listS <- map(rr_points13, run_logist_regression2(poly_xy_degree=2,direction="loss"))
+param_tablossqudraticS <- furrr::future_map_dfr(logistloss_quadraric_listS,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
+View(param_tablossqudraticS)
+
+##H-p:I think my R doesnt have enogh memory I have used below codes but I m not sure is it true or not
+memory.limit()
+memory.limit(size=10000)
