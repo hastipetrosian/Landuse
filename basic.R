@@ -318,9 +318,14 @@ run_logist_regression <- function(dd=rr_points13[["2014"]],
     return(logist1)
 }
  
-logist1L <- run_logist_regression(direction="loss")
+##loss
+logistlost <- run_logist_regression(direction="loss")
 
-logist1 <- run_logist_regression()  ## default is gain
+##logist1=logistgain
+## default is gain
+##without direction
+logistgain <- run_logist_regression()  
+
 ## glm.fit: fitted probabilities numerically 0 or 1 occurred
 ##  means we (probably) have *complete separation* (one variable completely explains everything)
 ##  does mean that the standard errors come out ridiculously large
@@ -330,14 +335,16 @@ logist1 <- run_logist_regression()  ## default is gain
 ##   SEs are ridiculous) it doesn't work right at all.
 ##   So we have to do confint(), and wait for it to finish ...
 
-summary(logist1)
+summary(logistgain)
 ## running with scale=TRUE takes a little longer
-logist1S <- run_logist_regression(scale=TRUE)
+##scale=normalized data
+##logist1=logistgain
+logistgainS <- run_logist_regression(scale=TRUE)
 
 
 ## leave the first set of changes out
 ## since we only lose 4/18K pixels
-logist_list <- map(rr_points13[-1], run_logist_regression) ## do all fits at once
+logist_list <- map(rr_points13, run_logist_regression) ## do all fits at once
 
 ## draw the plots
 ##dwplot is a function for quickly and easily generating plots of regression models 
@@ -352,28 +359,30 @@ plot1 + scale_x_continuous(limits=c(-3,3)) + geom_vline(lty=2,xintercept=0)
 
 ## extract parameters
 ## extract table data by tidy
-tidy(logist1)  ## estimate, SE, Z-statistic, p-value
-
+##logist1=logistgain
+tidy(logistgain)  ## estimate, SE, Z-statistic, p-value
+tidy(logistlost)
 
 ##The 1-degree polynomial is a simple linear logistic regression
 ##Linear and quadratic trend surface model mean responce surface is linear or quadratic
-logist1_linear <- run_logist_regression(poly_xy_degree=1)
+logistgain_linear <- run_logist_regression(poly_xy_degree=1)
 ##coef is a generic function which extracts model coefficients 
-coef(logist1_linear)
-summary(logist1_linear)
+coef(logistgain_linear)
+summary(logistgain_linear)
 
 ##A quadratic function is a second degree polynomial function. this model turns a linear regression model into a curve when there is a non-linear relationships
 ##quadratic model (squared model)polynomial predictorused if required by theory or simply to allow for curvature in empirical models.
-logist1_quadratic <- run_logist_regression(poly_xy_degree=2)
-summary(logist1_quadratic)
+logistgain_quadratic <- run_logist_regression(poly_xy_degree=2)
+summary(logistgain_quadratic)
 
+logistgain_quadratic_list <- map(rr_points13, logistgain_quadratic)
 ## scaled by 2SD by default
-dwplot(logist1) + geom_vline(lty=2,xintercept=0)
+dwplot(logistgain) + geom_vline(lty=2,xintercept=0)
 ## or we can turn that off
-dwplot(logist1, by_2sd=FALSE)
+dwplot(logistgain, by_2sd=FALSE)
 
 ## takes a while because of the confidence interval calculation
-system.time(tidy(tt1 <- logist1,conf.int=TRUE))
+system.time(tidy(tt1 <- logistgain,conf.int=TRUE))
 print(tt1)
 
 ## run jobs on 3 cores at once
@@ -382,10 +391,9 @@ plan(multiprocess(workers=3))
 ## map_dfr() runs the function on each item in the list
 ##  and combines the results into a data frame
 ## this is going to take about 10-12 minutes to run
-param_tab <- furrr::future_map_dfr(logist_list,tidy,.id="year",
-                            conf.int=TRUE) %>% arrange(term)
+param_tab <- furrr::future_map_dfr(logist_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
 View(param_tab)
-
+param_tab_quadricgot <- furrr::future_map_dfr(logi)
 ## look at nnet::multinom function to fit multinomial response model
 map(rr_points14,~table(is.na(.$slope), is.na(.$prop_veg_nbrs)))
 
