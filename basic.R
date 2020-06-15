@@ -344,6 +344,8 @@ logistgainS <- run_logist_regression(scale=TRUE)
 
 ## leave the first set of changes out
 ## since we only lose 4/18K pixels
+##H-P:one error:Error: cannot allocate vector of size 2.2 Mb
+## There are 5 logistic regression model but just calculate 3 of them
 logist_list <- map(rr_points13, run_logist_regression) ## do all fits at once
 
 ## draw the plots
@@ -372,10 +374,27 @@ summary(logistgain_linear)
 
 ##A quadratic function is a second degree polynomial function. this model turns a linear regression model into a curve when there is a non-linear relationships
 ##quadratic model (squared model)polynomial predictorused if required by theory or simply to allow for curvature in empirical models.
+##quadratic gain
 logistgain_quadratic <- run_logist_regression(poly_xy_degree=2)
 summary(logistgain_quadratic)
+tidy(logistgain_quadratic)
+##quadratic loss
+logistloss_quadratic <- run_logist_regression(poly_xy_degree=2, direction="loss")
+summary(logistloss_quadratic)
+tidy(logistloss_quadratic)
 
-logistgain_quadratic_list <- map(rr_points13, logistgain_quadratic)
+##quadratic list
+##H-P:Error: Can't convert a `glm/lm` object to function?
+##gain
+logist_quadratic_list <- map(rr_points13, logistgain_quadratic)
+param_tabqudratic <- furrr::future_map_dfr(logist_quadraric_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
+View(param_tabqudratic)
+##H-P:Error: Can't convert a `glm/lm` object to function
+##loss
+logistloss_quadratic_list <- map(rr_points13, logistloss_quadratic)
+param_tablossqudratic <- furrr::future_map_dfr(logistloss_quadraric_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
+View(param_tablossqudratic)
+
 ## scaled by 2SD by default
 dwplot(logistgain) + geom_vline(lty=2,xintercept=0)
 ## or we can turn that off
@@ -391,12 +410,98 @@ plan(multiprocess(workers=3))
 ## map_dfr() runs the function on each item in the list
 ##  and combines the results into a data frame
 ## this is going to take about 10-12 minutes to run
+## H-P:Error: cannot allocate vector of size 2.2 Mb
+logist_list <- map(rr_points13, run_logist_regression)
 param_tab <- furrr::future_map_dfr(logist_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
 View(param_tab)
-param_tab_quadricgot <- furrr::future_map_dfr(logi)
+
 ## look at nnet::multinom function to fit multinomial response model
 map(rr_points14,~table(is.na(.$slope), is.na(.$prop_veg_nbrs)))
 
-##VIF
-library(car)
-vif(logist1)
+
+
+##SCALE=TRUE (NO=1)
+run_logist_regression2 <- function(dd=rr_points13[["2014"]],
+                                  scale=TRUE,
+                                  poly_xy_degree=NA,
+                                  direction="gain") {
+    dd <- (dd
+           ## only want points that were erg before
+           ## only values that have aspect data
+           %>% drop_na(slope)
+           ## don't need x,y columns any more
+           ## (we may not want to use them in the logistic regression, and the formula
+           ##  response ~ . includes *everything* in the data set as part of the model
+           %>% mutate_at(c("x","y"), ~ . / 1000 ) ## CHECK: are these now kms?
+    )
+    
+    ## ANALYSIS 1: analyzing
+    ##just consider the cells that are now erg-without2=before
+    if (direction=="loss") {
+        dd_change <- (dd
+                      ## if change==3 we had erg both before
+                      ##  and after, so this is 0 for 'no change'
+                      ## otherwise 1 for 'lost erg'
+                      %>% filter(change %in% c(2,3))
+                      %>% mutate(change=ifelse(change==3,0,1))
+        )
+    } else {  ## gain
+        dd_change <- (dd
+                      ## if change==3 we had erg both before
+                      ##  and after, so this is 0 for 'no change'
+                      ## otherwise 1 for 'lost erg'
+                      %>% filter(change %in% c(0,1))
+                      %>% mutate(change=ifelse(change==0,0,1))
+        )
+    }
+    ## table(dd_change$prop_build_nbrs)
+    ## table(dd_change$prop_settle_nbrs)
+    ## table(dd$landuse)
+    
+    ##logistic
+    
+    print(table(dd_change$change))
+    ## logist1 <- glm(change~ slope+aspect+prop_erg_nbrs+prop_veg_nbrs+prop_build_nbrs+prop_riveg_nbrs+prop_settle_nbrs+prop_agri_nbrs, data = dd_change, family = "binomial")
+    ## . = everything
+    
+    predvars <- dd_change[,setdiff(names(dd_change),c("landuse","change"))]
+    if (scale) {
+        sdvec <- 2*sapply(predvars,sd,na.rm=TRUE)
+        predvars <- scale(predvars,
+                          center=TRUE,
+                          scale=sdvec)
+        ## all-zero or constant columns will mess things up
+        okvars <- colSums(!is.na(predvars))
+        predvars <- predvars[,okvars>0]
+    }
+    dd_change <- data.frame(change=dd_change$change, predvars)
+    if (is.na(poly_xy_degree)) {
+        form <- change ~ . - x - y
+    } else {
+        ## poly_xy_degree = 1  ->  linear model in x and y
+        ## poly_xy_degree = 2  ->  quadratic model in x and y
+        form <- change ~ . - x - y + poly(x,y,degree=poly_xy_degree)
+    }
+    logist1 <- glm(form , data = dd_change, family = "binomial")
+    return(logist1)
+}
+##H-P:Error: cannot allocate vector of size 36.3 Mb
+##gain
+logistgain_quadratic1=run_logist_regression2(poly_xy_degree=2)
+summary(logistgain_quadratic1)
+tidy(logistgain_quadratic1)
+
+##H-P:Error: Can't convert a `glm/lm` object to function
+logistgain_quadratic_list1 <- map(rr_points13, logistgain_quadratic1)
+param_tabgainqudratic1 <- furrr::future_map_dfr(logistgain_quadraric_list1,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
+View(param_tabgainqudratic1)
+
+##Loss
+logistloss_quadratic1=run_logist_regression2(poly_xy_degree=2,direction="loss")
+summary(logistloss_quadratic1)
+tidy(logistloss_quadratic1)
+
+##H-P:Error: Can't convert a `glm/lm` object to function
+logistloss_quadratic_list1 <- map(rr_points13, logistloss_quadratic1)
+param_tablossqudratic1 <- furrr::future_map_dfr(logistloss_quadraric_list1,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
+View(param_tablossqudratic1)
