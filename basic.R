@@ -66,11 +66,6 @@ years2 <- unique(years)
 ##reading all of the raster files into a list with classess
 rr_list <- map(years2 , get_categorical_raster, list_cats=TRUE)
 
-##H-P:Because of other raster maps (precepitaion and average temperature) the lenght of rrlist became 24 and then I got an error in full join
-##would you please help me to just add land use maps in rr_list
-### length(rr_list)=24
-
-
 ## set the raster names equal to the years
 names(rr_list) <- years2 
 
@@ -351,7 +346,7 @@ logist_quad_list <- map(rr_points13[-1], run_logist_regression, poly_xy_degree=2
 ## this will be unscaled; we could also add scale=TRUE to get the scaled version
 
 ## this should compute tidy() for each logistic regression, including confidence intervals (slow!)
-tidy_quad_list <- map(logist_quad_list, tidy, conf.int=TRUE)
+## tidy_quad_list <- map(logist_quad_list, tidy, conf.int=TRUE)
 ## but SEE BELOW: map_dfr() instead of map(); future_map_dfr() instead of map()
 
 save("logist_quad_list", "tidy_quad_list", file="saved_logist_fits.RData")
@@ -414,27 +409,33 @@ dwplot(logistgain, by_2sd=FALSE)
 system.time(tidy(tt1 <- logistgain,conf.int=TRUE))
 print(tt1)
 
+## if you run out of memory, maybe try a smaller number of workers (2 or only 1)
 ## run jobs on 3 cores at once
 plan(multiprocess(workers=3))
+options(future.globals.maxSize=Inf)
+plan(sequential)  ## turn off multi-processing, just one job at a time
 
 ## map_dfr() runs the function on each item in the list
 ##  and combines the results into a data frame
 ## this is going to take about 10-12 minutes to run
-<<<<<<< HEAD
+
 ## H-P:Error: cannot allocate vector of size 2.2 Mb
 logist_list <- map(rr_points13, run_logist_regression)
-param_tab <- furrr::future_map_dfr(logist_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
-=======
+fn <- "param_tab_basic.RData"
+if (!file.exists(fn)) {
+    param_tab <- furrr::future_map_dfr(logist_list,tidy,.id="year", conf.int=TRUE,
+                                       .progress=TRUE) %>% arrange(term)
+    save("param_tab",file=fn)
+} else {
+    load(fn)
+}
+
+
 ## future_map_dfr does the same thing, but runs on multiple cores (if you tell it to)
-param_tab <- furrr::future_map_dfr(logist_list,tidy,.id="year",
-                            conf.int=TRUE) %>% arrange(term)
->>>>>>> 90e584a40f5f062172e711f79cec5ca209af9db3
-View(param_tab)
 
 ## look at nnet::multinom function to fit multinomial response model
 map(rr_points14,~table(is.na(.$slope), is.na(.$prop_veg_nbrs)))
 
-<<<<<<< HEAD
 
 ##quadratic list,Scale=TRUE
 
@@ -510,8 +511,16 @@ summary(logistgain_quadraticS)
 tidy(logistgain_quadraticS)
 
 ##H-P:Error: Can't convert a `glm/lm` object to function
-logistgain_quadratic_listS <- map(rr_points13, run_logist_regression2(poly_xy_degree=2))
+## this was: run_logist_regression2(poly_xy_degree=2)
+## first way:  specify the function, plus additional arguments
+## logistgain_quadratic_listS <- map(rr_points13, run_logist_regression2, poly_xy_degree=2)
+## second way: use ~ and the . to specify where you want to substitute the data
+logistgain_quadratic_listS <- map(rr_points13, ~run_logist_regression2(., poly_xy_degree=2))
 
+## Remember the tidying will be slow; set up an if() statement to check if the results have
+##   already been saved in a file; if not, run the command and save the results; if they have,
+##   then load the results (as above with the 'load' command, use a sensible file name that
+##   we will recognize/understand later
 param_tabgainqudraticS <- furrr::future_map_dfr(logistgain_quadratic_listS,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
 View(param_tabgainqudraticS)
 
@@ -521,6 +530,7 @@ summary(logistloss_quadraticS)
 tidy(logistloss_quadraticS)
 
 ##H-P:Error: Can't convert a `glm/lm` object to function
+## BMB: same as above
 logistloss_quadratic_listS <- map(rr_points13, run_logist_regression2(poly_xy_degree=2,direction="loss"))
 param_tablossqudraticS <- furrr::future_map_dfr(logistloss_quadraric_listS,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
 View(param_tablossqudraticS)
@@ -528,7 +538,7 @@ View(param_tablossqudraticS)
 ##H-p:I think my R doesnt have enogh memory I have used below codes but I m not sure is it true or not
 memory.limit()
 memory.limit(size=10000)
-=======
+
 ##VIF
 library(car)
 vif(logist1)
@@ -537,4 +547,4 @@ dwplot(logist1,logist1_linear,logist1_quadratic)
 
 library(bbmle)
 AICtab(logist1,logist1_linear,logist1_quadratic)
->>>>>>> 90e584a40f5f062172e711f79cec5ca209af9db3
+

@@ -158,3 +158,12 @@ NONLINEAR statistical model if I decided to fit
 NPP = a*latitude^b
 
 then I can't do this in a linear regression or a logistic regression ...
+
+## 16 June 2020
+
+* run all the slow stuff in 'sequential' mode to avoid running out of memory; save all the tidied parameter tables, make sure to push them to the repository **if they're not too big** (most of the parameter tables should not be very large, <100KB; don't save the model fits themselves to the repository)
+
+Combining the `ff` package (which makes an index of a file on disk so that R can retrieve chunks at a time) and the `biglm` package (which also includes a `bigglm()` function) which can use the indexed file to fit the regression a chunk at a time
+* http://www.bnosac.be/index.php/blog/10-bigglm-on-your-big-data-set-in-open-source-r-it-just-works-similar-as-in-sas
+* https://faculty.washington.edu/tlumley/tutorials/user-biglm.pdf
+* https://bookdown.org/egarpor/PM-UC3M/glm-bigdata.html
