@@ -347,6 +347,15 @@ logistgainS <- run_logist_regression(scale=TRUE)
 logist_list <- map(rr_points13, run_logist_regression) ## do all fits at once
 
 
+logist_quad_list <- map(rr_points13[-1], run_logist_regression, poly_xy_degree=2)
+## this will be unscaled; we could also add scale=TRUE to get the scaled version
+
+## this should compute tidy() for each logistic regression, including confidence intervals (slow!)
+tidy_quad_list <- map(logist_quad_list, tidy, conf.int=TRUE)
+## but SEE BELOW: map_dfr() instead of map(); future_map_dfr() instead of map()
+
+save("logist_quad_list", "tidy_quad_list", file="saved_logist_fits.RData")
+
 ## draw the plots
 ##dwplot is a function for quickly and easily generating plots of regression models 
 plot1 <- dwplot(logist_list)
@@ -411,14 +420,21 @@ plan(multiprocess(workers=3))
 ## map_dfr() runs the function on each item in the list
 ##  and combines the results into a data frame
 ## this is going to take about 10-12 minutes to run
+<<<<<<< HEAD
 ## H-P:Error: cannot allocate vector of size 2.2 Mb
 logist_list <- map(rr_points13, run_logist_regression)
 param_tab <- furrr::future_map_dfr(logist_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
+=======
+## future_map_dfr does the same thing, but runs on multiple cores (if you tell it to)
+param_tab <- furrr::future_map_dfr(logist_list,tidy,.id="year",
+                            conf.int=TRUE) %>% arrange(term)
+>>>>>>> 90e584a40f5f062172e711f79cec5ca209af9db3
 View(param_tab)
 
 ## look at nnet::multinom function to fit multinomial response model
 map(rr_points14,~table(is.na(.$slope), is.na(.$prop_veg_nbrs)))
 
+<<<<<<< HEAD
 
 ##quadratic list,Scale=TRUE
 
@@ -512,3 +528,13 @@ View(param_tablossqudraticS)
 ##H-p:I think my R doesnt have enogh memory I have used below codes but I m not sure is it true or not
 memory.limit()
 memory.limit(size=10000)
+=======
+##VIF
+library(car)
+vif(logist1)
+
+dwplot(logist1,logist1_linear,logist1_quadratic)
+
+library(bbmle)
+AICtab(logist1,logist1_linear,logist1_quadratic)
+>>>>>>> 90e584a40f5f062172e711f79cec5ca209af9db3

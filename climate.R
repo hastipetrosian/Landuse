@@ -13,6 +13,7 @@ years <- c(1987,1997,2003,2008,2014,2018)
 
 ##change name of included map
 at <- sprintf("Average_temperature/%dAT.tif",years)
+at
 pr <- sprintf("precipitation/%dPR.tif",years)
 ws <- sprintf("Wind/%dW.tif",years) 
 
