@@ -337,6 +337,9 @@ summary(logistgain)
 ##logist1=logistgain
 logistgainS <- run_logist_regression(scale=TRUE)
 
+##my R doesnt have enogh memory I have used below codes but I m not sure is it true or not
+memory.limit(500000)
+
 ## leave the first set of changes out
 ## since we only lose 4/18K pixels
 logist_list <- map(rr_points13, run_logist_regression) ## do all fits at once
@@ -394,54 +397,7 @@ logist_quad_list_lost <- map(rr_points13, run_logist_regression, poly_xy_degree=
 tidy_quad_list_lost <-map(logist_quad_list_lost, tidy)
 save("logist_quad_list_lost", "tidy_quad_list_lost", file="saved_logist_fits2.RData")
 
-param_tabqudratic <- furrr::future_map_dfr(logistgain_quadratic_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
-View(param_tabqudratic)
-
-##H-P:2 Errors 1: glm.fit: algorithm did not converge  and glm.fit: fitted probabilities numerically 0 or 1 occurred
-##loss
-logistloss_quadratic_list <- map(rr_points13, run_logist_regression(poly_xy_degree=2, direction="loss"))
-param_tablossqudratic <- furrr::future_map_dfr(logistloss_quadraric_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
-View(param_tablossqudratic)
-
-## scaled by 2SD by default
-dwplot(logistgain) + geom_vline(lty=2,xintercept=0)
-## or we can turn that off
-dwplot(logistgain, by_2sd=FALSE)
-
-## takes a while because of the confidence interval calculation
-system.time(tidy(tt1 <- logistgain,conf.int=TRUE))
-print(tt1)
-
-## if you run out of memory, maybe try a smaller number of workers (2 or only 1)
-## run jobs on 3 cores at once
-plan(multiprocess(workers=3))
-options(future.globals.maxSize=Inf)
-plan(sequential)  ## turn off multi-processing, just one job at a time
-
-## map_dfr() runs the function on each item in the list
-##  and combines the results into a data frame
-## this is going to take about 10-12 minutes to run
-
-## H-P:Error: cannot allocate vector of size 2.2 Mb
-logist_list <- map(rr_points13, run_logist_regression)
-fn <- "param_tab_basic.RData"
-if (!file.exists(fn)) {
-    param_tab <- furrr::future_map_dfr(logist_list,tidy,.id="year", conf.int=TRUE,
-                                       .progress=TRUE) %>% arrange(term)
-    save("param_tab",file=fn)
-} else {
-    load(fn)
-}
-
-
-## future_map_dfr does the same thing, but runs on multiple cores (if you tell it to)
-
-## look at nnet::multinom function to fit multinomial response model
-map(rr_points14,~table(is.na(.$slope), is.na(.$prop_veg_nbrs)))
-
-
 ##quadratic list,Scale=TRUE
-
 run_logist_regression2 <- function(dd=rr_points13[["2014"]],
                                   scale=TRUE,
                                   poly_xy_degree=NA,
@@ -506,19 +462,65 @@ run_logist_regression2 <- function(dd=rr_points13[["2014"]],
     logist1 <- glm(form , data = dd_change, family = "binomial")
     return(logist1)
 }
-##H-P:Error: cannot allocate vector of size 36.3 Mb
-##gain
 
+##gain (2014)
 logistgain_quadraticS=run_logist_regression2(poly_xy_degree=2)
 summary(logistgain_quadraticS)
 tidy(logistgain_quadraticS)
 
-##H-P:Error: Can't convert a `glm/lm` object to function
-## this was: run_logist_regression2(poly_xy_degree=2)
-## first way:  specify the function, plus additional arguments
-## logistgain_quadratic_listS <- map(rr_points13, run_logist_regression2, poly_xy_degree=2)
-## second way: use ~ and the . to specify where you want to substitute the data
-logistgain_quadratic_listS <- map(rr_points13, ~run_logist_regression2(., poly_xy_degree=2))
+#logistic quadratic for all maps (scale=true)
+logist_quad_listS <- map(rr_points13, ~run_logist_regression2(., poly_xy_degree=2))
+tidy_quad_listS <-map(logist_quad_listS, tidy)
+save("logist_quad_listS", "tidy_quad_listS", file="saved_logist_fitsS.RData")
+
+
+##Loss (2014)
+logistloss_quadraticS=run_logist_regression2(poly_xy_degree=2,direction="loss")
+summary(logistloss_quadraticS)
+tidy(logistloss_quadraticS)
+
+##Loss all the maps (scale=true)
+logist_quad_list_lostS <- map(rr_points13, run_logist_regression2,poly_xy_degree=2,direction="loss")
+tidy_quad_list_lostS <-map(logist_quad_list_lostS, tidy)
+save("logist_quad_list_lostS", "tidy_quad_list_lostS", file="saved_logist_fits2S.RData")
+
+
+##furr??? until 434
+param_tabqudratic <- furrr::future_map_dfr(logist_quad_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
+View(param_tabqudratic)
+param_tablossqudratic <- furrr::future_map_dfr(logist_quad_list_lost,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
+View(param_tablossqudratic)
+
+## scaled by 2SD by default
+dwplot(logistgain) + geom_vline(lty=2,xintercept=0)
+## or we can turn that off
+dwplot(logistgain, by_2sd=FALSE)
+
+## takes a while because of the confidence interval calculation
+system.time(tidy(tt1 <- logistgain,conf.int=TRUE))
+print(tt1)
+
+## if you run out of memory, maybe try a smaller number of workers (2 or only 1)
+## run jobs on 3 cores at once
+plan(multiprocess(workers=3))
+options(future.globals.maxSize=Inf)
+plan(sequential)  ## turn off multi-processing, just one job at a time
+
+## map_dfr() runs the function on each item in the list
+##  and combines the results into a data frame
+## this is going to take about 10-12 minutes to run
+
+## H-P:Error: cannot allocate vector of size 2.2 Mb
+logist_list <- map(rr_points13, run_logist_regression)
+fn <- "param_tab_basic.RData"
+if (!file.exists(fn)) {
+    param_tab <- furrr::future_map_dfr(logist_list,tidy,.id="year", conf.int=TRUE,
+                                       .progress=TRUE) %>% arrange(term)
+    save("param_tab",file=fn)
+} else {
+    load(fn)
+}
+
 
 ## Remember the tidying will be slow; set up an if() statement to check if the results have
 ##   already been saved in a file; if not, run the command and save the results; if they have,
@@ -526,25 +528,10 @@ logistgain_quadratic_listS <- map(rr_points13, ~run_logist_regression2(., poly_x
 ##   we will recognize/understand later
 param_tabgainqudraticS <- furrr::future_map_dfr(logistgain_quadratic_listS,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
 View(param_tabgainqudraticS)
-
-##Loss
-logistloss_quadraticS=run_logist_regression2(poly_xy_degree=2,direction="loss")
-summary(logistloss_quadraticS)
-tidy(logistloss_quadraticS)
-
-##H-P:Error: Can't convert a `glm/lm` object to function
-## BMB: same as above
-logistloss_quadratic_listS <- map(rr_points13, run_logist_regression2(poly_xy_degree=2,direction="loss"))
 param_tablossqudraticS <- furrr::future_map_dfr(logistloss_quadraric_listS,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
 View(param_tablossqudraticS)
 
-##H-p:I think my R doesnt have enogh memory I have used below codes but I m not sure is it true or not
-memory.limit()
-memory.limit(size=10000)
 
-##VIF
-library(car)
-vif(logist1)
 
 dwplot(logist1,logist1_linear,logist1_quadratic)
 
