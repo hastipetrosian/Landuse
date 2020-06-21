@@ -341,15 +341,10 @@ logistgainS <- run_logist_regression(scale=TRUE)
 ## since we only lose 4/18K pixels
 logist_list <- map(rr_points13, run_logist_regression) ## do all fits at once
 
-
-logist_quad_list <- map(rr_points13[-1], run_logist_regression, poly_xy_degree=2)
 ## this will be unscaled; we could also add scale=TRUE to get the scaled version
-
 ## this should compute tidy() for each logistic regression, including confidence intervals (slow!)
 ## tidy_quad_list <- map(logist_quad_list, tidy, conf.int=TRUE)
 ## but SEE BELOW: map_dfr() instead of map(); future_map_dfr() instead of map()
-
-save("logist_quad_list", "tidy_quad_list", file="saved_logist_fits.RData")
 
 ## draw the plots
 ##dwplot is a function for quickly and easily generating plots of regression models 
@@ -377,20 +372,28 @@ summary(logistgain_linear)
 
 ##A quadratic function is a second degree polynomial function. this model turns a linear regression model into a curve when there is a non-linear relationships
 ##quadratic model (squared model)polynomial predictorused if required by theory or simply to allow for curvature in empirical models.
-##quadratic gain
+##quadratic gain (2014)
 logistgain_quadratic <- run_logist_regression(poly_xy_degree=2)
 summary(logistgain_quadratic)
 tidy(logistgain_quadratic)
-##quadratic loss
+
+##all map logistic quadaratic (gain, scale=false)
+logist_quad_list <- map(rr_points13, run_logist_regression, poly_xy_degree=2)
+tidy_quad_list <-map(logist_quad_list, tidy)
+save("logist_quad_list", "tidy_quad_list", file="saved_logist_fits.RData")
+
+##quadratic loss(for 2014)
 logistloss_quadratic <- run_logist_regression(poly_xy_degree=2, direction="loss")
 summary(logistloss_quadratic)
 tidy(logistloss_quadratic)
 
 ##quadratic list,Scale=False
 ##H-P:error: glm.fit: fitted probabilities numerically 0 or 1 occurred 
-##gain
-logistgain_quadratic_list <- map(rr_points13, run_logist_regression(poly_xy_degree=2))
-save(logistgain_quadratic_list, file="logisquadratic")
+##Lost
+logist_quad_list_lost <- map(rr_points13, run_logist_regression, poly_xy_degree=2, direction = "loss")
+tidy_quad_list_lost <-map(logist_quad_list_lost, tidy)
+save("logist_quad_list_lost", "tidy_quad_list_lost", file="saved_logist_fits2.RData")
+
 param_tabqudratic <- furrr::future_map_dfr(logistgain_quadratic_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
 View(param_tabqudratic)
 
