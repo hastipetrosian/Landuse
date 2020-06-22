@@ -385,6 +385,12 @@ logist_quad_list <- map(rr_points13, run_logist_regression, poly_xy_degree=2)
 tidy_quad_list <-map(logist_quad_list, tidy)
 save("logist_quad_list", "tidy_quad_list", file="saved_logist_fits.RData")
 
+## compare models
+install.packages("bbmle")
+library(bbmle)
+AICtab(logistgain,logistgain_linear,logistgain_quadratic)
+dwplot(logistgain,logistgain_linear,logistgain_quadratic)
+
 ##quadratic loss(for 2014)
 logistloss_quadratic <- run_logist_regression(poly_xy_degree=2, direction="loss")
 summary(logistloss_quadratic)
@@ -484,8 +490,25 @@ logist_quad_list_lostS <- map(rr_points13, run_logist_regression2,poly_xy_degree
 tidy_quad_list_lostS <-map(logist_quad_list_lostS, tidy)
 save("logist_quad_list_lostS", "tidy_quad_list_lostS", file="saved_logist_fits2S.RData")
 
+## using ff
+library(ff)
+##Gain -scale=FALSE
+ff_logist_quad_list <- ff(map(rr_points13, run_logist_regression, poly_xy_degree=2))
 
-##furr??? until 434
+##the ff_logist_quad_list is 1872 in comparision to logist_quad_list that is 1294728160
+library(pryr)
+object.size(ff_logist_quad_list)
+object.size(logist_quad_list)
+
+##Lost -scale=FALSE
+ff_logist_quad_list_lost <- ff(map(rr_points13, run_logist_regression, poly_xy_degree=2, direction = "loss"))
+##Gain -scale=TRUE
+ff_logist_quad_listS <- ff(map(rr_points13, run_logist_regression2, poly_xy_degree=2))
+##Lost-scale=TRUE
+ff_logist_quad_list_lostS <- ff(map(rr_points13, run_logist_regression2,poly_xy_degree=2,direction="loss"))
+
+
+##furr
 param_tabqudratic <- furrr::future_map_dfr(logist_quad_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
 View(param_tabqudratic)
 param_tablossqudratic <- furrr::future_map_dfr(logist_quad_list_lost,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
@@ -510,7 +533,6 @@ plan(sequential)  ## turn off multi-processing, just one job at a time
 ##  and combines the results into a data frame
 ## this is going to take about 10-12 minutes to run
 
-## H-P:Error: cannot allocate vector of size 2.2 Mb
 logist_list <- map(rr_points13, run_logist_regression)
 fn <- "param_tab_basic.RData"
 if (!file.exists(fn)) {
@@ -532,9 +554,4 @@ param_tablossqudraticS <- furrr::future_map_dfr(logistloss_quadraric_listS,tidy,
 View(param_tablossqudraticS)
 
 
-
-dwplot(logist1,logist1_linear,logist1_quadratic)
-
-library(bbmle)
-AICtab(logist1,logist1_linear,logist1_quadratic)
 
