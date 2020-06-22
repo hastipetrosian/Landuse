@@ -319,7 +319,6 @@ logistlost <- run_logist_regression(direction="loss")
 ##logist1=logistgain
 ## default is gain
 ##without direction
-##H-P: Error: cannot allocate vector of size 25.6 Mb
 logistgain <- run_logist_regression()  
 
 ## glm.fit: fitted probabilities numerically 0 or 1 occurred
@@ -397,7 +396,6 @@ summary(logistloss_quadratic)
 tidy(logistloss_quadratic)
 
 ##quadratic list,Scale=False
-##H-P:error: glm.fit: fitted probabilities numerically 0 or 1 occurred 
 ##Lost
 logist_quad_list_lost <- map(rr_points13, run_logist_regression, poly_xy_degree=2, direction = "loss")
 tidy_quad_list_lost <-map(logist_quad_list_lost, tidy)
@@ -491,6 +489,7 @@ tidy_quad_list_lostS <-map(logist_quad_list_lostS, tidy)
 save("logist_quad_list_lostS", "tidy_quad_list_lostS", file="saved_logist_fits2S.RData")
 
 ## using ff
+install.packages("ff")
 library(ff)
 ##Gain -scale=FALSE
 ff_logist_quad_list <- ff(map(rr_points13, run_logist_regression, poly_xy_degree=2))
