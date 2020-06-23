@@ -474,8 +474,10 @@ tidy(logistgain_quadraticS)
 
 #logistic quadratic for all maps (scale=true)
 logist_quad_listS <- map(rr_points13, ~run_logist_regression2(., poly_xy_degree=2))
-tidy_quad_listS <-map(logist_quad_listS, tidy)
-save("logist_quad_listS", "tidy_quad_listS", file="saved_logist_fitsS.RData")
+tidy_quad_listS <-map(logist_quad_listS, tidy, conf.int=TRUE)
+## LARGE: 600M or so
+save("logist_quad_listS",file="saved_logist_fitsS.RData")
+save("tidy_quad_listS",  file="saved_tidy_fitsS.RData")
 
 
 ##Loss (2014)
@@ -485,7 +487,7 @@ tidy(logistloss_quadraticS)
 
 ##Loss all the maps (scale=true)
 logist_quad_list_lostS <- map(rr_points13, run_logist_regression2,poly_xy_degree=2,direction="loss")
-tidy_quad_list_lostS <-map(logist_quad_list_lostS, tidy)
+tidy_quad_list_lostS <- map_dfr(logist_quad_list_lostS, tidy, conf.int=TRUE, .id="year")
 save("logist_quad_list_lostS", "tidy_quad_list_lostS", file="saved_logist_fits2S.RData")
 
 ## using ff
@@ -549,8 +551,26 @@ if (!file.exists(fn)) {
 ##   we will recognize/understand later
 param_tabgainqudraticS <- furrr::future_map_dfr(logistgain_quadratic_listS,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
 View(param_tabgainqudraticS)
-param_tablossqudraticS <- furrr::future_map_dfr(logistloss_quadraric_listS,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
+param_tablossqudraticS <- furrr::future_map_dfr(logistloss_quadratic_listS,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
 View(param_tablossqudraticS)
 
 
+## for val.prob
+library(rms)  
+library(mlmRev)
+Contraception$age <- scale(Contraception$age, scale=2*sd(Contraception$age))
+m1 <- glm(use ~ livch*urban*age, family=binomial, data=Contraception)
+cS <- split(Contraception, Contraception$livch)
+names(cS) <- levels(Contraception$livch)
+cfits <- map(cS, glm, formula= use ~ urban*age, family=binomial)
+tidy_cfits <- map_dfr(cfits, tidy, conf.int=TRUE, .id="livch")
+library(ggstance)
+print(ggplot(tidy_cfits, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=livch))
+      ## + geom_errorbar()
+      + geom_pointrange(position=position_dodgev(height=0.25)))
+      )
 
+head(predict(m1)) ## log-odds
+head(predict(m1,type="response")) ## probabilities
+n_use <- as.numeric(Contraception$use)-1  ## convert to 0/1
+val.prob(y=n_use, logit=predict(m1))

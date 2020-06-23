@@ -167,3 +167,14 @@ Combining the `ff` package (which makes an index of a file on disk so that R can
 * http://www.bnosac.be/index.php/blog/10-bigglm-on-your-big-data-set-in-open-source-r-it-just-works-similar-as-in-sas
 * https://faculty.washington.edu/tlumley/tutorials/user-biglm.pdf
 * https://bookdown.org/egarpor/PM-UC3M/glm-bigdata.html
+
+## 23 June 2020
+
+* save logistic regression fits in Google drive folder
+* save tidy logistic output (after re-running to add `conf.int=TRUE`) in GitHub
+* create coefficient plots (do this with the scaled models only, separately for gain and loss)
+* model validation
+    * graphical vs quantitative tests: ROC curve, Hosmer-Lemeshow test
+	* model **validity** (is my model "correct"? are the assumptions satisfied? am I missing important patterns that might invalidate the results?) vs. model **accuracy** (is the model working *well*, i.e., how accurately can I predict things?) (ROC, AUC)
+    * `DHARMa` package: `vignette("DHARMa", package="DHARMa")`; check 'binomial' section
+    * model **accuracy**: `rms::val.prob()`
