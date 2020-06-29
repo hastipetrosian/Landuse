@@ -401,6 +401,8 @@ tidy_quad_list_lost <-map(logist_quad_list_lost, tidy)
 save("logist_quad_list_lost", "tidy_quad_list_lost", file="saved_logist_fits2.RData")
 
 ##quadratic list,Scale=TRUE
+##saved files seperately
+
 run_logist_regression2 <- function(dd=rr_points13[["2014"]],
                                   scale=TRUE,
                                   poly_xy_degree=NA,
@@ -497,7 +499,33 @@ tidy_quad_list_lostS <-map_dfr(logist_quad_list_lostS, tidy, conf.int=TRUE, .id=
 save("logist_quad_list_lostS",file="saved_logist_lost_fitsS.RData")
 save("tidy_quad_list_lostS",  file="saved_tidy_lost_fitsS.RData")
 
-## using ff
+##plots
+print(ggplot(tidy_quad_listS, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=year))
+      ## + geom_errorbar()
+      + geom_pointrange(position=position_dodgev(height=0.25)))
+)
+
+##H-P:because tidy_quad_list_lostS is not tbl so ggplot is nt works
+print(ggplot(tidy_quad_list_lostS, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=year))
+      ## + geom_errorbar()
+      + geom_pointrange(position=position_dodgev(height=0.25)))
+)
+
+##resual check:we have to make a model that DHARMa supported it:
+S1=simulate(logistgain_quadraticS, nsim=100)
+##make matrix
+S2=do.call(cbind, S1)
+##make a DHARMa fitted model
+##H-P:I recevied an error
+##Error in .local(x, ...) : invalid layer names and object 'dd_change' not found
+S3=createDHARMa(simulatedResponse = S2, 
+                observedResponse = dd_change$change,
+                fittedPredictedResponse = predict(logistgain_quadraticS),
+                integerResponse = TRUE)
+S4=plotSimulatedResiduals(S3)
+
+
+## using ff for compress files
 install.packages("ff")
 library(ff)
 ##Gain -scale=FALSE
@@ -514,6 +542,7 @@ ff_logist_quad_list_lost <- ff(map(rr_points13, run_logist_regression, poly_xy_d
 ff_logist_quad_listS <- ff(map(rr_points13, run_logist_regression2, poly_xy_degree=2))
 ##Lost-scale=TRUE
 ff_logist_quad_list_lostS <- ff(map(rr_points13, run_logist_regression2,poly_xy_degree=2,direction="loss"))
+
 
 
 ##furr
@@ -576,31 +605,13 @@ print(ggplot(tidy_cfits, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, 
       ## + geom_errorbar()
       + geom_pointrange(position=position_dodgev(height=0.25)))
       )
-##plots
-print(ggplot(tidy_quad_listS, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=year))
-      ## + geom_errorbar()
-      + geom_pointrange(position=position_dodgev(height=0.25)))
-      )
-##H-P:because tidy_quad_list_lostS is not tbl so ggplot is nt works
-print(ggplot(tidy_quad_list_lostS, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=year))
-      ## + geom_errorbar()
-      + geom_pointrange(position=position_dodgev(height=0.25)))
-      )
 
 head(predict(m1)) ## log-odds
 head(predict(m1,type="response")) ## probabilities
 n_use <- as.numeric(Contraception$use)-1  ## convert to 0/1
 val.prob(y=n_use, logit=predict(m1))
 
-##resual check:we have to make a model that DHARMa supported it:
-S1=simulate(logistgain_quadraticS, nsim=100)
-##make matrix
-S2=do.call(cbind, S1)
-##make a DHARMa fitted model
-##H-P:I recevied an error:Error in change$prop_build_nbrs : 
-##Error in .local(x, ...) : invalid layer names
-S3=createDHARMa(simulatedResponse = S2, 
-             observedResponse = slope$change,
-             fittedPredictedResponse = predict(logistgain_quadraticS),
-             integerResponse = TRUE)
-S4=plotSimulatedResiduals(S3)
+##H-P:my data is dd_change but I have recieved an error:object 'dd_change' not found but when I used summery of logistgain_quadraticS I find this data in first line:
+##glm(formula = form, family = "binomial", data = dd_change)
+Num_gai_quadS=as.numeric(dd_change$change)
+val.prob(y=Num_gai_quadS, logit=logist_quad_listS)
