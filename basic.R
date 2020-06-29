@@ -525,6 +525,14 @@ S3=createDHARMa(simulatedResponse = S2,
 S4=plotSimulatedResiduals(S3)
 
 
+##H-P:my data is dd_change but I have recieved an error:object 'dd_change' not found but when I used summery of logistgain_quadraticS I find this data in first line:
+##glm(formula = form, family = "binomial", data = dd_change)
+Num_gai_quadS=as.numeric(dd_change$change)
+val.prob(y=Num_gai_quadS, logit=logist_quad_listS)
+
+##Acuracy
+library(rms)  
+library(mlmRev)
 ## using ff for compress files
 install.packages("ff")
 library(ff)
@@ -611,7 +619,4 @@ head(predict(m1,type="response")) ## probabilities
 n_use <- as.numeric(Contraception$use)-1  ## convert to 0/1
 val.prob(y=n_use, logit=predict(m1))
 
-##H-P:my data is dd_change but I have recieved an error:object 'dd_change' not found but when I used summery of logistgain_quadraticS I find this data in first line:
-##glm(formula = form, family = "binomial", data = dd_change)
-Num_gai_quadS=as.numeric(dd_change$change)
-val.prob(y=Num_gai_quadS, logit=logist_quad_listS)
+
