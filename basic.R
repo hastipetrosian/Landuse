@@ -286,7 +286,6 @@ run_logist_regression <- function(dd=rr_points13[["2014"]],
     ## table(dd$landuse)
     
     ##logistic
-
     print(table(dd_change$change))
     ## logist1 <- glm(change~ slope+aspect+prop_erg_nbrs+prop_veg_nbrs+prop_build_nbrs+prop_riveg_nbrs+prop_settle_nbrs+prop_agri_nbrs, data = dd_change, family = "binomial")
     ## . = everything
@@ -490,9 +489,10 @@ tidy(logistloss_quadraticS)
 ##map2_dfr make tbl
 
 logist_quad_list_lostS <- map(rr_points13, run_logist_regression2,poly_xy_degree=2,direction="loss")
-##H-P:map_dfr doesnt make a tbl file, make a list file 
+##H-P:map_dfr doesnt make a tbl file, make a list file and I have recevied below error:
 ##Error in approx(sp$y, sp$x, xout = cutoff) : 
 ##need at least two non-NA values to interpolate
+
 tidy_quad_list_lostS <-map_dfr(logist_quad_list_lostS, tidy, conf.int=TRUE, .id="year")
 save("logist_quad_list_lostS",file="saved_logist_lost_fitsS.RData")
 save("tidy_quad_list_lostS",  file="saved_tidy_lost_fitsS.RData")
@@ -581,7 +581,7 @@ print(ggplot(tidy_quad_listS, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.h
       ## + geom_errorbar()
       + geom_pointrange(position=position_dodgev(height=0.25)))
       )
-##because tidy_quad_list_lostS is not tbl so ggplot is nt works
+##H-P:because tidy_quad_list_lostS is not tbl so ggplot is nt works
 print(ggplot(tidy_quad_list_lostS, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=year))
       ## + geom_errorbar()
       + geom_pointrange(position=position_dodgev(height=0.25)))
@@ -591,3 +591,16 @@ head(predict(m1)) ## log-odds
 head(predict(m1,type="response")) ## probabilities
 n_use <- as.numeric(Contraception$use)-1  ## convert to 0/1
 val.prob(y=n_use, logit=predict(m1))
+
+##resual check:we have to make a model that DHARMa supported it:
+S1=simulate(logistgain_quadraticS, nsim=100)
+##make matrix
+S2=do.call(cbind, S1)
+##make a DHARMa fitted model
+##H-P:I recevied an error:Error in change$prop_build_nbrs : 
+##Error in .local(x, ...) : invalid layer names
+S3=createDHARMa(simulatedResponse = S2, 
+             observedResponse = slope$change,
+             fittedPredictedResponse = predict(logistgain_quadraticS),
+             integerResponse = TRUE)
+S4=plotSimulatedResiduals(S3)
