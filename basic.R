@@ -48,7 +48,29 @@ op <- par(mfrow=c(3,3))
 map(dd_list,~ plot(.["descrip"],key.pos=NULL,reset=FALSE))
 
 ## dd_list[[1]]["descrip"]
-all_descrip <- map(dd_list, ~ sort(.["descrip"]$descrip))
+
+## there are more rows in the DEM than in the slope
+## ? we can't compute slope on the edges
+nrow(conv_tbl(demR))
+nrow(conv_tbl(slope))
+
+##converts slope and aspect rasters into a tibble
+slope_tbl  <- conv_tbl(slope)
+aspect_tbl <- conv_tbl(aspect)
+dem_tbl <- conv_tbl(demR)
+
+comb_terrain <- full_join(aspect_tbl,slope_tbl,by=c("x","y"))
+
+## try to match up terrain (derived from DEM) with first 1987 landuse map; do the x and y match?
+tmp <- conv_tbl(rr_list[["1987"]])
+combaf2sloas=full_join(comb_terrain, tmp, by=c("x","y"))
+nrow(combaf2sloas)
+nrow(comb_terrain)
+nrow(tmp)
+## we have about the same number of rows in landuse and terrain and combination, but not exactly
+##  ??? different numbers of NAs ???
+
+## draw all of the raster mapsall_descrip <- map(dd_list, ~ sort(.["descrip"]$descrip))
 
 ##list the descrip of maps withoiut any repeat(unique) 
 sort(unique(unlist(all_descrip)))
@@ -96,28 +118,6 @@ levelplot(slope)
 aspect <- terrain(demR, opt="aspect", unit="radians", neighbors=8)
 levelplot(aspect)
 
-## there are more rows in the DEM than in the slope
-## ? we can't compute slope on the edges
-nrow(conv_tbl(demR))
-nrow(conv_tbl(slope))
-
-##converts slope and aspect rasters into a tibble
-slope_tbl  <- conv_tbl(slope)
-aspect_tbl <- conv_tbl(aspect)
-dem_tbl <- conv_tbl(demR)
-
-comb_terrain <- full_join(aspect_tbl,slope_tbl,by=c("x","y"))
-
-## try to match up terrain (derived from DEM) with first 1987 landuse map; do the x and y match?
-tmp <- conv_tbl(rr_list[["1987"]])
-combaf2sloas=full_join(comb_terrain, tmp, by=c("x","y"))
-nrow(combaf2sloas)
-nrow(comb_terrain)
-nrow(tmp)
-## we have about the same number of rows in landuse and terrain and combination, but not exactly
-##  ??? different numbers of NAs ???
-
-## draw all of the raster maps
 ## (2 rows, 3 columns)
 plots <- map(rr_list,levelplot,colorkey=FALSE)
 
@@ -381,7 +381,7 @@ tidy(logistgain_quadratic)
 
 ##all map logistic quadaratic (gain, scale=false)
 logist_quad_list <- map(rr_points13, run_logist_regression, poly_xy_degree=2)
-tidy_quad_list <-map_dfr(logist_quad_list, tidy, )
+tidy_quad_list <-map_dfr(logist_quad_list, tidy)
 save("logist_quad_list", "tidy_quad_list", file="saved_logist_fits.RData")
 
 ## compare models
@@ -486,8 +486,14 @@ summary(logistloss_quadraticS)
 tidy(logistloss_quadraticS)
 
 ##Loss all the maps (scale=true)
+##map makes list
+##map2_dfr make tbl
+
 logist_quad_list_lostS <- map(rr_points13, run_logist_regression2,poly_xy_degree=2,direction="loss")
-tidy_quad_list_lostS <- map_dfr(logist_quad_list_lostS, tidy, conf.int=TRUE, .id="year")
+##H-P:map_dfr doesnt make a tbl file, make a list file 
+##Error in approx(sp$y, sp$x, xout = cutoff) : 
+##need at least two non-NA values to interpolate
+tidy_quad_list_lostS <-map_dfr(logist_quad_list_lostS, tidy, conf.int=TRUE, .id="year")
 save("logist_quad_list_lostS",file="saved_logist_lost_fitsS.RData")
 save("tidy_quad_list_lostS",  file="saved_tidy_lost_fitsS.RData")
 
@@ -567,6 +573,16 @@ cfits <- map(cS, glm, formula= use ~ urban*age, family=binomial)
 tidy_cfits <- map_dfr(cfits, tidy, conf.int=TRUE, .id="livch")
 library(ggstance)
 print(ggplot(tidy_cfits, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=livch))
+      ## + geom_errorbar()
+      + geom_pointrange(position=position_dodgev(height=0.25)))
+      )
+##plots
+print(ggplot(tidy_quad_listS, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=year))
+      ## + geom_errorbar()
+      + geom_pointrange(position=position_dodgev(height=0.25)))
+      )
+##because tidy_quad_list_lostS is not tbl so ggplot is nt works
+print(ggplot(tidy_quad_list_lostS, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=year))
       ## + geom_errorbar()
       + geom_pointrange(position=position_dodgev(height=0.25)))
       )
