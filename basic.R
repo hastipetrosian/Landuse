@@ -381,7 +381,7 @@ tidy(logistgain_quadratic)
 
 ##all map logistic quadaratic (gain, scale=false)
 logist_quad_list <- map(rr_points13, run_logist_regression, poly_xy_degree=2)
-tidy_quad_list <-map(logist_quad_list, tidy)
+tidy_quad_list <-map_dfr(logist_quad_list, tidy, )
 save("logist_quad_list", "tidy_quad_list", file="saved_logist_fits.RData")
 
 ## compare models
@@ -474,11 +474,11 @@ tidy(logistgain_quadraticS)
 
 #logistic quadratic for all maps (scale=true)
 logist_quad_listS <- map(rr_points13, ~run_logist_regression2(., poly_xy_degree=2))
-tidy_quad_listS <-map(logist_quad_listS, tidy, conf.int=TRUE)
+tidy_quad_listS <-map_dfr(logist_quad_listS, tidy, conf.int=TRUE, .id="year")
 ## LARGE: 600M or so
+##save seperatly
 save("logist_quad_listS",file="saved_logist_fitsS.RData")
 save("tidy_quad_listS",  file="saved_tidy_fitsS.RData")
-
 
 ##Loss (2014)
 logistloss_quadraticS=run_logist_regression2(poly_xy_degree=2,direction="loss")
@@ -488,7 +488,8 @@ tidy(logistloss_quadraticS)
 ##Loss all the maps (scale=true)
 logist_quad_list_lostS <- map(rr_points13, run_logist_regression2,poly_xy_degree=2,direction="loss")
 tidy_quad_list_lostS <- map_dfr(logist_quad_list_lostS, tidy, conf.int=TRUE, .id="year")
-save("logist_quad_list_lostS", "tidy_quad_list_lostS", file="saved_logist_fits2S.RData")
+save("logist_quad_list_lostS",file="saved_logist_lost_fitsS.RData")
+save("tidy_quad_list_lostS",  file="saved_tidy_lost_fitsS.RData")
 
 ## using ff
 install.packages("ff")
