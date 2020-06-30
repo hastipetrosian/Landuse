@@ -503,13 +503,12 @@ save("tidy_quad_list_lostS",  file="saved_tidy_lost_fitsS.RData")
 print(ggplot(tidy_quad_listS, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=year))
       ## + geom_errorbar()
       + geom_pointrange(position=position_dodgev(height=0.25)))
-)
+      
 
 ##H-P:because tidy_quad_list_lostS is not tbl so ggplot is nt works
 print(ggplot(tidy_quad_list_lostS, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=year))
       ## + geom_errorbar()
       + geom_pointrange(position=position_dodgev(height=0.25)))
-)
 
 ##resual check:we have to make a model that DHARMa supported it:
 S1=simulate(logistgain_quadraticS, nsim=100)
@@ -517,22 +516,26 @@ S1=simulate(logistgain_quadraticS, nsim=100)
 S2=do.call(cbind, S1)
 ##make a DHARMa fitted model
 ##H-P:I recevied an error
-##Error in .local(x, ...) : invalid layer names and object 'dd_change' not found
+##Error number of observations < 3 ... this rarely makes sense
+##the lenght of  observedResponse = rr_points13$change is zero, but I could not find how it is possible
+library(DHARMa)
 S3=createDHARMa(simulatedResponse = S2, 
-                observedResponse = dd_change$change,
+                observedResponse = rr_points13$change,
                 fittedPredictedResponse = predict(logistgain_quadraticS),
                 integerResponse = TRUE)
+
 S4=plotSimulatedResiduals(S3)
 
 
-##H-P:my data is dd_change but I have recieved an error:object 'dd_change' not found but when I used summery of logistgain_quadraticS I find this data in first line:
-##glm(formula = form, family = "binomial", data = dd_change)
-Num_gai_quadS=as.numeric(dd_change$change)
-val.prob(y=Num_gai_quadS, logit=logist_quad_listS)
-
+##H-P:Error:lengths of p or logit and y do not agree, the lenght of Num_gai_quadS is zero
 ##Acuracy
 library(rms)  
 library(mlmRev)
+Num_gai_quadS=as.numeric(rr_points13$change)
+val.prob (y=rr_points13, logit=predict(logistgain_quadraticS))
+length(Num_gai_quadS)
+
+
 ## using ff for compress files
 install.packages("ff")
 library(ff)
