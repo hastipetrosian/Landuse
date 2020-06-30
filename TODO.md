@@ -178,3 +178,7 @@ Combining the `ff` package (which makes an index of a file on disk so that R can
 	* model **validity** (is my model "correct"? are the assumptions satisfied? am I missing important patterns that might invalidate the results?) vs. model **accuracy** (is the model working *well*, i.e., how accurately can I predict things?) (ROC, AUC)
     * `DHARMa` package: `vignette("DHARMa", package="DHARMa")`; check 'binomial' section
     * model **accuracy**: `rms::val.prob()`
+
+## 30 June 2020
+
+* **complete separation**

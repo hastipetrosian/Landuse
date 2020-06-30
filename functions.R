@@ -59,3 +59,16 @@ conv_tbl <- function(x,newname=NULL,rescale=NA) {
     return(x2)
 }
 
+safe_tidy <- function(x) {
+    x <- mm
+    tt <- try(tidy(x,conf.int=TRUE))  ## try(): don't stop even if there's an error
+    if (inherits(tt,"try-error")) {  ## if it failed
+        ## fall back to Wald estimates
+        tt <- tidy(x)  ## tidy without confidence intervals
+        tt$conf.low  <- tt$estimate-1.96*tt$std.error
+        tt$conf.high <- tt$estimate+1.96*tt$std.error
+    }
+    return(tt)
+}
+        
+    

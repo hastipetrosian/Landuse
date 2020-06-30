@@ -47,30 +47,9 @@ op <- par(mfrow=c(3,3))
 ## draw all of the vector maps
 map(dd_list,~ plot(.["descrip"],key.pos=NULL,reset=FALSE))
 
-## dd_list[[1]]["descrip"]
+## draw all of the raster maps
 
-## there are more rows in the DEM than in the slope
-## ? we can't compute slope on the edges
-nrow(conv_tbl(demR))
-nrow(conv_tbl(slope))
-
-##converts slope and aspect rasters into a tibble
-slope_tbl  <- conv_tbl(slope)
-aspect_tbl <- conv_tbl(aspect)
-dem_tbl <- conv_tbl(demR)
-
-comb_terrain <- full_join(aspect_tbl,slope_tbl,by=c("x","y"))
-
-## try to match up terrain (derived from DEM) with first 1987 landuse map; do the x and y match?
-tmp <- conv_tbl(rr_list[["1987"]])
-combaf2sloas=full_join(comb_terrain, tmp, by=c("x","y"))
-nrow(combaf2sloas)
-nrow(comb_terrain)
-nrow(tmp)
-## we have about the same number of rows in landuse and terrain and combination, but not exactly
-##  ??? different numbers of NAs ???
-
-## draw all of the raster mapsall_descrip <- map(dd_list, ~ sort(.["descrip"]$descrip))
+all_descrip <- map(dd_list, ~ sort(.["descrip"]$descrip))
 
 ##list the descrip of maps withoiut any repeat(unique) 
 sort(unique(unlist(all_descrip)))
@@ -117,6 +96,22 @@ slope <- terrain(demR, opt="slope", unit="radians", neighbors=8)
 levelplot(slope)
 aspect <- terrain(demR, opt="aspect", unit="radians", neighbors=8)
 levelplot(aspect)
+
+##converts slope and aspect rasters into a tibble
+slope_tbl  <- conv_tbl(slope)
+aspect_tbl <- conv_tbl(aspect)
+dem_tbl <- conv_tbl(demR)
+
+comb_terrain <- full_join(aspect_tbl,slope_tbl,by=c("x","y"))
+
+## try to match up terrain (derived from DEM) with first 1987 landuse map; do the x and y match?
+tmp <- conv_tbl(rr_list[["1987"]])
+combaf2sloas=full_join(comb_terrain, tmp, by=c("x","y"))
+nrow(combaf2sloas)
+nrow(comb_terrain)
+nrow(tmp)
+## we have about the same number of rows in landuse and terrain and combination, but not exactly
+##  ??? different numbers of NAs ???
 
 ## (2 rows, 3 columns)
 plots <- map(rr_list,levelplot,colorkey=FALSE)
@@ -245,6 +240,8 @@ rr_points10 <- map2(rr_points9, rr_focal_tblagri1, ~ full_join(.x,.y, by=c("x","
 rr_points11 <- map2(rr_points10, pr_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
 rr_points12 <- map2(rr_points11, at_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
 rr_points13 <- map2(rr_points12, ws_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
+
+save("rr_points13",file="rr_points13.RData")
 
 ## running everything for one set of changes
 
@@ -623,7 +620,7 @@ tidy_cfits <- map_dfr(cfits, tidy, conf.int=TRUE, .id="livch")
 library(ggstance)
 print(ggplot(tidy_cfits, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=livch))
       ## + geom_errorbar()
-      + geom_pointrange(position=position_dodgev(height=0.25)))
+      + geom_pointrange(position=position_dodgev(height=0.25))
       )
 
 head(predict(m1)) ## log-odds
@@ -632,3 +629,52 @@ n_use <- as.numeric(Contraception$use)-1  ## convert to 0/1
 val.prob(y=n_use, logit=predict(m1))
 
 
+
+### BELOW HERE: BMB playing around, please clean up (delete or comment) this section later ...
+
+L <- load("saved_logist_fits2S.RData")
+print(L)
+## skip the first year, no loss at all
+## skip the second year, only 17 pixels lost  
+logist_OK <- logist_quad_list_lostS[-1]
+tidy_quad_list_lostS <- map_dfr(
+    logist_OK,
+    safe_tidy, .id="year")
+
+names(logist_OK)
+for (y in names(logist_OK)) {
+    print(y)
+    tt <- safe_tidy(logist_quad_list_lostS[[y]])
+}
+mm <- logist_OK[["2008"]]
+table(model.frame(mm)$change)
+sapply(model.frame(mm),sd)
+length(coef(mm))
+names(tidy(mm))
+
+###
+L <- load("saved_logist_fitsS.RData")
+print(L)
+library(DHARMa)
+names(logist_quad_listS)
+x <- logist_quad_listS[["2014"]]
+ss <- simulateResiduals(x)
+tidy(x)
+table(model.frame(x)$change)
+
+S1 <- simulate(x, nsim=100)
+S2 <- do.call(cbind, S1)
+
+## H-P: In the third step I have received an error:
+ ## H-P:Error number of observations < 3 ... this rarely makes sense
+ ##the lenght of  observedResponse = rr_points13$change is zero, but I could not find how it is possible
+S3=createDHARMa(simulatedResponse = S2, 
+                observedResponse = rr_points13[["2014"]]$change,
+                fittedPredictedResponse = predict(logistgain_quadraticS),
+                integerResponse = TRUE)
+
+dim(S2)
+
+length(rr_points13[["2014"]]$change)
+       
+S4<-plotSimulatedResiduals(S3)
