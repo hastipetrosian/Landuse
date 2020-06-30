@@ -514,6 +514,7 @@ print(ggplot(tidy_quad_list_lostS, aes(x=estimate, y=term, xmin=conf.low, xmax=c
 S1=simulate(logistgain_quadraticS, nsim=100)
 ##make matrix
 S2=do.call(cbind, S1)
+
 ##make a DHARMa fitted model
 ##H-P:I recevied an error(I think most error occured because of same problem but I dont find how I can solve it)
 ##Error number of observations < 3 ... this rarely makes sense
