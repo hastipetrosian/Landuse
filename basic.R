@@ -386,6 +386,7 @@ save("logist_quad_list", "tidy_quad_list", file="saved_logist_fits.RData")
 ## compare models
 install.packages("bbmle")
 library(bbmle)
+
 AICtab(logistgain,logistgain_linear,logistgain_quadratic)
 dwplot(logistgain,logistgain_linear,logistgain_quadratic)
 
