@@ -526,8 +526,7 @@ S3=createDHARMa(simulatedResponse = S2,
 
 S4=plotSimulatedResiduals(S3)
 
-
-##H-P:Error:lengths of p or logit and y do not agree, the lenght of Num_gai_quadS is zero
+##H-P:Error:lengths of p or logit and y do not agree, the lenght of Num_gai_quadS is zero but I could not find how it is possible
 ##Acuracy
 library(rms)  
 library(mlmRev)
