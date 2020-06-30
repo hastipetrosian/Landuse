@@ -515,7 +515,7 @@ S1=simulate(logistgain_quadraticS, nsim=100)
 ##make matrix
 S2=do.call(cbind, S1)
 ##make a DHARMa fitted model
-##H-P:I recevied an error
+##H-P:I recevied an error(I think most error occured because of same problem but I dont find how I can solve it)
 ##Error number of observations < 3 ... this rarely makes sense
 ##the lenght of  observedResponse = rr_points13$change is zero, but I could not find how it is possible
 library(DHARMa)
@@ -526,6 +526,13 @@ S3=createDHARMa(simulatedResponse = S2,
 
 S4=plotSimulatedResiduals(S3)
 
+##Hosmer-Lemeshow Test:validity
+##H-P: Error: variable lengths differ
+library(ResourceSelection)
+hoslem.test(rr_points13$change, fitted(logistgain_quadraticS), g=10)
+##Test different g:
+for (i in 5:15){print(hoslem.test(rr_points13$change, fitted(logistgain_quadraticS), g=i)$p.value)}
+
 ##H-P:Error:lengths of p or logit and y do not agree, the lenght of Num_gai_quadS is zero but I could not find how it is possible
 ##Acuracy
 library(rms)  
@@ -533,6 +540,7 @@ library(mlmRev)
 Num_gai_quadS=as.numeric(rr_points13$change)
 val.prob (y=rr_points13, logit=predict(logistgain_quadraticS))
 length(Num_gai_quadS)
+ 
 
 
 ## using ff for compress files
