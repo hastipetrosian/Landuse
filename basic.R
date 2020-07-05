@@ -35,9 +35,13 @@ change <- function(x,y,code=3) {
 
 
 do_shape_files <- FALSE
+##all logistic formula is here
 source("functions.R")
+
+## get climate data
 load("climate.RData") ## get climate data
 
+##Load rr_point13 first
 if (file.exists("rr_points13.RData")) {
     load("rr_points13.RData")
 } else {
@@ -252,13 +256,12 @@ if (file.exists("rr_points13.RData")) {
 }
 
 
-##loss
-logistlost <- run_logist_regression(direction="loss")
-
-##logist1=logistgain
 ## default is gain
 ##without direction
-logistgain <- run_logist_regression()  
+logistgain <- run_logist_regression() 
+
+##loss
+logistlost <- run_logist_regression(direction="loss")
 
 ## glm.fit: fitted probabilities numerically 0 or 1 occurred
 ##  means we (probably) have *complete separation* (one variable completely explains everything)
@@ -270,26 +273,15 @@ logistgain <- run_logist_regression()
 ##   So we have to do confint(), and wait for it to finish ...
 summary(logistgain)
 
-## running with scale=TRUE takes a little longer
-##scale=normalized data
-##logist1=logistgain
-logistgainS <- run_logist_regression(scale=TRUE)
+## increse memory
+memory.limit(500000)
 
-##my R doesnt have enough memory I have used below codes but I m not sure is it true or not
-## memory.limit(500000)
-
-## leave the first set of changes out
-## since we only lose 4/18K pixels
-logist_list <- map(rr_points13, run_logist_regression) ## do all fits at once
-
-## this will be unscaled; we could also add scale=TRUE to get the scaled version
-## this should compute tidy() for each logistic regression, including confidence intervals (slow!)
-## tidy_quad_list <- map(logist_quad_list, tidy, conf.int=TRUE)
-## but SEE BELOW: map_dfr() instead of map(); future_map_dfr() instead of map()
+## list of all files after using run_logist_regression
+## do all fits at once
+logist_list <- map(rr_points13, run_logist_regression) 
 
 ## draw the plots
 ##dwplot is a function for quickly and easily generating plots of regression models
-## SLOW because it tries to scale everything ...
 
 if (FALSE) {
     plot1 <- dwplot(logist_list)
@@ -301,6 +293,7 @@ if (FALSE) {
     ## zoom in
     plot1 + scale_x_continuous(limits=c(-3,3)) + geom_vline(lty=2,xintercept=0)
 }
+
 
 ## extract parameters
 ## extract table data by tidy
@@ -318,42 +311,48 @@ summary(logistgain_linear)
 ##A quadratic function is a second degree polynomial function. this model turns a linear regression model into a curve when there is a non-linear relationships
 ##quadratic model (squared model)polynomial predictorused if required by theory or simply to allow for curvature in empirical models.
 ##quadratic gain (2014)
+##without direction
 logistgain_quadratic <- run_logist_regression(poly_xy_degree=2)
 summary(logistgain_quadratic)
 tidy(logistgain_quadratic)
 
+
+## but SEE BELOW: map_dfr() instead of map(); future_map_dfr() instead of map()
 ##all map logistic quadratic (gain, scale=false)
 logist_quad_list <- map(rr_points13, run_logist_regression, poly_xy_degree=2)
 tidy_quad_list <-map_dfr(logist_quad_list, tidy)
 save("logist_quad_list", "tidy_quad_list", file="saved_logist_fits.RData")
 
 ## compare models
-
 AICtab(logistgain,logistgain_linear,logistgain_quadratic)
 dwplot(logistgain,logistgain_linear,logistgain_quadratic)
 
+##Scale=False
 ##quadratic loss(for 2014)
+##with direction, SCALE=FALSE
 logistloss_quadratic <- run_logist_regression(poly_xy_degree=2, direction="loss")
 summary(logistloss_quadratic)
 tidy(logistloss_quadratic)
 
-##quadratic list,Scale=False
+##quadratic list lost,Scale=False
 ##Lost
 logist_quad_list_lost <- map(rr_points13, run_logist_regression, poly_xy_degree=2, direction = "loss")
 tidy_quad_list_lost <-map(logist_quad_list_lost, tidy)
 save("logist_quad_list_lost", "tidy_quad_list_lost", file="saved_logist_fits2.RData")
 
+##Scale=TRUE
 ##quadratic list,Scale=TRUE
 ##saved files seperately
-
-
+##we could also add scale=TRUE to get the scaled version
 ##gain (2014)
-logistgain_quadraticS=run_logist_regression(poly_xy_degree=2)
+## running with scale=TRUE takes a little longer
+##scale=normalized data
+logistgain_quadraticS=run_logist_regression(poly_xy_degree=2, scale = TRUE)
 summary(logistgain_quadraticS)
 tidy(logistgain_quadraticS)
 
-                                        #logistic quadratic for all maps (scale=true)
-logist_quad_listS <- map(rr_points13, ~run_logist_regression(., poly_xy_degree=2))
+#logistic quadratic for all maps (scale=true)
+logist_quad_listS <- map(rr_points13, ~run_logist_regression(., poly_xy_degree=2,scale = TRUE))
 tidy_quad_listS <-map_dfr(logist_quad_listS, tidy, conf.int=TRUE, .id="year")
 ## LARGE: 600M or so
 ##save seperatly
@@ -361,20 +360,20 @@ save("logist_quad_listS",file="saved_logist_fitsS.RData")
 save("tidy_quad_listS",  file="saved_tidy_fitsS.RData")
 
 ##Loss (2014)
-logistloss_quadraticS=run_logist_regression(poly_xy_degree=2,direction="loss")
+##Scale=TURUE
+logistloss_quadraticS=run_logist_regression(poly_xy_degree=2,direction="loss", scale = TRUE)
 summary(logistloss_quadraticS)
 tidy(logistloss_quadraticS)
 
-##Loss all the maps (scale=true)
+##Lost all the maps (scale=true)
 ##map makes list
 ##map2_dfr make tbl
+logist_quad_list_lostS <- map(rr_points13, run_logist_regression,poly_xy_degree=2,direction="loss", scale = TRUE)
 
-logist_quad_list_lostS <- map(rr_points13, run_logist_regression,poly_xy_degree=2,direction="loss")
 ##H-P:map_dfr doesnt make a tbl file, make a list file and I have received below error:
 ##Error in approx(sp$y, sp$x, xout = cutoff) : 
 ##need at least two non-NA values to interpolate
-
-tidy_quad_list_lostS <-map_dfr(logist_quad_list_lostS, tidy, conf.int=TRUE, .id="year")
+tidy_quad_list_lostS <-map_dfr(logist_quad_list_lostS, safe_tidy,.id="year")
 save("logist_quad_list_lostS",file="saved_logist_lost_fitsS.RData")
 save("tidy_quad_list_lostS",  file="saved_tidy_lost_fitsS.RData")
 
@@ -420,8 +419,6 @@ Num_gai_quadS=as.numeric(rr_points13$change)
 val.prob (y=rr_points13, logit=predict(logistgain_quadraticS))
 length(Num_gai_quadS)
 
-
-
 ## using ff for compress files
 install.packages("ff")
 library(ff)
@@ -439,7 +436,6 @@ ff_logist_quad_list_lost <- ff(map(rr_points13, run_logist_regression, poly_xy_d
 ff_logist_quad_listS <- ff(map(rr_points13, run_logist_regression, poly_xy_degree=2))
 ##Lost-scale=TRUE
 ff_logist_quad_list_lostS <- ff(map(rr_points13, run_logist_regression,poly_xy_degree=2,direction="loss"))
-
 
 
 ##furr
@@ -462,6 +458,7 @@ print(tt1)
 plan(multiprocess(workers=3))
 options(future.globals.maxSize=Inf)
 plan(sequential)  ## turn off multi-processing, just one job at a time
+
 
 ## map_dfr() runs the function on each item in the list
 ##  and combines the results into a data frame
@@ -512,11 +509,12 @@ val.prob(y=n_use, logit=predict(m1))
 
 ### BELOW HERE: BMB playing around, please clean up (delete or comment) this section later ...
 
-L <- load("saved_logist_fits2S.RData")
+L <- load("saved_logist_lost_fitsS.RData")
 print(L)
 ## skip the first year, no loss at all
 ## skip the second year, only 17 pixels lost  
 logist_OK <- logist_quad_list_lostS[-1]
+mm <- logist_OK[["2008"]]
 tidy_quad_list_lostS <- map_dfr(
     logist_OK,
     safe_tidy, .id="year")
@@ -526,7 +524,6 @@ for (y in names(logist_OK)) {
     print(y)
     tt <- safe_tidy(logist_quad_list_lostS[[y]])
 }
-mm <- logist_OK[["2008"]]
 table(model.frame(mm)$change)
 sapply(model.frame(mm),sd)
 length(coef(mm))
