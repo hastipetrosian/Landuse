@@ -444,76 +444,6 @@ ff_logist_quad_listS <- ff(map(rr_points13, run_logist_regression, poly_xy_degre
 ff_logist_quad_list_lostS <- ff(map(rr_points13, run_logist_regression,poly_xy_degree=2,direction="loss"))
 
 
-##furr
-param_tabqudratic <- furrr::future_map_dfr(logist_quad_list,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
-View(param_tabqudratic)
-param_tablossqudratic <- furrr::future_map_dfr(logist_quad_list_lost,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
-View(param_tablossqudratic)
-
-## scaled by 2SD by default
-dwplot(logistgain) + geom_vline(lty=2,xintercept=0)
-## or we can turn that off
-dwplot(logistgain, by_2sd=FALSE)
-
-## takes a while because of the confidence interval calculation
-system.time(tidy(tt1 <- logistgain,conf.int=TRUE))
-print(tt1)
-
-## if you run out of memory, maybe try a smaller number of workers (2 or only 1)
-## run jobs on 3 cores at once
-plan(multiprocess(workers=3))
-options(future.globals.maxSize=Inf)
-plan(sequential)  ## turn off multi-processing, just one job at a time
-
-
-## map_dfr() runs the function on each item in the list
-##  and combines the results into a data frame
-## this is going to take about 10-12 minutes to run
-
-logist_list <- map(rr_points13, run_logist_regression)
-fn <- "param_tab_basic.RData"
-if (!file.exists(fn)) {
-    param_tab <- furrr::future_map_dfr(logist_list,tidy,.id="year", conf.int=TRUE,
-                                       .progress=TRUE) %>% arrange(term)
-    save("param_tab",file=fn)
-} else {
-    load(fn)
-}
-
-
-## Remember the tidying will be slow; set up an if() statement to check if the results have
-##   already been saved in a file; if not, run the command and save the results; if they have,
-##   then load the results (as above with the 'load' command, use a sensible file name that
-##   we will recognize/understand later
-param_tabgainqudraticS <- furrr::future_map_dfr(logistgain_quadratic_listS,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
-View(param_tabgainqudraticS)
-param_tablossqudraticS <- furrr::future_map_dfr(logistloss_quadratic_listS,tidy,.id="year", conf.int=TRUE) %>% arrange(term)
-View(param_tablossqudraticS)
-
-
-## for val.prob
-library(rms)  
-library(mlmRev)
-Contraception$age <- scale(Contraception$age, scale=2*sd(Contraception$age))
-m1 <- glm(use ~ livch*urban*age, family=binomial, data=Contraception)
-cS <- split(Contraception, Contraception$livch)
-names(cS) <- levels(Contraception$livch)
-cfits <- map(cS, glm, formula= use ~ urban*age, family=binomial)
-tidy_cfits <- map_dfr(cfits, tidy, conf.int=TRUE, .id="livch")
-library(ggstance)
-print(ggplot(tidy_cfits, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=livch))
-      ## + geom_errorbar()
-      + geom_pointrange(position=position_dodgev(height=0.25))
-      )
-
-head(predict(m1)) ## log-odds
-head(predict(m1,type="response")) ## probabilities
-n_use <- as.numeric(Contraception$use)-1  ## convert to 0/1
-val.prob(y=n_use, logit=predict(m1))
-
-
-
-### BELOW HERE: BMB playing around, please clean up (delete or comment) this section later ...
 ##load loss scale quadratic 
 L <- load("saved_logist_lost_fitsS.RData")
 print(L)
@@ -523,14 +453,14 @@ logist_OK <- logist_quad_list_lostS[-1]
 mm <- logist_OK[["2008"]]
 ##map dfr with safe tidy
 tidy_quad_list_lostS <- map_dfr(
-    logist_OK,
-    safe_tidy, .id="year")
+  logist_OK,
+  safe_tidy, .id="year")
 ##name of list with out 1987
 names(logist_OK)
 ##in l
 for (y in names(logist_OK)) {
-    print(y)
-    tt <- safe_tidy(logist_quad_list_lostS[[y]])
+  print(y)
+  tt <- safe_tidy(logist_quad_list_lostS[[y]])
 }
 table(model.frame(mm)$change)
 sapply(model.frame(mm),sd)
@@ -566,4 +496,28 @@ S3=createDHARMa(simulatedResponse = S2,
                 fittedPredictedResponse = predict(logistgain_quadraticS),
                 integerResponse = TRUE)
 ## same problem
+
+
+##EXAMPLE
+## for val.prob
+library(rms)  
+library(mlmRev)
+Contraception$age <- scale(Contraception$age, scale=2*sd(Contraception$age))
+m1 <- glm(use ~ livch*urban*age, family=binomial, data=Contraception)
+cS <- split(Contraception, Contraception$livch)
+names(cS) <- levels(Contraception$livch)
+cfits <- map(cS, glm, formula= use ~ urban*age, family=binomial)
+tidy_cfits <- map_dfr(cfits, tidy, conf.int=TRUE, .id="livch")
+library(ggstance)
+print(ggplot(tidy_cfits, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=livch))
+      ## + geom_errorbar()
+      + geom_pointrange(position=position_dodgev(height=0.25))
+      )
+
+head(predict(m1)) ## log-odds
+head(predict(m1,type="response")) ## probabilities
+n_use <- as.numeric(Contraception$use)-1  ## convert to 0/1
+val.prob(y=n_use, logit=predict(m1))
+
+
 
