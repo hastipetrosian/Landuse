@@ -360,7 +360,7 @@ save("logist_quad_listS",file="saved_logist_fitsS.RData")
 save("tidy_quad_listS",  file="saved_tidy_fitsS.RData")
 
 ##Loss (2014)
-##Scale=TURUE
+##Scale=TRUE
 logistloss_quadraticS=run_logist_regression(poly_xy_degree=2,direction="loss", scale = TRUE)
 summary(logistloss_quadraticS)
 tidy(logistloss_quadraticS)
@@ -413,15 +413,14 @@ S4=plotSimulatedResiduals(S3)
 ##Hosmer-Lemeshow Test:validity
 ##2014
 ##gain-Scale=TRUE
-x <- logist_quad_listS[["2014"]]
+x <- logistgain_quadraticS
 tidy(x)
 table(model.frame(x)$change)
-Num_gai_quadS=as.numeric(model.frame(x)$change)-1
-hoslem.test(Num_gai_quadS, fitted(logistgain_quadraticS), g=10)
+Num_gai_quadS=as.numeric(model.frame(x)$change)
+hoslem.test(Num_gai_quadS, fitted(logistgain_quadraticS), g=20)
 
 ##Acuracy
 library(rms)  
-library(mlmRev)
 ##2014
 ##gain-Scale=TRUE
 val.prob (y=Num_gai_quadS, logit=predict(logistgain_quadraticS))
@@ -466,7 +465,7 @@ head(predict(m1,type="response")) ## probabilities
 n_use <- as.numeric(Contraception$use)-1  ## convert to 0/1
 val.prob(y=n_use, logit=predict(m1))
 
-##Codes for 
+##Codes for DHRAMA
 for (y in names(logist_OK)) {
   print(y)
   tt <- safe_tidy(logist_quad_list_lostS[[y]])
