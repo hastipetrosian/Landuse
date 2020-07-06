@@ -404,26 +404,27 @@ S2=do.call(cbind, S1)
 ##Error number of observations < 3 ... this rarely makes sense
 ##the lenght of  observedResponse = rr_points13$change is zero, but I could not find how it is possible
 S3=createDHARMa(simulatedResponse = S2, 
-                observedResponse = rr_points13$change,
+                observedResponse = Num_gai_quadS,
                 fittedPredictedResponse = predict(logistgain_quadraticS),
                 integerResponse = TRUE)
 
 S4=plotSimulatedResiduals(S3)
 
 ##Hosmer-Lemeshow Test:validity
-##H-P: Error: variable lengths differ
+##2014
+##gain-Scale=TRUE
+x <- logist_quad_listS[["2014"]]
+tidy(x)
+table(model.frame(x)$change)
+Num_gai_quadS=as.numeric(model.frame(x)$change)-1
+hoslem.test(Num_gai_quadS, fitted(logistgain_quadraticS), g=10)
 
-hoslem.test(rr_points13[["2014"]]$change, fitted(logistgain_quadraticS), g=10)
-##Test different g:
-for (i in 5:15){print(hoslem.test(rr_points13$change, fitted(logistgain_quadraticS), g=i)$p.value)}
-
-##H-P:Error:lengths of p or logit and y do not agree, the lenght of Num_gai_quadS is zero but I could not find how it is possible
 ##Acuracy
 library(rms)  
 library(mlmRev)
-Num_gai_quadS=as.numeric(rr_points13$change)
-val.prob (y=rr_points13, logit=predict(logistgain_quadraticS))
-length(Num_gai_quadS)
+##2014
+##gain-Scale=TRUE
+val.prob (y=Num_gai_quadS, logit=predict(logistgain_quadraticS))
 
 ## using ff for compress files
 install.packages("ff")
@@ -442,60 +443,6 @@ ff_logist_quad_list_lost <- ff(map(rr_points13, run_logist_regression, poly_xy_d
 ff_logist_quad_listS <- ff(map(rr_points13, run_logist_regression, poly_xy_degree=2))
 ##Lost-scale=TRUE
 ff_logist_quad_list_lostS <- ff(map(rr_points13, run_logist_regression,poly_xy_degree=2,direction="loss"))
-
-
-##load loss scale quadratic 
-L <- load("saved_logist_lost_fitsS.RData")
-print(L)
-## skip the first year, no loss at all
-## skip the second year, only 17 pixels lost  
-logist_OK <- logist_quad_list_lostS[-1]
-mm <- logist_OK[["2008"]]
-##map dfr with safe tidy
-tidy_quad_list_lostS <- map_dfr(
-  logist_OK,
-  safe_tidy, .id="year")
-##name of list with out 1987
-names(logist_OK)
-##in l
-for (y in names(logist_OK)) {
-  print(y)
-  tt <- safe_tidy(logist_quad_list_lostS[[y]])
-}
-table(model.frame(mm)$change)
-sapply(model.frame(mm),sd)
-length(coef(mm))
-names(tidy(mm))
-
-### load 'gain', scaled, quadratic
-L <- load("saved_logist_fitsS.RData")
-print(L)
-names(logist_quad_listS)
-x <- logist_quad_listS[["2014"]]
-ss <- try(simulateResiduals(x))
-## Error in approxfun(vals, cumsum(tabulate(match(x, vals)))/(n + 1), method = "linear",  : 
-##   need at least two non-NA values to interpolate
-
-tidy(x)
-table(model.frame(x)$change)
-
-S1 <- simulate(x, nsim=100)
-S2 <- do.call(cbind, S1)
-
-## H-P: In the third step I have received an error:
-## H-P:Error number of observations < 3 ... this rarely makes sense
-##the lenght of  observedResponse = rr_points13$change is zero, but I could not find how it is possible
-
-dd <- get_logist_data(rr_points13[["2014"]],
-                      scale=TRUE,
-                      direction="gain")
-dd <- na.omit(dd)
-nrow(dd)
-S3=createDHARMa(simulatedResponse = S2, 
-                observedResponse = dd$change,
-                fittedPredictedResponse = predict(logistgain_quadraticS),
-                integerResponse = TRUE)
-## same problem
 
 
 ##EXAMPLE
@@ -519,5 +466,37 @@ head(predict(m1,type="response")) ## probabilities
 n_use <- as.numeric(Contraception$use)-1  ## convert to 0/1
 val.prob(y=n_use, logit=predict(m1))
 
+##Codes for 
+for (y in names(logist_OK)) {
+  print(y)
+  tt <- safe_tidy(logist_quad_list_lostS[[y]])
+}
+table(model.frame(mm)$change)
+sapply(model.frame(mm),sd)
+length(coef(mm))
+names(tidy(mm))
+
+### load 'gain', scaled, quadratic
+L <- load("saved_logist_fitsS.RData")
+print(L)
+names(logist_quad_listS)
+x <- logist_quad_listS[["2014"]]
+ss <- try(simulateResiduals(x))
+## Error in approxfun(vals, cumsum(tabulate(match(x, vals)))/(n + 1), method = "linear",  : 
+##   need at least two non-NA values to interpolate
+
+S1 <- simulate(x, nsim=100)
+S2 <- do.call(cbind, S1)
+
+dd <- get_logist_data(rr_points13[["2014"]],
+                      scale=TRUE,
+                      direction="gain")
+dd <- na.omit(dd)
+nrow(dd)
+S3=createDHARMa(simulatedResponse = S2, 
+                observedResponse = Num_gai_quadS,
+                fittedPredictedResponse = predict(logistgain_quadraticS),
+                integerResponse = TRUE)
+## same problem
 
 
