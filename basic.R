@@ -369,24 +369,30 @@ tidy(logistloss_quadraticS)
 ##map makes list
 ##map2_dfr make tbl
 logist_quad_list_lostS <- map(rr_points13, run_logist_regression,poly_xy_degree=2,direction="loss", scale = TRUE)
-
-##H-P:map_dfr doesnt make a tbl file, make a list file and I have received below error:
-##Error in approx(sp$y, sp$x, xout = cutoff) : 
-##need at least two non-NA values to interpolate
-tidy_quad_list_lostS <-map_dfr(logist_quad_list_lostS, safe_tidy,.id="year")
 save("logist_quad_list_lostS",file="saved_logist_lost_fitsS.RData")
+
+##load loss scale quadratic 
+L <- load("saved_logist_lost_fitsS.RData")
+print(L)
+## skip the first year, no loss at all
+## skip the second year, only 17 pixels lost  
+logist_OK <- logist_quad_list_lostS[-1]
+mm <- logist_OK[["2008"]]
+##map dfr with safe tidy
+tidy_quad_list_lostS <- map_dfr(
+  logist_OK,
+  safe_tidy, .id="year")
 save("tidy_quad_list_lostS",  file="saved_tidy_lost_fitsS.RData")
 
 ##plots
+library(rms)  
 print(ggplot(tidy_quad_listS, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=year))
       ## + geom_errorbar()
       + geom_pointrange(position=position_dodgev(height=0.25)))
 
-
-##H-P:because tidy_quad_list_lostS is not tbl so ggplot is nt works
 print(ggplot(tidy_quad_list_lostS, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=year))
       ## + geom_errorbar()
-      + geom_pointrange(position=position_dodgev(height=0.25)))
+      + geom_pointrange(position= position_dodgev(height=0.25)))
 
 ##resual check:we have to make a model that DHARMa supported it:
 S1=simulate(logistgain_quadraticS, nsim=100)
@@ -508,18 +514,20 @@ val.prob(y=n_use, logit=predict(m1))
 
 
 ### BELOW HERE: BMB playing around, please clean up (delete or comment) this section later ...
-
+##load loss scale quadratic 
 L <- load("saved_logist_lost_fitsS.RData")
 print(L)
 ## skip the first year, no loss at all
 ## skip the second year, only 17 pixels lost  
 logist_OK <- logist_quad_list_lostS[-1]
 mm <- logist_OK[["2008"]]
+##map dfr with safe tidy
 tidy_quad_list_lostS <- map_dfr(
     logist_OK,
     safe_tidy, .id="year")
-
+##name of list with out 1987
 names(logist_OK)
+##in l
 for (y in names(logist_OK)) {
     print(y)
     tt <- safe_tidy(logist_quad_list_lostS[[y]])
