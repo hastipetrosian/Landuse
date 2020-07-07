@@ -17,6 +17,7 @@ library(furrr)
 library(bbmle)
 library(DHARMa)
 library(ResourceSelection)
+library(arm)
 
 ##change during time in erg cells 
 
@@ -276,6 +277,7 @@ summary(logistgain)
 ## increse memory
 memory.limit(500000)
 
+
 ## list of all files after using run_logist_regression
 ## do all fits at once
 logist_list <- map(rr_points13, run_logist_regression) 
@@ -410,16 +412,17 @@ S3=createDHARMa(simulatedResponse = S2,
 
 S4=plotSimulatedResiduals(S3)
 
-##Hosmer-Lemeshow Test:validity
+##Acuracy
+##Hosmer-Lemeshow Test:
 ##2014
 ##gain-Scale=TRUE
 x <- logistgain_quadraticS
 tidy(x)
 table(model.frame(x)$change)
 Num_gai_quadS=as.numeric(model.frame(x)$change)
-hoslem.test(Num_gai_quadS, fitted(logistgain_quadraticS), g=20)
+hoslem.test(Num_gai_quadS, fitted(logistgain_quadraticS), g=10)
 
-##Acuracy
+##validity
 library(rms)  
 ##2014
 ##gain-Scale=TRUE
