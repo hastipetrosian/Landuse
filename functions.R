@@ -128,15 +128,47 @@ get_logist_data <- function(dd=rr_points13[["2014"]],
 run_logist_regression <- function(dd=rr_points13[["2014"]],
                                   scale=FALSE,
                                   poly_xy_degree=NA,
-                                  direction="gain") {
+                                  direction="gain",
+                                  extra_terms=NA) {
     dd_change <- get_logist_data(dd, scale, direction)
-    if (is.na(poly_xy_degree)) {
-        form <- change ~ . - x - y
-    } else {
+    form_str <- ". - x - y"
+    if (!is.na(poly_xy_degree)) {
         ## poly_xy_degree = 1  ->  linear model in x and y
         ## poly_xy_degree = 2  ->  quadratic model in x and y
-        form <- change ~ . - x - y + poly(x,y,degree=poly_xy_degree)
+        form_str <- c(form_str, "poly(x,y,degree=poly_xy_degree)")
     }
+    if (!is.na(extra_terms)) {
+        form_str <- c(form_str,extra_terms)
+    }
+    form <- reformulate(form_str, response="change")
     logist1 <- glm(form , data = dd_change, family = "binomial")
     return(logist1)
+}
+
+## find a way to plot *average* predicted and observed values for different ranges of parameters
+plot_preds <- function(model, focal_var="prop_settle_nbrs",n_bins=20) {
+    mf <- model.frame(model)
+    mf$pred <- fitted(model)
+    fv <- mf[[focal_var]]
+    fv_bins <- seq(min(fv)-0.001,max(fv)+0.001, length.out=n_bins)
+    mf$fv_cat <- cut(fv, breaks=fv_bins)  ## categories
+    dd_sum <- (mf
+        %>% arrange(fv_cat)
+        %>% group_by(fv_cat)
+        %>% summarise(n=n(),
+                      pred=mean(pred),
+                      lwr=prop.test(sum(change),n())$conf.int[1],
+                  upr=prop.test(sum(change),n())$conf.int[2],
+                  sumobs=sum(change),
+                  sumpred=pred*n(),
+                  obs=mean(change)
+                  )
+    )
+    ##    dd_sum$midpts <- (fv_bins[-1] + fv_bins[-n_bins])/2  ## midpoints of the categories
+    ggplot(dd_sum,aes(fv_cat,obs,ymin=lwr,ymax=upr)) +
+        geom_linerange() +
+        geom_point(aes(size=n),alpha=0.5) +
+        geom_line(aes(y=pred),group=1,colour="red") +
+        ggtitle(focal_var)
+    
 }
