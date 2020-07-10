@@ -108,7 +108,7 @@ get_logist_data <- function(dd=rr_points13[["2014"]],
 
     ##logistic
     print(table(dd_change$change))
-    ## logist1 <- glm(change~ slope+aspect+prop_erg_nbrs+prop_veg_nbrs+prop_build_nbrs+prop_riveg_nbrs+prop_settle_nbrs+prop_agri_nbrs, data = dd_change, family = "binomial")
+    ## logist1 <- bayseglm(change~ slope+aspect+prop_erg_nbrs+prop_veg_nbrs+prop_build_nbrs+prop_riveg_nbrs+prop_settle_nbrs+prop_agri_nbrs, data = dd_change, family = "binomial")
     ## . = everything
     
     predvars <- dd_change[,setdiff(names(dd_change),c("landuse","change"))]
@@ -137,6 +137,6 @@ run_logist_regression <- function(dd=rr_points13[["2014"]],
         ## poly_xy_degree = 2  ->  quadratic model in x and y
         form <- change ~ . - x - y + poly(x,y,degree=poly_xy_degree)
     }
-    logist1 <- glm(form , data = dd_change, family = "binomial")
+    logist1 <- bayesglm(form , data = dd_change, family = "binomial")
     return(logist1)
 }
