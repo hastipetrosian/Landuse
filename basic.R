@@ -18,6 +18,9 @@ library(bbmle)
 library(DHARMa)
 library(ResourceSelection)
 library(arm)
+library(bayesglm)
+library(brglm2)
+library(rms)
 
 ##change during time in erg cells 
 
@@ -349,6 +352,7 @@ save("logist_quad_list_lost", "tidy_quad_list_lost", file="saved_logist_fits2.RD
 ##gain (2014)
 ## running with scale=TRUE takes a little longer
 ##scale=normalized data
+L <- load("~/Dropbox/saved_logist_fitsS.RData")
 logistgain_quadraticS=run_logist_regression(poly_xy_degree=2, scale = TRUE)
 summary(logistgain_quadraticS)
 tidy(logistgain_quadraticS)
@@ -416,17 +420,51 @@ S4=plotSimulatedResiduals(S3)
 ##Hosmer-Lemeshow Test:
 ##2014
 ##gain-Scale=TRUE
-x <- logistgain_quadraticS
+## x <- logistgain_quadraticS
+x <- logist_quad_listS[["2014"]]
 tidy(x)
 table(model.frame(x)$change)
 Num_gai_quadS=as.numeric(model.frame(x)$change)
-hoslem.test(Num_gai_quadS, fitted(logistgain_quadraticS), g=10)
+dd <- data.frame(pred=fitted(x),obs=as.numeric(model.frame(x)$change))
+
+dd_sum <- (dd
+    %>% arrange(pred)
+    %>% mutate(bin=cut(pred,breaks=seq(0,1,by=0.05)))
+    %>% group_by(bin)
+    %>% summarise(n=n(),
+                  pred=mean(pred),
+                  lwr=prop.test(sum(obs),n())$conf.int[1],
+                  upr=prop.test(sum(obs),n())$conf.int[2],
+                  sumobs=sum(obs),
+                  sumpred=pred*n(),
+                  obs=mean(obs)
+                  )
+)
+
+plot(x)
+
+
+glm(obs~1, data=dd)
+
+dd_sum$midpt <- seq(0.025,0.975,by=0.05)
+(ggplot(dd_sum,aes(midpt,obs,ymin=lwr,ymax=upr))
+    + geom_pointrange()
+    + geom_abline(intercept=0,slope=1,colour="red"))
+
+
+x <- logist_quad_listS[["2014"]]
+plot_preds(x,"prop_settle_nbrs")
+plot_preds(x,"prop_erg_nbrs")
+plot_preds(x,"slope")
+plot_preds(x,"aspect")
+
+hoslem.test(Num_gai_quadS, fitted(x), g=10)
 
 ##validity
-library(rms)  
+
 ##2014
 ##gain-Scale=TRUE
-val.prob (y=Num_gai_quadS, logit=predict(logistgain_quadraticS))
+rms::val.prob (y=Num_gai_quadS, logit=predict(logistgain_quadraticS))
 
 ## using ff for compress files
 install.packages("ff")

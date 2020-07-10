@@ -182,3 +182,12 @@ Combining the `ff` package (which makes an index of a file on disk so that R can
 ## 30 June 2020
 
 * **complete separation**
+
+## 7 July 2020
+
+* for 2014 (and maybe? for one or two other years), examine the predictor variables (with plot_preds()) to try to see which ones are causing trouble
+* try adding a polynomial term in these variables (for example, add a quadratic term of proportion of nbr pixels settled)
+```
+rr <- run_logist_regression(poly_xy_degree=2,extra_terms="I(prop_settle_nbrs^2)")
+```
+* read a little bit about random forests and think about how you would run one on these data ...
