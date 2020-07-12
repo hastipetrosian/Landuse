@@ -135,17 +135,17 @@ run_logist_regression <- function(dd=rr_points13[["2014"]],
     if (!is.na(poly_xy_degree)) {
         ## poly_xy_degree = 1  ->  linear model in x and y
         ## poly_xy_degree = 2  ->  quadratic model in x and y
-        form_str <- c(form_str, "poly(x,y,degree=poly_xy_degree)")
-    }
-<<<<<<< HEAD
+        form_str <- c(form_str, "poly(x,y,degree=poly_xy_degree)")}
+    
+##HEAD
     logist1 <- bayesglm(form , data = dd_change, family = "binomial")
-=======
+##
     if (!is.na(extra_terms)) {
         form_str <- c(form_str,extra_terms)
     }
     form <- reformulate(form_str, response="change")
     logist1 <- glm(form , data = dd_change, family = "binomial")
->>>>>>> 389eda242fcf77a90c88e5ab6ca82f8312b737d5
+## 389eda242fcf77a90c88e5ab6ca82f8312b737d5
     return(logist1)
 }
 
