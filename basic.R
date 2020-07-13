@@ -1,3 +1,6 @@
+## increse memory
+memory.limit(500000)
+
 library(sf)
 library(rgeos)
 library(readxl)
@@ -18,8 +21,9 @@ library(bbmle)
 library(DHARMa)
 library(ResourceSelection)
 library(arm)
-library(bayesglm)
 library(brglm2)
+library(SparseM)
+library(Hmisc)
 library(rms)
 
 ##change during time in erg cells 
@@ -262,6 +266,8 @@ if (file.exists("rr_points13.RData")) {
 
 ## default is gain
 ##without direction
+##H-p:new error:Error in stats::model.frame(formula = form, data = dd_change, drop.unused.levels = TRUE) : 
+##object 'form' not found 
 logistgain <- run_logist_regression() 
 
 ##loss
@@ -276,9 +282,6 @@ logistlost <- run_logist_regression(direction="loss")
 ##   SEs are ridiculous) it doesn't work right at all.
 ##   So we have to do confint(), and wait for it to finish ...
 summary(logistgain)
-
-## increse memory
-memory.limit(500000)
 
 
 ## list of all files after using run_logist_regression
@@ -352,7 +355,7 @@ save("logist_quad_list_lost", "tidy_quad_list_lost", file="saved_logist_fits2.RD
 ##gain (2014)
 ## running with scale=TRUE takes a little longer
 ##scale=normalized data
-L <- load("~/Dropbox/saved_logist_fitsS.RData")
+
 logistgain_quadraticS=run_logist_regression(poly_xy_degree=2, scale = TRUE)
 summary(logistgain_quadraticS)
 tidy(logistgain_quadraticS)
@@ -377,7 +380,9 @@ tidy(logistloss_quadraticS)
 logist_quad_list_lostS <- map(rr_points13, run_logist_regression,poly_xy_degree=2,direction="loss", scale = TRUE)
 save("logist_quad_list_lostS",file="saved_logist_lost_fitsS.RData")
 
+##tidy of loss
 ##load loss scale quadratic 
+L <- load("~/Dropbox/saved_logist_lost_fitsS.RData")
 L <- load("saved_logist_lost_fitsS.RData")
 print(L)
 ## skip the first year, no loss at all
@@ -423,10 +428,22 @@ S4=plotSimulatedResiduals(S3)
 ## x <- logistgain_quadraticS
 x <- logist_quad_listS[["2014"]]
 tidy(x)
+
+##return a data.frame with the variables needed to use formula
 table(model.frame(x)$change)
+##make numbers
 Num_gai_quadS=as.numeric(model.frame(x)$change)
+## A data frame is a table or a two-dimensional array-like structure in which each column contains values of one variable and each row contains one set of values from each column
+##pred=Predicted values based on the model. 
+##fitted=mean response value
+##make a table with two colume prediction and observation
 dd <- data.frame(pred=fitted(x),obs=as.numeric(model.frame(x)$change))
 
+
+
+## %>%=will forward a value, or the result of an expression, into the next function call/expression.
+## the mutate function is used to create a new variable from a data set
+##breks(from=0, to=1)
 dd_sum <- (dd
     %>% arrange(pred)
     %>% mutate(bin=cut(pred,breaks=seq(0,1,by=0.05)))
@@ -443,7 +460,7 @@ dd_sum <- (dd
 
 plot(x)
 
-
+##H_P:
 glm(obs~1, data=dd)
 
 dd_sum$midpt <- seq(0.025,0.975,by=0.05)
@@ -506,7 +523,7 @@ head(predict(m1,type="response")) ## probabilities
 n_use <- as.numeric(Contraception$use)-1  ## convert to 0/1
 val.prob(y=n_use, logit=predict(m1))
 
-##Codes for DHRAMA
+##Extra Codes for DHRAMA
 for (y in names(logist_OK)) {
   print(y)
   tt <- safe_tidy(logist_quad_list_lostS[[y]])
