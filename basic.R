@@ -444,6 +444,7 @@ dd <- data.frame(pred=fitted(x),obs=as.numeric(model.frame(x)$change))
 ## %>%=will forward a value, or the result of an expression, into the next function call/expression.
 ## the mutate function is used to create a new variable from a data set
 ##breks(from=0, to=1)
+##bin is based on the predicted values
 dd_sum <- (dd
     %>% arrange(pred)
     %>% mutate(bin=cut(pred,breaks=seq(0,1,by=0.05)))
@@ -460,9 +461,14 @@ dd_sum <- (dd
 
 plot(x)
 
-##H_P:
+##~=tidle right hands of tidle depends on left hand of tidle
 glm(obs~1, data=dd)
 
+##midpt=average of bin colume
+##aes=inputs are quoted to be evaluated in the context of the data. 
+##geom_pointrange=defined by an upper and lower value for the line
+##geom_abline=The abline geom adds a line with specified slope and intercept to the plot.
+##midpt=mid bin=predicted values and obs==mean(obs)
 dd_sum$midpt <- seq(0.025,0.975,by=0.05)
 (ggplot(dd_sum,aes(midpt,obs,ymin=lwr,ymax=upr))
     + geom_pointrange()
