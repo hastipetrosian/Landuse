@@ -150,6 +150,10 @@ run_logist_regression <- function(dd=rr_points13[["2014"]],
 }
 
 ## find a way to plot *average* predicted and observed values for different ranges of parameters
+##model frame=mf,dd_sum(mf)
+## the variables on wich analysis focused=focal variable
+##fitted=mean response values of the model
+##mf=model, fv=focal variable in mf, pred=prdection value
 plot_preds <- function(model, focal_var="prop_settle_nbrs",n_bins=20) {
     mf <- model.frame(model)
     mf$pred <- fitted(model)
