@@ -433,6 +433,10 @@ tidy(x)
 table(model.frame(x)$change)
 ##make numbers
 Num_gai_quadS=as.numeric(model.frame(x)$change)
+hoslem.test(Num_gai_quadS, fitted(x), g=10)
+
+
+##relation ship betwwrn observation and predication variables
 ## A data frame is a table or a two-dimensional array-like structure in which each column contains values of one variable and each row contains one set of values from each column
 ##pred=Predicted values based on the model. 
 ##fitted=mean response value
@@ -480,8 +484,13 @@ plot_preds(x,"prop_settle_nbrs")
 plot_preds(x,"prop_erg_nbrs")
 plot_preds(x,"slope")
 plot_preds(x,"aspect")
+plot_preds(x,"prop_veg_nbrs")
+plot_preds(x,"prop_riveg_nbrs")
+plot_preds(x,"prop_agri_nbrs")
+plot_preds(x,"averagetemchange")
+plot_preds(x,"windchange")
+plot_preds(x,"precipchange")
 
-hoslem.test(Num_gai_quadS, fitted(x), g=10)
 
 ##validity
 
