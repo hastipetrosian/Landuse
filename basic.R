@@ -333,7 +333,7 @@ save("logist_quad_list", "tidy_quad_list", file="saved_logist_fits.RData")
 
 ## compare models
 AICtab(logistgain,logistgain_linear,logistgain_quadratic)
-dwplot(logistgain,logistgain_linear,logistgain_quadratic)
+try(dwplot(logistgain,logistgain_linear,logistgain_quadratic))
 
 ##Scale=False
 ##quadratic loss(for 2014)
@@ -498,28 +498,36 @@ plot_preds(x,"precipchange")
 ##gain-Scale=TRUE
 rms::val.prob (y=Num_gai_quadS, logit=predict(logistgain_quadraticS))
 
-##extra terms
-##H-p:new error:Error in stats::model.frame(formula = form, data = dd_change, drop.unused.levels = TRUE) : 
-##object 'form' not found 
-logist_quad_listS_extra <- map(rr_points13, ~run_logist_regression(., poly_xy_degree=2,scale = TRUE, extra_terms="(prop_settle_nbrs^2)"))
-logist_quad_listS_extra <- map(rr_points13, ~run_logist_regression(., poly_xy_degree=2,scale = TRUE, extra_terms="(prop_build_nbrs^2)"))
+## extra terms
+## does this help??
+logist_quad_listS_extra <- map(rr_points13,
+                               ~run_logist_regression(., poly_xy_degree=2,scale = TRUE, extra_terms="(prop_settle_nbrs^2)"))
+
+logist_quad_listS_extra <- map(rr_points13,
+                               ~run_logist_regression(., poly_xy_degree=2,scale = TRUE, extra_terms="(prop_build_nbrs^2)"))
 
 ##randomforest
 library(caTools)
-a <- rr_points13[["2014"]
+
+## get 2014 data, drop NA values
 a <- na.omit(rr_points13[["2014"]])
-                 
-##H-P:Error in sample.split: 'SplitRatio' parameter has to be i [0, 1] range or [1, length(Y)] range
+nrow(a)  ## how big is it?
+
+## too big: let's just select the western tip of the study area
+a2 <- filter(a,x<600000 & y >284000 &  y < 2846000)
+nrow(a2) ## much smaller
+
 sample <- sample.split(a$change, SplitRatio = 0.75)
 
-## H_P:comparison (1) is possible only for atomic and list types
 train <- subset(a, sample == TRUE)
 test <- subset(a, sample == FALSE)
 
 library(randomForest)
-rf <- randomForest(formula=change ~ ., data = train)
+
+## do.trace=1 means 'print out information for every tree'
+rf <- randomForest(formula=  change ~ ., data = train, do.trace=1)
+
 pred <- predict(rf, newdata=test)
-rf <- randomForest(formula=change ~ ., data = train, do.trace=TRUE)
 
 
 ## using ff for compress files

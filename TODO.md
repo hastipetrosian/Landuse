@@ -191,3 +191,13 @@ Combining the `ff` package (which makes an index of a file on disk so that R can
 rr <- run_logist_regression(poly_xy_degree=2,extra_terms="I(prop_settle_nbrs^2)")
 ```
 * read a little bit about random forests and think about how you would run one on these data ...
+
+## 14 July 2020
+
+* try the `extra_terms` fits (now that they should be working); can you make the logistic fits for 2014 (for example) better by adding some quadratic terms of the 'worst' predictors?
+* in other models/studies of land use change, what **scale** are people looking at? e.g. are they looking 1-ha blocks/pixels/etc., or 100-ha blocks, or ... ? What counts as a data point? How do they account for **spatial autocorrelation** (i.e. all of the pixels in a block simultaneously gain or lose erg ... this probably does not happen independently!)  How big are our pixels? (you could search for "land use change spatial autocorrelation" or "land use change scale")
+* try out random forests with a smaller sample of the data so that you can see how it works without running out of memory
+   * for example, 
+
+* **BMB**: look at practical options for doing logistic fits with spatial correlations
+* **BMB**: think about remote solutions
