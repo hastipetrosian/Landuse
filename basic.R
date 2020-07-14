@@ -480,6 +480,7 @@ dd_sum$midpt <- seq(0.025,0.975,by=0.05)
 
 
 x <- logist_quad_listS[["2014"]]
+x2 <- logist_quad_listS[["2008"]]
 plot_preds(x,"prop_settle_nbrs")
 plot_preds(x,"prop_erg_nbrs")
 plot_preds(x,"slope")
@@ -505,17 +506,20 @@ logist_quad_listS_extra <- map(rr_points13, ~run_logist_regression(., poly_xy_de
 
 ##randomforest
 library(caTools)
-a <- rr_points13[2014]
+a <- rr_points13[["2014"]
+a <- na.omit(rr_points13[["2014"]])
+                 
 ##H-P:Error in sample.split: 'SplitRatio' parameter has to be i [0, 1] range or [1, length(Y)] range
 sample <- sample.split(a$change, SplitRatio = 0.75)
 
 ## H_P:comparison (1) is possible only for atomic and list types
 train <- subset(a, sample == TRUE)
-test <- subset(data, sample == FALSE)
+test <- subset(a, sample == FALSE)
 
 library(randomForest)
-rf <- randomForest(formula=  num ~ ., data = train)
+rf <- randomForest(formula=change ~ ., data = train)
 pred <- predict(rf, newdata=test)
+rf <- randomForest(formula=change ~ ., data = train, do.trace=TRUE)
 
 
 ## using ff for compress files
