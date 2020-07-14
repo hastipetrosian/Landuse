@@ -487,16 +487,36 @@ plot_preds(x,"aspect")
 plot_preds(x,"prop_veg_nbrs")
 plot_preds(x,"prop_riveg_nbrs")
 plot_preds(x,"prop_agri_nbrs")
+plot_preds(x,"prop_build_nbrs")
 plot_preds(x,"averagetemchange")
 plot_preds(x,"windchange")
 plot_preds(x,"precipchange")
 
-
 ##validity
-
 ##2014
 ##gain-Scale=TRUE
 rms::val.prob (y=Num_gai_quadS, logit=predict(logistgain_quadraticS))
+
+##extra terms
+##H-p:new error:Error in stats::model.frame(formula = form, data = dd_change, drop.unused.levels = TRUE) : 
+##object 'form' not found 
+logist_quad_listS_extra <- map(rr_points13, ~run_logist_regression(., poly_xy_degree=2,scale = TRUE, extra_terms="(prop_settle_nbrs^2)"))
+logist_quad_listS_extra <- map(rr_points13, ~run_logist_regression(., poly_xy_degree=2,scale = TRUE, extra_terms="(prop_build_nbrs^2)"))
+
+##randomforest
+library(caTools)
+a <- rr_points13[2014]
+##H-P:Error in sample.split: 'SplitRatio' parameter has to be i [0, 1] range or [1, length(Y)] range
+sample <- sample.split(a$change, SplitRatio = 0.75)
+
+## H_P:comparison (1) is possible only for atomic and list types
+train <- subset(a, sample == TRUE)
+test <- subset(data, sample == FALSE)
+
+library(randomForest)
+rf <- randomForest(formula=  num ~ ., data = train)
+pred <- predict(rf, newdata=test)
+
 
 ## using ff for compress files
 install.packages("ff")
