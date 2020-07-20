@@ -500,11 +500,26 @@ rms::val.prob (y=Num_gai_quadS, logit=predict(logistgain_quadraticS))
 
 ## extra terms
 ## does this help??
+##aspect
+##not good accuracy
 logist_quad_listS_extra <- map(rr_points13,
+                                ~run_logist_regression(., poly_xy_degree=2,scale = TRUE, extra_terms="(aspect^2)"))
+
+extra1 <- logist_quad_listS_extra[["2014"]]
+table(model.frame(extra1)$change)
+Num_gai_quadS=as.numeric(model.frame(extra1)$change)
+hoslem.test(Num_gai_quadS, fitted(extra1), g=10)
+
+##settlement
+##not good accuracy
+logist_quad_listS_extra2 <- map(rr_points13,
                                ~run_logist_regression(., poly_xy_degree=2,scale = TRUE, extra_terms="(prop_settle_nbrs^2)"))
 
-logist_quad_listS_extra <- map(rr_points13,
-                               ~run_logist_regression(., poly_xy_degree=2,scale = TRUE, extra_terms="(prop_build_nbrs^2)"))
+extract2 <- logist_quad_listS_extra2[["2014"]]
+table(model.frame(extract2)$change)
+Num_gai_quadS=as.numeric(model.frame(extract2)$change)
+hoslem.test(Num_gai_quadS, fitted(extract2), g=10)
+
 
 ##randomforest
 library(caTools)
@@ -517,18 +532,16 @@ nrow(a)  ## how big is it?
 a2 <- filter(a,x<600000 & y >284000 &  y < 2846000)
 nrow(a2) ## much smaller
 
-sample <- sample.split(a$change, SplitRatio = 0.75)
+sample <- sample.split(a2$change, SplitRatio = 0.75)
 
-train <- subset(a, sample == TRUE)
-test <- subset(a, sample == FALSE)
+train <- subset(a2, sample == TRUE)
+test <- subset(a2, sample == FALSE)
 
 library(randomForest)
 
 ## do.trace=1 means 'print out information for every tree'
 rf <- randomForest(formula=  change ~ ., data = train, do.trace=1)
-
 pred <- predict(rf, newdata=test)
-
 
 ## using ff for compress files
 install.packages("ff")
