@@ -51,7 +51,7 @@ load("climate.RData") ## get climate data
 
 ##Load rr_point13 first
 if (file.exists("rr_points13.RData")) {
-    load("rr_points13.RData")
+  load("rr_points13.RData")
 } else {
 
     ## all shape files(vectors):s
