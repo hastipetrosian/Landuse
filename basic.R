@@ -424,6 +424,7 @@ S4=plotSimulatedResiduals(S3)
 ##2014
 ##gain-Scale=TRUE
 ## x <- logistgain_quadraticS
+load("saved_logist_fitsS.RData")
 x <- logist_quad_listS[["2014"]]
 tidy(x)
 
