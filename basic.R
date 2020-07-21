@@ -526,11 +526,13 @@ library(caTools)
 
 ## get 2014 data, drop NA values
 a <- na.omit(rr_points13[["2014"]])
-nrow(a)  ## how big is it?
+ ## how big is it?
+nrow(a) 
 
 ## too big: let's just select the western tip of the study area
 a2 <- filter(a,x<600000 & y >284000 &  y < 2846000)
-nrow(a2) ## much smaller
+## much smaller
+nrow(a2) 
 
 sample <- sample.split(a2$change, SplitRatio = 0.75)
 
@@ -543,6 +545,9 @@ library(randomForest)
 rf <- randomForest(formula=  change ~ ., data = train, do.trace=1)
 pred <- predict(rf, newdata=test)
 
+##
+confusionMatrix(factor(pred, levels = 1:148),factor(test$change, levels = 1:148)
+                
 ## using ff for compress files
 install.packages("ff")
 library(ff)
