@@ -200,4 +200,20 @@ rr <- run_logist_regression(poly_xy_degree=2,extra_terms="I(prop_settle_nbrs^2)"
    * for example, 
 
 * **BMB**: look at practical options for doing logistic fits with spatial correlations
-* **BMB**: think about remote solutions
+* **BMB**: think about remote solutions (Ellie ? Austr ecocloud?)
+
+## notes
+
+* `library("sos"); findFn("autocorrelation")`
+* `ngspatial::autologistic`, `spatialEco::logistic.regression`; `CARBayes::S.glm`
+
+## 21 July 
+
+* compute Moran test on residuals, possibly by converting residuals back to a raster layer??
+
+* generate figures: compare original residuals plot with 'best effort' i.e. (1) weird residuals vs fitted plot; (2) weird residuals vs covariate plot; (3) and (4) are those same plots but with the regression with the added quadratic term ...
+
+* figure out how to run random forest appropriately for spatial data (i.e. accounting properly for spatial autocorrelation) https://peerj.com/preprints/26693v1/GeoMLA_README_thengl.pdf
+
+* BMB: keep thinking about practical autocorrelation fixes
+* BMB: contact Ellie about ecocloud viability - other solutions?

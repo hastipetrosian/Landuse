@@ -1,4 +1,4 @@
-## increse memory
+## increase memory
 memory.limit(500000)
 
 library(sf)
@@ -526,12 +526,12 @@ library(caTools)
 ## get 2014 data, drop NA values
 a <- na.omit(rr_points13[["2014"]])
  ## how big is it?
-nrow(a) 
+nrow(a)
 
 ## too big: let's just select the western tip of the study area
 a2 <- filter(a,x<600000 & y >284000 &  y < 2846000)
 ## much smaller
-nrow(a2) 
+nrow(a2)/nrow(a)  ## 4%
 
 sample <- sample.split(a2$change, SplitRatio = 0.75)
 
@@ -541,12 +541,18 @@ test <- subset(a2, sample == FALSE)
 library(randomForest)
 
 ## do.trace=1 means 'print out information for every tree'
-rf <- randomForest(formula=  change ~ ., data = train, do.trace=1)
+## use factor() to do classification
+rf <- randomForest(formula=  factor(change) ~ . - x - y , data = train, do.trace=1)
 pred <- predict(rf, newdata=test)
 
-##H-P;I dont know why my result is NAN
-conf500=confusionMatrix(factor(pred, levels = 1:500),factor(test$change, levels = 1:500))
-save("conf500",  file="saved_conf-500")               
+## 0: not-erg before and after (no gain)
+## 1: not-erg before, erg after (gain)
+## 2: erg before, not-erg after (loss)
+## 3: erg before and after (no loss)
+ff <- function(x) factor(x,levels=0:3,labels=c("no gain","gain","loss","no loss"))
+conf500= caret::confusionMatrix(ff(pred),ff(test$change))
+save("conf500",  file="saved_conf-500.RData")
+
 ## using ff for compress files
 install.packages("ff")
 library(ff)
