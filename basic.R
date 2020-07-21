@@ -266,8 +266,6 @@ if (file.exists("rr_points13.RData")) {
 
 ## default is gain
 ##without direction
-##H-p:new error:Error in stats::model.frame(formula = form, data = dd_change, drop.unused.levels = TRUE) : 
-##object 'form' not found 
 logistgain <- run_logist_regression() 
 
 ##loss
@@ -545,7 +543,7 @@ library(randomForest)
 rf <- randomForest(formula=  change ~ ., data = train, do.trace=1)
 pred <- predict(rf, newdata=test)
 
-##I dont know why my result is NAN
+##H-P;I dont know why my result is NAN
 conf500=confusionMatrix(factor(pred, levels = 1:500),factor(test$change, levels = 1:500))
 save("conf500",  file="saved_conf-500")               
 ## using ff for compress files
