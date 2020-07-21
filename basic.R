@@ -545,9 +545,9 @@ library(randomForest)
 rf <- randomForest(formula=  change ~ ., data = train, do.trace=1)
 pred <- predict(rf, newdata=test)
 
-##
-confusionMatrix(factor(pred, levels = 1:148),factor(test$change, levels = 1:148)
-                
+##I dont know why my result is NAN
+conf500=confusionMatrix(factor(pred, levels = 1:500),factor(test$change, levels = 1:500))
+save("conf500",  file="saved_conf-500")               
 ## using ff for compress files
 install.packages("ff")
 library(ff)
