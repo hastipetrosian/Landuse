@@ -124,13 +124,14 @@ get_logist_data <- function(dd=rr_points13[["2014"]],
     dd_change <- data.frame(change=dd_change$change, predvars)
     return(dd_change)
 }
-
+##autologistic=TRUE
 run_logist_regression <- function(dd=rr_points13[["2014"]],
                                   scale=FALSE,
                                   poly_xy_degree=NA,
                                   direction="gain",
                                   extra_terms=NA,
-                                  use_bayesglm=TRUE) {
+                                  use_bayesglm=TRUE,
+                                  autologistic=TRUE) {
     dd_change <- get_logist_data(dd, scale, direction)
     form_str <- ". - x - y"
     if (!is.na(poly_xy_degree)) {
