@@ -1,4 +1,4 @@
-## increase memory
+## increse memory
 memory.limit(500000)
 
 library(sf)
@@ -432,7 +432,7 @@ tidy(x)
 table(model.frame(x)$change)
 ##make numbers
 Num_gai_quadS=as.numeric(model.frame(x)$change)
-hoslem.test(Num_gai_quadS, fitted(x), g=10)
+hoslem.test(Num_gai_quadS, fitted(x), g=2)
 
 
 ##relation ship betwwrn observation and predication variables
@@ -526,12 +526,12 @@ library(caTools)
 ## get 2014 data, drop NA values
 a <- na.omit(rr_points13[["2014"]])
  ## how big is it?
-nrow(a)
+nrow(a) 
 
 ## too big: let's just select the western tip of the study area
 a2 <- filter(a,x<600000 & y >284000 &  y < 2846000)
 ## much smaller
-nrow(a2)/nrow(a)  ## 4%
+nrow(a2) 
 
 sample <- sample.split(a2$change, SplitRatio = 0.75)
 
@@ -541,17 +541,12 @@ test <- subset(a2, sample == FALSE)
 library(randomForest)
 
 ## do.trace=1 means 'print out information for every tree'
-## use factor() to do classification
-rf <- randomForest(formula=  factor(change) ~ . - x - y , data = train, do.trace=1)
+rf <- randomForest(formula=  change ~ ., data = train, do.trace=1)
 pred <- predict(rf, newdata=test)
 
-## 0: not-erg before and after (no gain)
-## 1: not-erg before, erg after (gain)
-## 2: erg before, not-erg after (loss)
-## 3: erg before and after (no loss)
-ff <- function(x) factor(x,levels=0:3,labels=c("no gain","gain","loss","no loss"))
-conf500= caret::confusionMatrix(ff(pred),ff(test$change))
-save("conf500",  file="saved_conf-500.RData")
+##H-P;I dont know why my result is NAN
+conf500=confusionMatrix(factor(pred, levels = 1:500),factor(test$change, levels = 1:500))
+save("conf500",  file="saved_conf-500")
 
 ## using ff for compress files
 install.packages("ff")
@@ -592,6 +587,18 @@ head(predict(m1)) ## log-odds
 head(predict(m1,type="response")) ## probabilities
 n_use <- as.numeric(Contraception$use)-1  ## convert to 0/1
 val.prob(y=n_use, logit=predict(m1))
+
+##spatial autocorelation
+##Convert data to spatial points dataframe
+glm <- run_logist_regression(rr_points13[["2014"]])
+data <- rr_points13[["2014"]]
+datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
+## Construct weights matrix in weights list form using the 10 nearest neighbors 
+lstw  <- nb2listw(knn2nb(knearneigh(datpoint, k = 10)))
+
+##H-p: objects of different length, when I have change the k the lenght of lstw is same before(3)
+moran.test(residuals.glm(glm), lstw)
+
 
 ##Extra Codes for DHRAMA
 for (y in names(logist_OK)) {
