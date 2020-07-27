@@ -578,13 +578,15 @@ test <- subset(a2, sample == FALSE)
 library(randomForest)
 
 ## do.trace=1 means 'print out information for every tree'
-rf <- randomForest(formula=  change ~ ., data = train, do.trace=1)
+
+rf <- randomForest(formula=  factor(change) ~ . - x - y , data = train, do.trace=1)
 pred <- predict(rf, newdata=test)
 
 ##H-P;I dont know why my result is NAN
 library(caret)
-conf500=confusionMatrix(factor(pred, levels = 1:500),factor(test$change, levels = 1:500))
-save("conf500",  file="saved_conf-500")
+ff <- function(x) factor(x,levels=0:3,labels=c("no gain","gain","loss","no loss"))
+conf500= caret::confusionMatrix(ff(pred),ff(test$change))
+save("conf500",  file="saved_conf-500.RData")
 
 # number of trees with lowest MSE
 which.min(rf$mse)
