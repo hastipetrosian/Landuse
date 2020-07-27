@@ -525,13 +525,33 @@ extra1 <- logist_quad_listS_extra[["2014"]]
 table(model.frame(extra1)$change)
 Num_gai_quadS=as.numeric(model.frame(extra1)$change)
 hoslem.test(Num_gai_quadS, fitted(extra1), g=10)
-
+##plot
+binnedplot(fitted(extra1), 
+             residuals(extra1, type = "response"), 
+             nclass = NULL, 
+             xlab = "Expected Values", 
+             ylab = "Average residual", 
+             main = "Binned residual plot-extra1", 
+             cex.pts = 0.8, 
+             col.pts = 1, 
+             col.int = "gray")
 ##settlement
 ##not good accuracy
 logist_quad_listS_extra2 <- map(rr_points13,
                                ~run_logist_regression(., poly_xy_degree=2,scale = TRUE, extra_terms="(prop_settle_nbrs^2)"))
 
 extract2 <- logist_quad_listS_extra2[["2014"]]
+##plot
+binnedplot(fitted(extract2), 
+             residuals(extract2, type = "response"), 
+             nclass = NULL, 
+             xlab = "Expected Values", 
+             ylab = "Average residual", 
+             main = "Binned residual plot-extra2", 
+             cex.pts = 0.8, 
+             col.pts = 1, 
+             col.int = "gray")
+
 table(model.frame(extract2)$change)
 Num_gai_quadS=as.numeric(model.frame(extract2)$change)
 hoslem.test(Num_gai_quadS, fitted(extract2), g=10)
