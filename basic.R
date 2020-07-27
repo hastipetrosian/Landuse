@@ -578,15 +578,16 @@ test <- subset(a2, sample == FALSE)
 library(randomForest)
 
 ## do.trace=1 means 'print out information for every tree'
-
 rf <- randomForest(formula=  factor(change) ~ . - x - y , data = train, do.trace=1)
 pred <- predict(rf, newdata=test)
 
-##H-P;I dont know why my result is NAN
 library(caret)
 ff <- function(x) factor(x,levels=0:3,labels=c("no gain","gain","loss","no loss"))
 conf500= caret::confusionMatrix(ff(pred),ff(test$change))
 save("conf500",  file="saved_conf-500.RData")
+
+## importance of each predictor
+importance(rf)
 
 # number of trees with lowest MSE
 which.min(rf$mse)
@@ -594,6 +595,7 @@ which.min(rf$mse)
 # RMSE (Root Mean Square Error)of this optimal random forest
 sqrt(rf$mse[which.min(rf$mse)])
 
+##mtry: Number of variables randomly sampled as candidates at each split
 
 ##spatial autocorelation,Morans I Index
 ##Convert data to spatial points dataframe
