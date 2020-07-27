@@ -582,8 +582,28 @@ rf <- randomForest(formula=  change ~ ., data = train, do.trace=1)
 pred <- predict(rf, newdata=test)
 
 ##H-P;I dont know why my result is NAN
+library(caret)
 conf500=confusionMatrix(factor(pred, levels = 1:500),factor(test$change, levels = 1:500))
 save("conf500",  file="saved_conf-500")
+
+# number of trees with lowest MSE
+which.min(rf$mse)
+
+# RMSE (Root Mean Square Error)of this optimal random forest
+sqrt(rf$mse[which.min(rf$mse)])
+
+
+##spatial autocorelation,Morans I Index
+##Convert data to spatial points dataframe
+glm <- run_logist_regression(rr_points13[["2014"]])
+data <- rr_points13[["2014"]]
+datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
+## Construct weights matrix in weights list form using the 10 nearest neighbors 
+lstw  <- nb2listw(knn2nb(knearneigh(datpoint, k = 10)))
+
+##H-p: objects of different length, when I have change the k the lenght of lstw is same before(3)
+moran.test(residuals.glm(glm), lstw)
+
 
 ## using ff for compress files
 install.packages("ff")
@@ -602,6 +622,9 @@ ff_logist_quad_list_lost <- ff(map(rr_points13, run_logist_regression, poly_xy_d
 ff_logist_quad_listS <- ff(map(rr_points13, run_logist_regression, poly_xy_degree=2))
 ##Lost-scale=TRUE
 ff_logist_quad_list_lostS <- ff(map(rr_points13, run_logist_regression,poly_xy_degree=2,direction="loss"))
+
+
+
 
 
 ##EXAMPLE
@@ -624,17 +647,6 @@ head(predict(m1)) ## log-odds
 head(predict(m1,type="response")) ## probabilities
 n_use <- as.numeric(Contraception$use)-1  ## convert to 0/1
 val.prob(y=n_use, logit=predict(m1))
-
-##spatial autocorelation
-##Convert data to spatial points dataframe
-glm <- run_logist_regression(rr_points13[["2014"]])
-data <- rr_points13[["2014"]]
-datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
-## Construct weights matrix in weights list form using the 10 nearest neighbors 
-lstw  <- nb2listw(knn2nb(knearneigh(datpoint, k = 10)))
-
-##H-p: objects of different length, when I have change the k the lenght of lstw is same before(3)
-moran.test(residuals.glm(glm), lstw)
 
 
 ##Extra Codes for DHRAMA
