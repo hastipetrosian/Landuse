@@ -435,14 +435,12 @@ Num_gai_quadS=as.numeric(model.frame(x)$change)
 hoslem.test(Num_gai_quadS, fitted(x), g=2)
 
 
-##relation ship betwwrn observation and predication variables
+##relation ship between observation and predication variables
 ## A data frame is a table or a two-dimensional array-like structure in which each column contains values of one variable and each row contains one set of values from each column
 ##pred=Predicted values based on the model. 
 ##fitted=mean response value
 ##make a table with two colume prediction and observation
 dd <- data.frame(pred=fitted(x),obs=as.numeric(model.frame(x)$change))
-
-
 
 ## %>%=will forward a value, or the result of an expression, into the next function call/expression.
 ## the mutate function is used to create a new variable from a data set
@@ -480,6 +478,8 @@ dd_sum$midpt <- seq(0.025,0.975,by=0.05)
 
 x <- logist_quad_listS[["2014"]]
 x2 <- logist_quad_listS[["2008"]]
+
+
 plot_preds(x,"prop_settle_nbrs")
 plot_preds(x,"prop_erg_nbrs")
 plot_preds(x,"slope")
@@ -491,6 +491,23 @@ plot_preds(x,"prop_build_nbrs")
 plot_preds(x,"averagetemchange")
 plot_preds(x,"windchange")
 plot_preds(x,"precipchange")
+
+## Predict vs residual
+##Fitted values are also called predicted values.
+plot(predict(x),residuals(x))
+
+##
+library(arm)
+binnedplot(fitted(x), 
+           residuals(x, type = "response"), 
+           nclass = NULL, 
+           xlab = "Expected Values", 
+           ylab = "Average residual", 
+           main = "Binned residual plot", 
+           cex.pts = 0.8, 
+           col.pts = 1, 
+           col.int = "gray")
+
 
 ##validity
 ##2014
