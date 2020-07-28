@@ -217,3 +217,21 @@ rr <- run_logist_regression(poly_xy_degree=2,extra_terms="I(prop_settle_nbrs^2)"
 
 * BMB: keep thinking about practical autocorrelation fixes
 * BMB: contact Ellie about ecocloud viability - other solutions?
+
+## 28 July
+
+* draw spatial plots of residuals _and_ predicted values, think about what this means in terms of where we predicted gain was probable and it didn't happen vs where we predicted
+* use `type="response"` in `residuals()` to get 'raw' residuals (predict-obs), `type="response"` in `predict()` to get probabilities rather than log-odds (if you want)
+* convert residuals from logistic regression back to a raster to make plotting etc. easier ...
+* maybe too much but ... think about 1-ha pixels or even larger ... this is one way of dealing with spatial autocorrelation ...
+
+* (BMB) understand why DHARMa plots fail:
+
+```{r}
+L <- load("saved_logist_fitsS.RData")
+x <- logist_quad_listS[["2014"]]
+ss <- try(simulateResiduals(x))
+## Error in approxfun(vals, cumsum(tabulate(match(x, vals)))/(n + 1), method = "linear",  : 
+##   need at least two non-NA values to interpolate
+```
+* support request from ecocloud: is this still supported? slow ...

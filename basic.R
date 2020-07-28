@@ -403,7 +403,7 @@ print(ggplot(tidy_quad_list_lostS, aes(x=estimate, y=term, xmin=conf.low, xmax=c
       ## + geom_errorbar()
       + geom_pointrange(position= position_dodgev(height=0.25)))
 
-##resual check:we have to make a model that DHARMa supported it:
+##residual check:we have to make a model that DHARMa supported it:
 S1=simulate(logistgain_quadraticS, nsim=100)
 ##make matrix
 S2=do.call(cbind, S1)
@@ -612,14 +612,42 @@ sqrt(rf$mse[which.min(rf$mse)])
 
 ##spatial autocorelation,Morans I Index
 ##Convert data to spatial points dataframe
+## https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
 glm <- run_logist_regression(rr_points13[["2014"]])
 data <- rr_points13[["2014"]]
 datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
-## Construct weights matrix in weights list form using the 10 nearest neighbors 
-lstw  <- nb2listw(knn2nb(knearneigh(datpoint, k = 10)))
+## Construct weights matrix in weights list form using the 10 nearest neighbors
+library(spdep)
 
-##H-p: objects of different length, when I have change the k the lenght of lstw is same before(3)
-moran.test(residuals.glm(glm), lstw)
+## test with smaller data set
+testdat <- filter(rr_points13[["2014"]],
+                  x<600000 & y >284000 &  y < 2846000)
+
+## get only the points that are being used in the analysis
+## (e.g. for "gain" regression, only points that start as non-erg)
+## and make sure to drop NA values, so that the length matches the
+## length of the logistic fit residuals
+testdat2 <- na.omit(get_logist_data(testdat, scale=TRUE, direction="gain"))
+testglm <- run_logist_regression(testdat)
+testpoint <- SpatialPointsDataFrame(cbind(testdat2$x, testdat2$y), testdat2)
+lstw  <- nb2listw(knn2nb(knearneigh(testpoint, k = 10)))
+## now run the Moran test
+moran.test(residuals(testglm), lstw)
+
+## POSSIBLE solution to spatial autocorrelation: aggregate the data set to
+##  a larger scale (i.e. go back to the rasters and compute fraction erg)
+
+
+cr <- colorRamp(c("blue", "red"))
+res0 <- residuals(testglm,type="response")
+hist(res0)
+hist(predict(testglm))
+hist(predict(testglm,type="response"))
+## scale residuals from 0 to 1 
+res <- scale(res0, center=min(res0), scale=diff(range(res0)))
+range(res)
+plot(testpoint$x,testpoint$y,col=rgb(cr(res)/255),
+     pch=16) ##,pch=".",cex=3)
 
 ## using ff for compress files
 install.packages("ff")
@@ -665,7 +693,7 @@ n_use <- as.numeric(Contraception$use)-1  ## convert to 0/1
 val.prob(y=n_use, logit=predict(m1))
 
 
-##Extra Codes for DHRAMA
+##Extra Codes for DHARMa
 for (y in names(logist_OK)) {
   print(y)
   tt <- safe_tidy(logist_quad_list_lostS[[y]])
