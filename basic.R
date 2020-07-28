@@ -574,10 +574,8 @@ nrow(a2)
 set.seed(123)
 sample <- sample.split(a2$change, SplitRatio = 0.75)
 
+##subset=take random samples from a dataset
 train <- subset(a2, sample == TRUE)
-rf_fit <- train(as.factor(change) ~ ., 
-                data = a2, 
-                method = "ranger")
 test <- subset(a2, sample == FALSE)
 
 library(randomForest)
@@ -593,6 +591,13 @@ library(caret)
 ff <- function(x) factor(x,levels=0:3,labels=c("no gain","gain","loss","no loss"))
 conf500= caret::confusionMatrix(ff(pred),ff(test$change))
 save("conf500",  file="saved_conf-500.RData")
+
+### fit a random forest model (using ranger)
+library(ranger)
+rf_fit <- train(as.factor(change) ~ ., 
+                data = a2, 
+                method = "ranger")
+save("rf_fit",  file="saved_rf_fit.RData")
 
 ## importance of each predictor
 importance(rf)
@@ -615,7 +620,6 @@ lstw  <- nb2listw(knn2nb(knearneigh(datpoint, k = 10)))
 
 ##H-p: objects of different length, when I have change the k the lenght of lstw is same before(3)
 moran.test(residuals.glm(glm), lstw)
-
 
 ## using ff for compress files
 install.packages("ff")
