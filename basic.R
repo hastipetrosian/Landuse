@@ -570,15 +570,23 @@ a2 <- filter(a,x<600000 & y >284000 &  y < 2846000)
 ## much smaller
 nrow(a2) 
 
+##generate a sequence of random numbers – it ensures that you get the same result if you start with that same seed each time you run the same process. 
+set.seed(123)
 sample <- sample.split(a2$change, SplitRatio = 0.75)
 
 train <- subset(a2, sample == TRUE)
+rf_fit <- train(as.factor(change) ~ ., 
+                data = a2, 
+                method = "ranger")
 test <- subset(a2, sample == FALSE)
 
 library(randomForest)
 
-## do.trace=1 means 'print out information for every tree'
-rf <- randomForest(formula=  factor(change) ~ . - x - y , data = train, do.trace=1)
+## do.trace=1 means 'print out information for every tree
+##if consider change as factor the outh put type will be classification if consider without d=factor the conf matrix doesnt work
+rf <- randomForest(formula=  change ~ . - x - y , data = train, do.trace=1, type=regression, proximity=TRUE)
+rf <- randomForest(formula= factor(change) ~ . - x - y , data = train, do.trace=1, type=regression, proximity=TRUE)
+plot(rf)
 pred <- predict(rf, newdata=test)
 
 library(caret)
