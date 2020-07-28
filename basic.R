@@ -581,7 +581,7 @@ test <- subset(a2, sample == FALSE)
 library(randomForest)
 
 ## do.trace=1 means 'print out information for every tree
-##if consider change as factor the outh put type will be classification if consider without d=factor the conf matrix doesnt work
+##if consider change as factor the output type will be classification if consider without factor the conf matrix doesnt work but out put wii be regression
 rf <- randomForest(formula=  change ~ . - x - y , data = train, do.trace=1, type=regression, proximity=TRUE)
 rf <- randomForest(formula= factor(change) ~ . - x - y , data = train, do.trace=1, type=regression, proximity=TRUE)
 plot(rf)
