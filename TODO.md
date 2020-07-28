@@ -225,13 +225,23 @@ rr <- run_logist_regression(poly_xy_degree=2,extra_terms="I(prop_settle_nbrs^2)"
 * convert residuals from logistic regression back to a raster to make plotting etc. easier ...
 * maybe too much but ... think about 1-ha pixels or even larger ... this is one way of dealing with spatial autocorrelation ...
 
-* (BMB) understand why DHARMa plots fail:
+* (BMB) understand why DHARMa plots fail: examples
 
 ```{r}
 L <- load("saved_logist_fitsS.RData")
 x <- logist_quad_listS[["2014"]]
-ss <- try(simulateResiduals(x))
+## undebug(simulateResiduals)
+ss <- DHARMa::simulateResiduals(x)
 ## Error in approxfun(vals, cumsum(tabulate(match(x, vals)))/(n + 1), method = "linear",  : 
 ##   need at least two non-NA values to interpolate
+
+## simpler
+set.seed(101)
+n <- 2e5
+dd <- data.frame(x=rnorm(n, mean=-5,sd=5))
+dd$y <- rbinom(n,size=1,prob=plogis(dd$x))
+m <- glm(y~x,data=dd,family=binomial)
+ss <- DHARMa::simulateResiduals(m)
 ```
+
 * support request from ecocloud: is this still supported? slow ...
