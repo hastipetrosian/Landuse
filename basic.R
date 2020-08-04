@@ -245,8 +245,11 @@ if (file.exists("rr_points13.RData")) {
     rr_focal_tblagri <- map(rr_focalagri, conv_tbl, newname="prop_agri_nbrs", rescale=8)
     rr_focal_tblagri1=rr_focal_tblagri[-length(rr_focal_tblagri)]
 
-
-
+    ##bareland
+    rr_focalbare=map(rr_list,~ focal(.==2, w, fun=sum))
+    rr_focal_tblbare <- map(rr_focalbare, conv_tbl, newname="prop_bare_nbrs", rescale=8)
+    rr_focal_tblbare1=rr_focal_tblbare[-length(rr_focal_tblbare)]
+    
     ## table(xx$prop_build_nbrs)
     ## xx <- rr_focal_tblbuild1[["2014"]]
     rr_points6 <- map2(rr_points5, rr_focal_tblbuild1, ~ full_join(.x, .y, by=c("x","y")))
@@ -254,11 +257,12 @@ if (file.exists("rr_points13.RData")) {
     rr_points8 <- map2(rr_points7, rr_focal_tblriveg1, ~ full_join(.x,.y, by=c("x","y")))
     rr_points9 <- map2(rr_points8, rr_focal_tblset1, ~ full_join(.x,.y, by=c("x","y")))
     rr_points10 <- map2(rr_points9, rr_focal_tblagri1, ~ full_join(.x,.y, by=c("x","y")))
-
+    
     ## combine climate data (loaded them in from climate.RData)
     rr_points11 <- map2(rr_points10, pr_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
     rr_points12 <- map2(rr_points11, at_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
     rr_points13 <- map2(rr_points12, ws_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
+    
 
     save("rr_points13",file="rr_points13.RData")
 }
@@ -284,6 +288,7 @@ summary(logistgain)
 
 ## list of all files after using run_logist_regression
 ## do all fits at once
+##H-P: an error when it run for 2014 :Error in family$linkfun(mustart) : Argument mu must be a nonempty numeric vector 
 logist_list <- map(rr_points13, run_logist_regression) 
 
 ## draw the plots
@@ -561,7 +566,7 @@ hoslem.test(Num_gai_quadS, fitted(extract2), g=10)
 library(caTools)
 
 ## get 2014 data, drop NA values
-a <- na.omit(rr_points13[["2014"]])
+a <- na.omit(rr_points13[["2008"]])
  ## how big is it?
 nrow(a) 
 
@@ -581,7 +586,7 @@ test <- subset(a2, sample == FALSE)
 library(randomForest)
 
 ## do.trace=1 means 'print out information for every tree
-##if consider change as factor the output type will be classification if consider without factor the conf matrix doesnt work but out put wii be regression
+##H-P:if consider change as factor the output type will be classification if consider without factor the conf matrix doesnt work but out put wii be regression
 rf <- randomForest(formula=  change ~ . - x - y , data = train, do.trace=1, type=regression, proximity=TRUE)
 rf <- randomForest(formula= factor(change) ~ . - x - y , data = train, do.trace=1, type=regression, proximity=TRUE)
 plot(rf)
@@ -616,36 +621,36 @@ sqrt(rf$mse[which.min(rf$mse)])
 glm <- run_logist_regression(rr_points13[["2014"]])
 data <- rr_points13[["2014"]]
 datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
-## Construct weights matrix in weights list form using the 10 nearest neighbors
-library(spdep)
 
+library(spdep)
 ## test with smaller data set
-testdat <- filter(rr_points13[["2014"]],
+testdat <- filter(rr_points14[["2008"]],
                   x<600000 & y >284000 &  y < 2846000)
 
 ## get only the points that are being used in the analysis
 ## (e.g. for "gain" regression, only points that start as non-erg)
 ## and make sure to drop NA values, so that the length matches the
-## length of the logistic fit residuals
-testdat2 <- na.omit(get_logist_data(testdat, scale=TRUE, direction="gain"))
+## length of the logistic fit res## POSSIBLE solution to spatial autocorrelation: aggregate the data set to
+##  a larger scale (i.e. go back to the rasters and compute fraction erg)iduals
+
 testglm <- run_logist_regression(testdat)
-testpoint <- SpatialPointsDataFrame(cbind(testdat2$x, testdat2$y), testdat2)
-lstw  <- nb2listw(knn2nb(knearneigh(testpoint, k = 10)))
 ## now run the Moran test
+## Construct weights matrix in weights list form using the 10 nearest neighbors
+lstw  <- nb2listw(knn2nb(knearneigh(testpoint, k = 10)))
 moran.test(residuals(testglm), lstw)
 
-## POSSIBLE solution to spatial autocorrelation: aggregate the data set to
-##  a larger scale (i.e. go back to the rasters and compute fraction erg)
-
-
-cr <- colorRamp(c("blue", "red"))
+##Histogram
+testdat2 <- na.omit(get_logist_data(testdat, scale=TRUE, direction="gain"))
+testpoint <- SpatialPointsDataFrame(cbind(testdat2$x, testdat2$y), testdat2)
 res0 <- residuals(testglm,type="response")
 hist(res0)
 hist(predict(testglm))
 hist(predict(testglm,type="response"))
+
 ## scale residuals from 0 to 1 
 res <- scale(res0, center=min(res0), scale=diff(range(res0)))
 range(res)
+cr <- colorRamp(c("blue", "red"))
 plot(testpoint$x,testpoint$y,col=rgb(cr(res)/255),
      pch=16) ##,pch=".",cex=3)
 
@@ -666,10 +671,6 @@ ff_logist_quad_list_lost <- ff(map(rr_points13, run_logist_regression, poly_xy_d
 ff_logist_quad_listS <- ff(map(rr_points13, run_logist_regression, poly_xy_degree=2))
 ##Lost-scale=TRUE
 ff_logist_quad_list_lostS <- ff(map(rr_points13, run_logist_regression,poly_xy_degree=2,direction="loss"))
-
-
-
-
 
 ##EXAMPLE
 ## for val.prob
