@@ -290,6 +290,7 @@ summary(logistgain)
 ##H-P: an error when it run for 2014 :Error in family$linkfun(mustart) : Argument mu must be a nonempty numeric vector 
 logist_list <- map(rr_points13, run_logist_regression) 
 
+
 ## draw the plots
 ##dwplot is a function for quickly and easily generating plots of regression models
 if (FALSE) {
