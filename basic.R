@@ -285,6 +285,7 @@ logistlost <- run_logist_regression(direction="loss")
 ##   So we have to do confint(), and wait for it to finish ...
 summary(logistgain)
 
+
 ## list of all files after using run_logist_regression
 ## do all fits at once
 ##H-P: an error when it run for 2014 :Error in family$linkfun(mustart) : Argument mu must be a nonempty numeric vector 
