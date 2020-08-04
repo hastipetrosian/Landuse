@@ -245,3 +245,11 @@ ss <- DHARMa::simulateResiduals(m)
 ```
 
 * support request from ecocloud: is this still supported? slow ...
+
+
+## August 4
+
+* figure out x-coordinate for 2014 land use raster: why are the x coordinates mismatched with the DEM and with the rest of the land use rasters?
+* reconcile our use of "downwind" and "upwind" so that we are speaking the same language ...
+
+* (BMB) think about incorporating interaction between wind direction and land use in the model ...

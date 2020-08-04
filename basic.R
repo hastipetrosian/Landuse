@@ -1,5 +1,5 @@
-## increse memory
-memory.limit(500000)
+## increase memory
+if (.Platform$OS.type=="windows") memory.limit(500000)
 
 library(sf)
 library(rgeos)
@@ -96,6 +96,8 @@ if (file.exists("rr_points13.RData")) {
     ## https://gis.stackexchange.com/questions/154276/reprojecting-raster-from-lat-lon-to-utm-in-r
     ## dem_reproj <- projectRaster(dem, crs=crs(rr_list[[1]]))
     ##change project system of dem to landuse raster 1987
+    crs(rr_list[[1]])
+    lapply(rr_list, crs) ## check coord systems for all land-use maps
     demR <- projectRaster(dem, rr_list[[1]])
 
     ## for finding max and min x and y
@@ -267,10 +269,57 @@ if (file.exists("rr_points13.RData")) {
     save("rr_points13",file="rr_points13.RData")
 }
 
+if (FALSE) {
+    str(rr_points13[["2014"]])
+    str(rr_points12[["2014"]])
+    str(rr_points12[["2014"]])
+    ## default is gain
+    ##without direction
 
-## default is gain
-##without direction
-logistgain <- run_logist_regression() 
+    ## debugging
+    summary(rr_points13[["2014"]][c("x","y")])
+
+    xysum <- function(dd1,dd2) {
+        c(length(intersect(dd1$x,dd2$x)),
+          length(intersect(dd1$y,dd2$y)))
+    }
+    xysum(comb_terrain,rr_tbl[[1]])
+    xysum(rr_tbl[[1]],rr_tbl[[2]])
+    xysum(rr_tbl[["1987"]],rr_tbl[["2014"]])
+    xysum(comb_terrain, rr_tbl[["2014"]])
+    xysum(rr_tbl[["1987"]],rr_tbl[["2018"]])
+    xysum(rr_tbl[["1987"]],rr_tbl[["2008"]])
+
+    head(sort(unique(rr_tbl[["2014"]]$x)))
+    head(sort(unique(rr_tbl[["2018"]]$x)))
+    head(sort(unique(comb_terrain$x)))
+    
+    rr_list[["1987"]]
+    rr_list[["2014"]]
+
+    summary(comb_terrain[c("x","y")])
+ ##       x                y          
+ ## Min.   :592356   Min.   :2827279  
+ ## 1st Qu.:608506   1st Qu.:2834879  
+ ## Median :616206   Median :2840379  
+ ## Mean   :616041   Mean   :2840359  
+ ## 3rd Qu.:623856   3rd Qu.:2845529  
+ ## Max.   :636706   Max.   :2857829  
+    summary(rr_tbl[[1]][c("x","y")])
+
+    debug(run_logist_regression)
+    logistgain <- run_logist_regression()
+    dd <- rr_points13[["2014"]]
+    debug(get_logist_data)
+    table(dd$change, useNA="always")
+    get_logist_data(dd, scale=FALSE, direction="gain")
+
+    nrow(dd %>% drop_na(slope))
+}
+
+## we do have lots of 0 and 1 values (which are
+## not-erg -> not-erg  and not-erg -> erg)
+
 
 ##loss
 logistlost <- run_logist_regression(direction="loss")
