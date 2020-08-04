@@ -285,7 +285,6 @@ logistlost <- run_logist_regression(direction="loss")
 ##   So we have to do confint(), and wait for it to finish ...
 summary(logistgain)
 
-
 ## list of all files after using run_logist_regression
 ## do all fits at once
 ##H-P: an error when it run for 2014 :Error in family$linkfun(mustart) : Argument mu must be a nonempty numeric vector 
@@ -293,7 +292,6 @@ logist_list <- map(rr_points13, run_logist_regression)
 
 ## draw the plots
 ##dwplot is a function for quickly and easily generating plots of regression models
-
 if (FALSE) {
     plot1 <- dwplot(logist_list)
 
