@@ -565,7 +565,7 @@ hoslem.test(Num_gai_quadS, fitted(extract2), g=10)
 library(caTools)
 
 ## get 2014 data, drop NA values
-a <- na.omit(rr_points13[["2008"]])
+a <- na.omit(rr_points13[["2014"]])
  ## how big is it?
 nrow(a) 
 
@@ -623,7 +623,7 @@ datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
 
 library(spdep)
 ## test with smaller data set
-testdat <- filter(rr_points14[["2008"]],
+testdat <- filter(rr_points13[["2014"]],
                   x<600000 & y >284000 &  y < 2846000)
 
 ## get only the points that are being used in the analysis
