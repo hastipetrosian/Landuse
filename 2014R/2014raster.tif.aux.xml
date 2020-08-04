@@ -1,5 +1,7 @@
 <PAMDataset>
-  <Metadata />
+  <Metadata>
+    <MDI key="DataType">Thematic</MDI>
+  </Metadata>
   <Metadata domain="Esri">
     <MDI key="PyramidResamplingType">NEAREST</MDI>
   </Metadata>
