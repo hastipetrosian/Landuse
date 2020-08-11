@@ -253,3 +253,10 @@ ss <- DHARMa::simulateResiduals(m)
 * reconcile our use of "downwind" and "upwind" so that we are speaking the same language ...
 
 * (BMB) think about incorporating interaction between wind direction and land use in the model ...
+
+## August 11
+
+* play around with the wind direction stuff; decide how big you want to make your focal window (bigger=slower; loses resolution)
+* figure out the appropriate wind direction to encode
+
+URL: https://github.com/hastipetrosian/Landuse.git
