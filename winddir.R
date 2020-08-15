@@ -38,13 +38,21 @@ plot(rr_list[[1]])
 n <- 25  ## window size: helps if n is odd
 r <- 5  ## 'range': larger value means we have longer-range influence
 kappa <- 3  ## concentration parameter: larger means more focused
+##example winddire=-45
 winddir <- -pi/4     ## wind direction
 winddir_angle <- 315
 
 w <- matrix(1, nrow=n, ncol=n)
+
+##ceiling=midle number
+## test that center (focal) cell doesn't count!
+##make a matrix just with 
 mid <- ceiling(n/2)
-w[mid,mid] <- 0   ## center (focal) cell doesn't count!
+w[mid,mid] <- 0 
+
+##make an image
 image(1:n,1:n,w)
+
 ## cartesian coordinates
 x <- row(w)-mid
 y <- col(w)-mid
@@ -52,6 +60,7 @@ image(x)
 image(y)
 d <- sqrt(x^2+y^2) ## distance from the focal cell
 image(d)
+##e^(-d/r)
 d2 <- exp(-d/r)
 image(d2)
 persp(d2)
@@ -59,7 +68,8 @@ d2[mid,mid] <- 0 ## don't count the focal pixel
 rgl::persp3d(d2,col="gray")
 
 ##  now think about direction
-
+##function returns the radian arctangent between the x-axis and the vector from the origin to 
+##atan2=arc tangent 
 dir <- atan2(y,x) ## converts from x and y to radian
 image(dir)  ## WATCH OUT FOR ORIENTATION!
 
