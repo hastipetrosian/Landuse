@@ -38,10 +38,12 @@ plot(rr_list[[1]])
 n <- 25  ## window size: helps if n is odd
 r <- 5  ## 'range': larger value means we have longer-range influence
 kappa <- 3  ## concentration parameter: larger means more focused
-##example winddire=-45
-winddir <- -pi/4     ## wind direction
-winddir_angle <- 315
 
+##example winddirection=-45
+winddir <- pi/4     ## wind direction
+winddir_angle <- 45
+
+##data=1
 w <- matrix(1, nrow=n, ncol=n)
 
 ##ceiling=midle number
@@ -58,9 +60,12 @@ x <- row(w)-mid
 y <- col(w)-mid
 image(x)
 image(y)
+
 d <- sqrt(x^2+y^2) ## distance from the focal cell
 image(d)
+
 ##e^(-d/r)
+r=10
 d2 <- exp(-d/r)
 image(d2)
 persp(d2)
@@ -69,32 +74,37 @@ rgl::persp3d(d2,col="gray")
 
 ##  now think about direction
 ##function returns the radian arctangent between the x-axis and the vector from the origin to 
-##atan2=arc tangent 
-dir <- atan2(y,x) ## converts from x and y to radian
+##atan2=arc tangent
+## converts from x and y to radian 
+dir <- atan2(y,x) 
 image(dir)  ## WATCH OUT FOR ORIENTATION!
 
 circular(winddir)  ## uses radians by default (multiples of pi)
 circular(180,units="degrees")
+
 ## von Mises distribution (Wikipedia)
 dir2 <- dvonmises(circular(dir),      ## direction matrix we calculated (converted to 'circular' object)
                   mu=circular(winddir),  ## primary direction: this should be direction of the wind
-                                      ## right now it's north
+                                      ## right now it's south easth
                   kappa=kappa)            ## 'concentration' parameter: 0 = no directional bias
                                       ## large values = strong directional bias
 image(dir2)
 image(Matrix(dir2))
 rgl::persp3d(dir2,col="gray")
-
-comb <- dir2*d2  ## multiply direction and distance effects: this is what we want to use for focal()
+## multiply direction and distance effects: this is what we want to use for focal()
+comb <- dir2*d2  
 image(Matrix(comb))
 persp(comb)
 comb[mid,mid] <- 0 ## don't count focal cell
+rgl::persp3d(comb,col="gray")
+image(comb)
 
+##use comb in 1987
 plot(rr_list[[1]])
 is_erg <- rr_list[[1]]==3  ## 
 plot(is_erg)
 rr_focalex <- focal(is_erg, comb, fun=mean)
-rr_focalex <- focal(rr_list[[1]]==3, comb, fun=mean)
+rr_focalex <- focal(rr_list[[1]]==7, comb, fun=mean)
 
 plot(rr_focalex)
 
