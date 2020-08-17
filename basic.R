@@ -672,7 +672,7 @@ datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
 
 library(spdep)
 ## test with smaller data set
-testdat <- filter(rr_points14[["2014"]],
+testdat <- filter(rr_points14[["1987"]],
                   x<600000 & y >284000 &  y < 2846000)
 
 ## get only the points that are being used in the analysis
