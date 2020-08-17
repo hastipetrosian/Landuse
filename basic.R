@@ -172,7 +172,7 @@ if (file.exists("rr_points13.RData")) {
 
     w <- matrix(1, nrow=3, ncol=3)
     w[2,2] <- 0   ## center cell doesn't count!
-    rr_focal <- map(rr_list, ~ focal(.==3, w, sum))
+    rr_focal <- map(rr_list, ~ focal(.==3, comb, sum))
 
     levelplot(rr_focal[[1]])
 
@@ -222,33 +222,33 @@ if (file.exists("rr_points13.RData")) {
     rr_points5 <- map2(rr_points4, rr_change_tbl, ~full_join(.x, .y, by=c("x","y")))
 
     ##buildup area
-    rr_focalbuild=map(rr_list,~ focal(.==12, w, fun=sum))
+    rr_focalbuild=map(rr_list,~ focal(.==12, comb, fun=sum))
     rr_focal_tblbuild <- map(rr_focalbuild, conv_tbl, newname="prop_build_nbrs", rescale=8)
     ## we don't need the last one (because there's no change to compare it to)
     rr_focal_tblbuild1 <- rr_focal_tblbuild[-length(rr_focal_tblbuild)]
 
     ##vegetation
-    rr_focalveg=map(rr_list,~ focal(.==10, w, fun=sum))
+    rr_focalveg=map(rr_list,~ focal(.==10, comb, fun=sum))
     rr_focal_tblveg <- map(rr_focalveg, conv_tbl, newname="prop_veg_nbrs", rescale=8)
     rr_focal_tblveg1=rr_focal_tblveg[-length(rr_focal_tblveg)]
 
     ##river bed vegetation
-    rr_focalriveg=map(rr_list,~ focal(.==7, w, fun=sum))
+    rr_focalriveg=map(rr_list,~ focal(.==7, comb, fun=sum))
     rr_focal_tblriveg <- map(rr_focalriveg, conv_tbl, newname="prop_riveg_nbrs", rescale=8)
     rr_focal_tblriveg1=rr_focal_tblriveg[-length(rr_focal_tblriveg)]
 
     ##settlement
-    rr_focalset=map(rr_list,~ focal(.==9, w, fun=sum))
+    rr_focalset=map(rr_list,~ focal(.==9, comb, fun=sum))
     rr_focal_tblset <- map(rr_focalset, conv_tbl, newname="prop_settle_nbrs", rescale=8)
     rr_focal_tblset1=rr_focal_tblset[-length(rr_focal_tblset)]
 
     ##agriculture
-    rr_focalagri=map(rr_list,~ focal(.==1, w, fun=sum))
+    rr_focalagri=map(rr_list,~ focal(.==1, comb, fun=sum))
     rr_focal_tblagri <- map(rr_focalagri, conv_tbl, newname="prop_agri_nbrs", rescale=8)
     rr_focal_tblagri1=rr_focal_tblagri[-length(rr_focal_tblagri)]
 
     ##bareland
-    rr_focalbare=map(rr_list,~ focal(.==2, w, fun=sum))
+    rr_focalbare=map(rr_list,~ focal(.==2, comb, fun=sum))
     rr_focal_tblbare <- map(rr_focalbare, conv_tbl, newname="prop_bare_nbrs", rescale=8)
     rr_focal_tblbare1=rr_focal_tblbare[-length(rr_focal_tblbare)]
     
@@ -264,7 +264,7 @@ if (file.exists("rr_points13.RData")) {
     rr_points11 <- map2(rr_points10, pr_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
     rr_points12 <- map2(rr_points11, at_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
     rr_points13 <- map2(rr_points12, ws_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
-    
+    rr_points14 <- map2(rr_points13, rr_focal_tblbare1, ~ full_join(.x,.y, by=c("x","y")))
 
     save("rr_points13",file="rr_points13.RData")
 }
@@ -614,7 +614,7 @@ hoslem.test(Num_gai_quadS, fitted(extract2), g=10)
 library(caTools)
 
 ## get 2014 data, drop NA values
-a <- na.omit(rr_points13[["2014"]])
+a <- na.omit(rr_points14[["2014"]])
  ## how big is it?
 nrow(a) 
 
@@ -672,7 +672,7 @@ datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
 
 library(spdep)
 ## test with smaller data set
-testdat <- filter(rr_points13[["2014"]],
+testdat <- filter(rr_points14[["2014"]],
                   x<600000 & y >284000 &  y < 2846000)
 
 ## get only the points that are being used in the analysis
