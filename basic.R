@@ -49,9 +49,9 @@ source("functions.R")
 ## get climate data
 load("climate.RData") ## get climate data
 
-##Load rr_point13 first
-if (file.exists("rr_points13.RData")) {
-  load("rr_points13.RData")
+##Load rr_point14 first
+if (file.exists("rr_points14.RData")) {
+  load("rr_points14.RData")
 } else {
 
     ## all shape files(vectors):s
@@ -266,7 +266,7 @@ if (file.exists("rr_points13.RData")) {
     rr_points13 <- map2(rr_points12, ws_change_tbl, ~ full_join(.x,.y, by=c("x","y")))
     rr_points14 <- map2(rr_points13, rr_focal_tblbare1, ~ full_join(.x,.y, by=c("x","y")))
 
-    save("rr_points13",file="rr_points13.RData")
+    save("rr_points14",file="rr_points14.RData")
 }
 
 if (FALSE) {
