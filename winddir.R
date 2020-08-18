@@ -3,7 +3,7 @@
 library(tidyverse)
 library(raster)
 library(circular)
-library(rgl)
+## library(rgl)
 library(Matrix)
 source("functions.R")
 
@@ -71,7 +71,7 @@ d2 <- exp(-d/r)
 image(d2)
 persp(d2)
 d2[mid,mid] <- 0 ## don't count the focal pixel
-rgl::persp3d(d2,col="gray")
+## rgl::persp3d(d2,col="gray")
 
 ##  now think about direction
 ##function returns the radian arctangent between the x-axis and the vector from the origin to 
@@ -91,13 +91,13 @@ dir2 <- dvonmises(circular(dir),      ## direction matrix we calculated (convert
                                       ## large values = strong directional bias
 image(dir2)
 image(Matrix(dir2))
-rgl::persp3d(dir2,col="gray")
+## rgl::persp3d(dir2,col="gray")
 ## multiply direction and distance effects: this is what we want to use for focal()
 comb <- dir2*d2  
 image(Matrix(comb))
 persp(comb)
 comb[mid,mid] <- 0 ## don't count focal cell
-rgl::persp3d(comb,col="gray")
+## rgl::persp3d(comb,col="gray")
 image(comb)
 
 ##use comb in 1987
@@ -114,6 +114,4 @@ plot(rr_focalex)
 ##  apply to all rasters, then converting to a table, then joining all the tables together ...)
 
 
-
-
-
+save("comb",file="winddir_out.rda")
