@@ -260,3 +260,19 @@ ss <- DHARMa::simulateResiduals(m)
 * figure out the appropriate wind direction to encode
 
 URL: https://github.com/hastipetrosian/Landuse.git
+
+## August 18
+
+* BMB: think about computational resources!
+* HP: zoom in on the region that seems to be giving odd predictions
+* use `predict(model, type="terms")`: this will give a matrix with columns for each predictor variable and how much it contributes to the predicted outcome at the point
+
+```
+set.seed(101)
+dd <- data.frame(z=rbinom(10,size=1,prob=0.5),y=rnorm(10),x=rnorm(10))
+m <- glm(z~y+x, data=dd,family=binomial)
+## compare effects of individual terms
+## total = intercept + sum of all terms
+## prob = convert total (which is on the log-odds scale) to probability
+cbind(predict(m,type="terms"), total=predict(m), prob=predict(m,type="response"))
+```
