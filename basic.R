@@ -48,6 +48,7 @@ source("functions.R")
 
 ## get climate data
 load("climate.RData") ## get climate data
+load("winddir_out.rda") ## get winddir matrix ('comb')
 
 ##Load rr_point14 first
 if (file.exists("rr_points14.RData")) {
