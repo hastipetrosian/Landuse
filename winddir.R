@@ -36,8 +36,9 @@ plot(rr_list[[1]])
 
 ## definitions
 n <- 25  ## window size: helps if n is odd
-r <- 5  ## 'range': larger value means we have longer-range influence
-kappa <- 3  ## concentration parameter: larger means more focused
+## 'range': larger value means we have longer-range influence
+r <- 35 
+kappa <- 20  ## concentration parameter: larger means more focused
 
 ##example winddirection=-45
 winddir <- pi/4     ## wind direction
@@ -65,7 +66,7 @@ d <- sqrt(x^2+y^2) ## distance from the focal cell
 image(d)
 
 ##e^(-d/r)
-r=10
+r=20
 d2 <- exp(-d/r)
 image(d2)
 persp(d2)
@@ -104,7 +105,7 @@ plot(rr_list[[1]])
 is_erg <- rr_list[[1]]==3  ## 
 plot(is_erg)
 rr_focalex <- focal(is_erg, comb, fun=mean)
-rr_focalex <- focal(rr_list[[1]]==7, comb, fun=mean)
+rr_focalex <- focal(rr_list[[1]]==3, comb, fun=sum)
 
 plot(rr_focalex)
 

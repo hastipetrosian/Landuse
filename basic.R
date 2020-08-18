@@ -62,7 +62,7 @@ if (file.exists("rr_points13.RData")) {
 
     ## set up a 3x3 grid of plots
     ## (3 rows, 3 columns)
-    op <- par(mfrow=c(3,3))  
+    op <- par(mfrow=c(1,1))  
 
     ## draw all of the vector maps
     map(dd_list,~ plot(.["descrip"],key.pos=NULL,reset=FALSE))
@@ -412,7 +412,7 @@ summary(logistgain_quadraticS)
 tidy(logistgain_quadraticS)
 
 #logistic quadratic for all maps (scale=true)
-logist_quad_listS <- map(rr_points13, ~run_logist_regression(., poly_xy_degree=2,scale = TRUE))
+logist_quad_listS <- map(rr_points14, ~run_logist_regression(., poly_xy_degree=2,scale = TRUE))
 tidy_quad_listS <-map_dfr(logist_quad_listS, tidy, conf.int=TRUE, .id="year")
 ## LARGE: 600M or so
 ##save seperatly
@@ -666,13 +666,13 @@ sqrt(rf$mse[which.min(rf$mse)])
 ##spatial autocorelation,Morans I Index
 ##Convert data to spatial points dataframe
 ## https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
-glm <- run_logist_regression(rr_points13[["2014"]])
-data <- rr_points13[["2014"]]
+glm <- run_logist_regression(rr_points14[["2003"]])
+data <- rr_points14[["1987"]]
 datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
 
 library(spdep)
 ## test with smaller data set
-testdat <- filter(rr_points14[["1987"]],
+testdat <- filter(rr_points14[["2008"]],
                   x<600000 & y >284000 &  y < 2846000)
 
 ## get only the points that are being used in the analysis

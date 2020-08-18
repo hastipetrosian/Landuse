@@ -74,7 +74,7 @@ safe_tidy <- function(x) {
     
 ## running everything for one set of changes
 
-get_logist_data <- function(dd=rr_points13[["2014"]],
+get_logist_data <- function(dd=rr_points14[["2014"]],
                             scale=FALSE,
                             direction="gain") {
     dd <- (dd
@@ -125,7 +125,7 @@ get_logist_data <- function(dd=rr_points13[["2014"]],
     return(dd_change)
 }
 ##autologistic=TRUE
-run_logist_regression <- function(dd=rr_points13[["2014"]],
+run_logist_regression <- function(dd=rr_points14[["2014"]],
                                   scale=FALSE,
                                   poly_xy_degree=NA,
                                   direction="gain",
