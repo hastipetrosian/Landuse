@@ -673,8 +673,8 @@ datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
 
 library(spdep)
 ## test with smaller data set
-testdat <- filter(rr_points14[["2008"]],
-                  x<600000 & y >284000 &  y < 2846000)
+testdat <- filter(rr_points14[["2014"]],
+                  x<620000 & y >284000 &  y < 2846000)
 
 ## get only the points that are being used in the analysis
 ## (e.g. for "gain" regression, only points that start as non-erg)
@@ -690,7 +690,7 @@ moran.test(residuals(testglm), lstw)
 
 ##Histogram
 testdat2 <- na.omit(get_logist_data(testdat, scale=TRUE, direction="gain"))
-testpoint <- SpatialPointsDataFrame(cbind(testdat2$x, testdat2$y), testdat2)
+testestpoint <- SpatialPointsDataFrame(cbind(testdat2$x, testdat2$y), testdat2)
 res0 <- residuals(testglm,type="response")
 hist(res0)
 hist(predict(testglm))
@@ -776,4 +776,10 @@ S3=createDHARMa(simulatedResponse = S2,
                 integerResponse = TRUE)
 ## same problem
 
-
+set.seed(101)
+dd <- data.frame(z=rbinom(10,size=1,prob=0.5),y=rnorm(10),x=rnorm(10))
+m <- glm(z~y+x, data=dd,family=binomial)
+## compare effects of individual terms
+## total = intercept + sum of all terms
+## prob = convert total (which is on the log-odds scale) to probability
+cbind(predict(testglm,type="terms"), total=predict(testglm), prob=predict(testglm,type="response"))
