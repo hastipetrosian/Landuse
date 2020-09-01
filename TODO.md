@@ -276,3 +276,30 @@ m <- glm(z~y+x, data=dd,family=binomial)
 ## prob = convert total (which is on the log-odds scale) to probability
 cbind(predict(m,type="terms"), total=predict(m), prob=predict(m,type="response"))
 ```
+
+## September 1
+
+- random forest stuff:
+   - we want to analyze gain and loss separately??
+   - probably want do classification ...
+   - the error rates are very different for common and rare categories ...
+   - balancing the data set?? when is unbalanced data actually a problem?
+       * (1) when your data is so big that you can't handle it, and most of your data is boring because it's the overrepresented group : ?? *downsample* the overrepresented group (i.e., throw out most of the no-change data points) This is throwing away data, so it's not really worthwhile unless you can't do the computations you want with the full data set
+	   * (2) if the way you're fitting is trying to minimize classification error but weights misclassification of common and rare categories the same. Read about this: is there a way to tell the RF program what it should be trying to optimize?  (People sometimes *upsample* the rare categories) What "loss function" is it using? (The loss function is the measurement of error that we're trying to minimize ... [unweighted classification error, AUC, negative log-likelihood, etc.]
+   
+Learn about block cross-validation for spatial problems: is there a way to do random forests with appropriate spatial resampling?
+
+* Roberts, David R., Volker Bahn, Simone Ciuti, Mark S. Boyce, Jane Elith, Gurutzeta Guillera-Arroita, Severin Hauenstein, et al. “Cross-Validation Strategies for Data with Temporal, Spatial, Hierarchical, or Phylogenetic Structure.” Ecography, December 1, 2016, n/a-n/a. https://doi.org/10.1111/ecog.02881.
+
+```
+library(sos)  ## install this first
+findFn("block validation spatial")
+```
+`blockCV` package 
+   
+   
+
+**BMB**: figure out why predictions of training sets have gaps??
+   
+
+
