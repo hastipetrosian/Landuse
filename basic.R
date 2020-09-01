@@ -615,12 +615,12 @@ hoslem.test(Num_gai_quadS, fitted(extract2), g=10)
 library(caTools)
 
 ## get 2014 data, drop NA values
-a <- na.omit(rr_points14[["2014"]])
+a <- na.omit(rr_points14[["2008"]])
  ## how big is it?
 nrow(a) 
 
 ## too big: let's just select the western tip of the study area
-a2 <- filter(a,x<600000 & y >284000 &  y < 2846000)
+a2 <- filter(a,x<604000 & y >284000 &  y < 2846000)
 ## much smaller
 nrow(a2) 
 
@@ -639,6 +639,7 @@ library(randomForest)
 rf <- randomForest(formula=  change ~ . - x - y , data = train, do.trace=1, type=regression, proximity=TRUE)
 rf <- randomForest(formula= factor(change) ~ . - x - y , data = train, do.trace=1, type=regression, proximity=TRUE)
 plot(rf)
+plot(rf$predicted)
 pred <- predict(rf, newdata=test)
 
 library(caret)
@@ -656,11 +657,16 @@ save("rf_fit",  file="saved_rf_fit.RData")
 ## importance of each predictor
 importance(rf)
 
-# number of trees with lowest MSE
+# number of trees with lowest MSE.MSE=mean square errors: sum of squared residuals divided by n
+MSE=rf$mse
 which.min(rf$mse)
 
 # RMSE (Root Mean Square Error)of this optimal random forest
 sqrt(rf$mse[which.min(rf$mse)])
+testpoint <- SpatialPointsDataFrame(cbind(a2$x, a2$y), a2)
+plot(testpoint$x,testpoint$y,col=rgb(cr(res)/255),
+     pch=16) ##,pch=".",cex=3)
+
 
 ##mtry: Number of variables randomly sampled as candidates at each split
 
@@ -673,8 +679,8 @@ datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
 
 library(spdep)
 ## test with smaller data set
-testdat <- filter(rr_points14[["2014"]],
-                  x<620000 & y >284000 &  y < 2846000)
+testdat <- filter(rr_points14[["2008"]],
+                  x<604000 & y >284000 &  y < 2846000)
 
 ## get only the points that are being used in the analysis
 ## (e.g. for "gain" regression, only points that start as non-erg)
@@ -690,7 +696,7 @@ moran.test(residuals(testglm), lstw)
 
 ##Histogram
 testdat2 <- na.omit(get_logist_data(testdat, scale=TRUE, direction="gain"))
-testestpoint <- SpatialPointsDataFrame(cbind(testdat2$x, testdat2$y), testdat2)
+testpoint <- SpatialPointsDataFrame(cbind(testdat2$x, testdat2$y), testdat2)
 res0 <- residuals(testglm,type="response")
 hist(res0)
 hist(predict(testglm))
