@@ -636,8 +636,38 @@ library(randomForest)
 
 ## do.trace=1 means 'print out information for every tree
 ##H-P:if consider change as factor the output type will be classification if consider without factor the conf matrix doesnt work but out put wii be regression
-rf <- randomForest(formula=  change ~ . - x - y , data = train, do.trace=1, type=regression, proximity=TRUE)
-rf <- randomForest(formula= factor(change) ~ . - x - y , data = train, do.trace=1, type=regression, proximity=TRUE)
+
+## REGRESSION: trying to predict {0,1,2,3} [change values]
+## this doesn't make sense because
+## 0: not-erg before and after (no gain)
+## 1: not-erg before, erg after (gain)
+## 2: erg before, not-erg after (loss)
+## 3: erg before and after (no loss)
+##
+## regression might make sense if we treated gain {0,1} and loss {2,3}
+## separately. BUT: classification probably still makes more sense, because
+## a regression framework assumes equal change  in the output variable for
+## the same amount of change in the input variable
+## suppose we have a place that's very unlikely to gain erg (i.e. the prediction
+## is close to 0), and we increase some input value that makes gain more likely
+## (e.g. we increase the amount of nearby erg, or upwind erg, or ...)
+## then we expect a big change in the output variable (from say 0.01 to 0.5)
+## but if we have a place that's *likely* to gain erg (the prediction is already
+## close to 1), then it doesn't make sense to increase the prediction by the
+## same amount, because a prediction >1 doesn't really make  sense
+## ... this is why we usually use logistic regression rather than linear
+## regression for binary responses
+## which is a long-winded way of saying we should probably do classification
+## instead
+
+rf <- randomForest(formula=  change ~ . - x - y ,
+                   data = train, do.trace=1,
+                   type=regression, proximity=TRUE)
+
+rf <- randomForest(formula= factor(change) ~ . - x - y ,
+                   data = train, do.trace=1,
+                   type=regression, proximity=TRUE)
+save("rf",file="rf.RData")
 plot(rf)
 plot(rf$predicted)
 pred <- predict(rf, newdata=test)
@@ -660,12 +690,37 @@ importance(rf)
 # number of trees with lowest MSE.MSE=mean square errors: sum of squared residuals divided by n
 MSE=rf$mse
 which.min(rf$mse)
+<<<<<<< HEAD
+=======
+
+## rf$votes is the number of votes for each category
+##  for each data point, calculate the proportion of
+##  trees that got the right answer
+mm <- match(train$change,0:3) ## which column matches?
+## this gives us the column number we want in each row
+correct_prop <- rf$votes[cbind(seq(nrow(rf$votes)), mm)]
+
+any(is.na(correct_prop)) ## no missing values
+any(is.na(cr(correct_prop))) ## no missing values
+rr <- rgb(cr(correct_prop)/255) ## no missing values
+any(is.na(rr))
+
+testpoint <- SpatialPointsDataFrame(cbind(train$x, train$y), train)
+plot(testpoint$x,testpoint$y,col=rgb(cr(correct_prop)/255),
+     pch=16) ##,pch=".",cex=3)
+points(test$x,test$y,pch=".")
+
+head(rf$votes)
+head(a2$change)
+npts <- nrow(rf$votes)
+
+
+>>>>>>> fb5ea6f32ecbe43e1d49fa64fa69d6ffbf62bc04
 # RMSE (Root Mean Square Error)of this optimal random forest
 sqrt(rf$mse[which.min(rf$mse)])
 testpoint <- SpatialPointsDataFrame(cbind(a2$x, a2$y), a2)
 plot(testpoint$x,testpoint$y,col=rgb(cr(res)/255),
      pch=16) ##,pch=".",cex=3)
-
 
 ##mtry: Number of variables randomly sampled as candidates at each split
 
@@ -691,7 +746,7 @@ testglm <- run_logist_regression(testdat)
 ## now run the Moran test
 ## Construct weights matrix in weights list form using the 10 nearest neighbors
 lstw  <- nb2listw(knn2nb(knearneigh(testpoint, k = 10)))
-moran.test(residuals(testglm), lstw)
+## moran.test(residuals(testglm), lstw)
 
 ##Histogram
 testdat2 <- na.omit(get_logist_data(testdat, scale=TRUE, direction="gain"))
