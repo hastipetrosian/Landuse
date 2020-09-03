@@ -660,7 +660,6 @@ importance(rf)
 # number of trees with lowest MSE.MSE=mean square errors: sum of squared residuals divided by n
 MSE=rf$mse
 which.min(rf$mse)
-
 # RMSE (Root Mean Square Error)of this optimal random forest
 sqrt(rf$mse[which.min(rf$mse)])
 testpoint <- SpatialPointsDataFrame(cbind(a2$x, a2$y), a2)
