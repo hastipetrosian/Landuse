@@ -308,10 +308,7 @@ if (FALSE) {
  ## Max.   :636706   Max.   :2857829  
     summary(rr_tbl[[1]][c("x","y")])
 
-    debug(run_logist_regression)
-    logistgain <- run_logist_regression()
     dd <- rr_points13[["2014"]]
-    debug(get_logist_data)
     table(dd$change, useNA="always")
     get_logist_data(dd, scale=FALSE, direction="gain")
 
@@ -324,6 +321,7 @@ if (FALSE) {
 
 ##loss
 logistlost <- run_logist_regression(direction="loss")
+logistgain <- run_logist_regression()
 
 ## glm.fit: fitted probabilities numerically 0 or 1 occurred
 ##  means we (probably) have *complete separation* (one variable completely explains everything)
@@ -337,8 +335,8 @@ summary(logistgain)
 
 ## list of all files after using run_logist_regression
 ## do all fits at once
-##H-P: an error when it run for 2014 :Error in family$linkfun(mustart) : Argument mu must be a nonempty numeric vector 
-logist_list <- map(rr_points13, run_logist_regression) 
+
+logist_list <- map(rr_points14, run_logist_regression) 
 
 
 ## draw the plots
@@ -402,7 +400,7 @@ save("logist_quad_list_lost", "tidy_quad_list_lost", file="saved_logist_fits2.RD
 
 ##Scale=TRUE
 ##quadratic list,Scale=TRUE
-##saved files seperately
+##saved files separately
 ##we could also add scale=TRUE to get the scaled version
 ##gain (2014)
 ## running with scale=TRUE takes a little longer
@@ -660,14 +658,14 @@ library(randomForest)
 ## which is a long-winded way of saying we should probably do classification
 ## instead
 
-rf <- randomForest(formula=  change ~ . - x - y ,
-                   data = train, do.trace=1,
-                   type=regression, proximity=TRUE)
-
-rf <- randomForest(formula= factor(change) ~ . - x - y ,
-                   data = train, do.trace=1,
-                   type=regression, proximity=TRUE)
-save("rf",file="rf.RData")
+if (file.exists("rf.RData")) {
+    load("rf.RData")
+} else {
+    rf <- randomForest(formula= factor(change) ~ . - x - y ,
+                       data = train, do.trace=1,
+                       type="classification", proximity=TRUE)
+    save("rf",file="rf.RData")
+}
 plot(rf)
 plot(rf$predicted)
 pred <- predict(rf, newdata=test)
@@ -690,8 +688,7 @@ importance(rf)
 # number of trees with lowest MSE.MSE=mean square errors: sum of squared residuals divided by n
 MSE=rf$mse
 which.min(rf$mse)
-<<<<<<< HEAD
-=======
+
 #cross validation
 library(rfUtilities)
 rf.crossValidation
@@ -717,7 +714,6 @@ head(a2$change)
 npts <- nrow(rf$votes)
 
 
->>>>>>> fb5ea6f32ecbe43e1d49fa64fa69d6ffbf62bc04
 # RMSE (Root Mean Square Error)of this optimal random forest
 sqrt(rf$mse[which.min(rf$mse)])
 testpoint <- SpatialPointsDataFrame(cbind(a2$x, a2$y), a2)
@@ -736,8 +732,10 @@ datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
 
 library(spdep)
 ## test with smaller data set
+plot(y~x,rr_points14[["2014"]],pch=".")
 testdat <- filter(rr_points14[["2014"]],
                   x<604000 & y >284000 &  y < 2846000)
+plot(y~x,testdat,pch=".")
 
 ## get only the points that are being used in the analysis
 ## (e.g. for "gain" regression, only points that start as non-erg)
@@ -753,6 +751,8 @@ lstw  <- nb2listw(knn2nb(knearneigh(testpoint, k = 10)))
 
 ##Histogram
 testdat2 <- na.omit(get_logist_data(testdat, scale=TRUE, direction="gain"))
+plot(y~x,testdat,pch=".")
+points(testdat2$x,testdat2$y,col=2)
 testpoint <- SpatialPointsDataFrame(cbind(testdat2$x, testdat2$y), testdat2)
 res0 <- residuals(testglm,type="response")
 hist(res0)
@@ -766,22 +766,36 @@ cr <- colorRamp(c("blue", "red"))
 plot(testpoint$x,testpoint$y,col=rgb(cr(res)/255),
      pch=16) ##,pch=".",cex=3)
 
+plot(testpoint$x,testpoint$y)
+
+plot(testpoint$x,testpoint$y,col=rgb(cr(res)/255),
+     pch=16) ##,pch=".",cex=3)
+
 
 ##downsample
 ##H-P:error The response variable must have 2 levels.
 library(ROSE)
 table(testdat$change)
-prop.table(x=table(testdat$change))
-ovun.sample(change~., data = testdat, method = "over")$data
-ovun.sample(change~., data = testdat, method = "under")$data
+testdat$change <- factor(testdat$change, levels=0:3,
+                         labels= c("no gain","gain","loss","no loss"))
 
+
+testdat$change2 <- factor(ifelse(testdat$change %in% c("no gain", "no loss"),
+                                 "no change", "change"))
+
+prop.table(x=table(testdat$change))
+prop.table(x=table(testdat$change2))
+ss <- ovun.sample(change2~., data = testdat, method = "over")$data
+ss2 <- ovun.sample(change2~., data = testdat, method = "under")$data
+
+## time series classification ???
 installed.packages("OSTSC")
-library("ostsc")
+library("OSTSC")
 testdatlabel=testdat$y
 testdatsample=testdat$x
 testdat2=OSTSC(testdatsample,testdatlabel,parallel = FALSE)
 
-installed.packages("groupdata2")
+install.packages("groupdata2")
 library(groupdata2)
-downsample(testdatf,cat_col = "change")
+ss3 <- downsample(testdat,cat_col = "change2")
 

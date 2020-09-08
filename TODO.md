@@ -297,9 +297,23 @@ findFn("block validation spatial")
 ```
 `blockCV` package 
    
-   
-
 **BMB**: figure out why predictions of training sets have gaps??
    
+## 8 September 
 
+- https://rspatial.org/raster/analysis/3-spauto.html
+- spdep package: `sp.correlogram` 
+- compute a spatial autocorrelation function for the residuals of the logistic regression; how far away do we have to go before residuals are (close enough to) independent?
+- find out about coastal management zone sub-regions; is there a good *ecologically relevant* way to split the data into 5-10 spatial subsets?
+- do spatial cross-validation (with whatever kind of spatial blocking you decide is best) to estimate out-of-sample error [fit the model to k-1 blocks (training set), estimate error in the left-out block (testing set)]: use AUC? 
 
+[NOT: Nagelkerke R^2? (`performance:r2_nagelkerke`)]
+[NOT: equally-weighted classification error]
+
+- concerns about up/downsampling:
+    - like everything else, up- and down-sampling usually assumes spatial independence???
+	- is it really necessary? (not for logistic regression)
+    - can we achieve the same goal by setting the `classwt` parameter?
+- read more about using random forest for spatial prediction problems?  How do we deal with spatial autocorrelation in this context??	
+
+**BMB**: figure out why predictions of training sets have gaps??
