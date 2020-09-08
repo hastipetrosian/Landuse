@@ -316,4 +316,8 @@ findFn("block validation spatial")
     - can we achieve the same goal by setting the `classwt` parameter?
 - read more about using random forest for spatial prediction problems?  How do we deal with spatial autocorrelation in this context??	
 
+https://msu.edu/~ashton/classes/866/notes/lect19/index.htm
+https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0229509
+https://github.com/thengl/GeoMLA
+
 **BMB**: figure out why predictions of training sets have gaps??
