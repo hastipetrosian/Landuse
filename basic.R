@@ -577,6 +577,7 @@ extra1 <- logist_quad_listS_extra[["2014"]]
 table(model.frame(extra1)$change)
 Num_gai_quadS=as.numeric(model.frame(extra1)$change)
 hoslem.test(Num_gai_quadS, fitted(extra1), g=10)
+
 ##plot
 binnedplot(fitted(extra1), 
              residuals(extra1, type = "response"), 
@@ -608,13 +609,53 @@ table(model.frame(extract2)$change)
 Num_gai_quadS=as.numeric(model.frame(extract2)$change)
 hoslem.test(Num_gai_quadS, fitted(extract2), g=10)
 
+##mtry: Number of variables randomly sampled as candidates at each split
+##spatial autocorelation,Morans I Index
+##Convert data to spatial points dataframe
+## https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
+glm <- run_logist_regression(rr_points14[["2003"]])
+data <- rr_points14[["1987"]]
+datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
+
+library(spdep)
+## test with smaller data set
+testdat <- filter(rr_points14[["2014"]],
+                  x<604000 & y >284000 &  y < 2846000)
+
+## get only the points that are being used in the analysis
+## (e.g. for "gain" regression, only points that start as non-erg)
+## and make sure to drop NA values, so that the length matches the
+## length of the logistic fit res## POSSIBLE solution to spatial autocorrelation: aggregate the data set to
+##  a larger scale (i.e. go back to the rasters and compute fraction erg)iduals
+
+testglm <- run_logist_regression(testdat)
+## now run the Moran test
+## Construct weights matrix in weights list form using the 10 nearest neighbors
+lstw  <- nb2listw(knn2nb(knearneigh(testpoint, k = 10)))
+## moran.test(residuals(testglm), lstw)
+
+##Histogram
+testdat2 <- na.omit(get_logist_data(testdat, scale=TRUE, direction="gain"))
+testpoint <- SpatialPointsDataFrame(cbind(testdat2$x, testdat2$y), testdat2)
+res0 <- residuals(testglm,type="response")
+hist(res0)
+hist(predict(testglm))
+hist(predict(testglm,type="response"))
+
+## scale residuals from 0 to 1 
+res <- scale(res0, center=min(res0), scale=diff(range(res0)))
+range(res)
+cr <- colorRamp(c("blue", "red"))
+plot(testpoint$x,testpoint$y,col=rgb(cr(res)/255),
+     pch=16) ##,pch=".",cex=3)
 
 ##randomforest
+library(randomForest)
 library(caTools)
 
 ## get 2014 data, drop NA values
 a <- na.omit(rr_points14[["2008"]])
- ## how big is it?
+## how big is it?
 nrow(a) 
 
 ## too big: let's just select the western tip of the study area
@@ -629,11 +670,6 @@ sample <- sample.split(a2$change, SplitRatio = 0.75)
 ##subset=take random samples from a dataset
 train <- subset(a2, sample == TRUE)
 test <- subset(a2, sample == FALSE)
-
-library(randomForest)
-
-## do.trace=1 means 'print out information for every tree
-##H-P:if consider change as factor the output type will be classification if consider without factor the conf matrix doesnt work but out put wii be regression
 
 ## REGRESSION: trying to predict {0,1,2,3} [change values]
 ## this doesn't make sense because
@@ -692,13 +728,13 @@ which.min(rf$mse)
 #cross validation
 library(rfUtilities)
 rf.crossValidation
+
 ## rf$votes is the number of votes for each category
 ##  for each data point, calculate the proportion of
 ##  trees that got the right answer
 mm <- match(train$change,0:3) ## which column matches?
 ## this gives us the column number we want in each row
 correct_prop <- rf$votes[cbind(seq(nrow(rf$votes)), mm)]
-
 any(is.na(correct_prop)) ## no missing values
 any(is.na(cr(correct_prop))) ## no missing values
 rr <- rgb(cr(correct_prop)/255) ## no missing values
@@ -771,9 +807,12 @@ plot(testpoint$x,testpoint$y)
 plot(testpoint$x,testpoint$y,col=rgb(cr(res)/255),
      pch=16) ##,pch=".",cex=3)
 
+## RMSE (Root Mean Square Error)of this optimal random forest
+sqrt(rf$mse[which.min(rf$mse)])
+testpoint <- SpatialPointsDataFrame(cbind(a2$x, a2$y), a2)
+plot(testpoint$x,testpoint$y,col=rgb(cr(MSE)/255),
+     pch=16) ##,pch=".",cex=3)
 
-##downsample
-##H-P:error The response variable must have 2 levels.
 library(ROSE)
 table(testdat$change)
 testdat$change <- factor(testdat$change, levels=0:3,
@@ -789,13 +828,17 @@ ss <- ovun.sample(change2~., data = testdat, method = "over")$data
 ss2 <- ovun.sample(change2~., data = testdat, method = "under")$data
 
 ## time series classification ???
-installed.packages("OSTSC")
+## install.packages("OSTSC")
 library("OSTSC")
 testdatlabel=testdat$y
 testdatsample=testdat$x
 testdat2=OSTSC(testdatsample,testdatlabel,parallel = FALSE)
 
-install.packages("groupdata2")
+## install.packages("groupdata2")
 library(groupdata2)
 ss3 <- downsample(testdat,cat_col = "change2")
+testdatf=data.frame(testdat)
+downsample(testdatf,cat_col = "change")
 
+##SMOTE
+library(DMwR)
