@@ -842,5 +842,31 @@ library(groupdata2)
 ss3 <- downsample(testdat,cat_col = "change2")
 testdatf=data.frame(testdat)
 downsample(testdatf,cat_col = "change")
+##codes for spatial autocorrelation 
+library(spdep)
+a=rr_points14[["2014"]]
+m <- a[, c('x', 'y')]
+##H-P:Data non-numeric
+nb200=dnearneigh(m, d1=200, d2=1000)
+##H-P:what should I consider as mod1
+sp.correlogram(nb200, residuals(mod1), order = 50, method = "I", style
+               = "W", randomisation = TRUE, zero.policy = TRUE, spChk=NULL)
 
+##Codes for spatial cross-validation
+PA=as.factor(ss$change2)
+classified1=raster("Classified1.tif")
+classified2=raster("Classified2.tif")
+
+PA_data <- st_as_sf(PA, coords = c("x", "y"), crs = crs(classified1))
+# spatial blocking by specified range with random assignment
+sb <- spatialBlock(speciesData = pa_data,
+                   species = "Species",
+                   rasterLayer = awt,
+                   theRange = 70000, # size of the blocks
+                   k = 5,
+                   selection = "random",
+                   iteration = 100, # find evenly dispersed folds
+                   biomod2Format = TRUE,
+                   xOffset = 0, # shift the blocks horizontally
+                   yOffset = 0)
 
