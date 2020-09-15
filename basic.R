@@ -1,5 +1,5 @@
 ## increase memory
-if (.Platform$OS.type=="windows") memory.limit(500000)
+if (.Platform$OS.type=="windows") memory.limit(1000000)
 
 library(sf)
 library(rgeos)
@@ -665,11 +665,11 @@ nrow(a2)
 
 ##generate a sequence of random numbers – it ensures that you get the same result if you start with that same seed each time you run the same process. 
 set.seed(123)
-sample <- sample.split(a2$change, SplitRatio = 0.75)
+sample <- sample.split(ss$change, SplitRatio = 0.75)
 
 ##subset=take random samples from a dataset
-train <- subset(a2, sample == TRUE)
-test <- subset(a2, sample == FALSE)
+train <- subset(ss, sample == TRUE)
+test <- subset(ss, sample == FALSE)
 
 ## REGRESSION: trying to predict {0,1,2,3} [change values]
 ## this doesn't make sense because
@@ -713,11 +713,13 @@ save("conf500",  file="saved_conf-500.RData")
 
 ### fit a random forest model (using ranger)
 library(ranger)
-rf_fit <- train(as.factor(change) ~ ., 
-                data = a2, 
+rf_fit <- train(as.factor(change2) ~ ., 
+                data = ss, 
                 method = "ranger")
+rf_fit2 <-ranger(change2 ~ ., data = train, num.trees = 500, mtry = 6, importance = "impurity", min.node.size = 3, replace = TRUE, num.threads = 3)
 save("rf_fit",  file="saved_rf_fit.RData")
-
+rf_pred <- predict(rf_fit, test)
+confusionMatrix(rf_pred, as.factor(test$change2))
 ## importance of each predictor
 importance(rf)
 
@@ -813,18 +815,19 @@ testpoint <- SpatialPointsDataFrame(cbind(a2$x, a2$y), a2)
 plot(testpoint$x,testpoint$y,col=rgb(cr(MSE)/255),
      pch=16) ##,pch=".",cex=3)
 
+##upsample & downsample
 library(ROSE)
-table(testdat$change)
-testdat$change <- factor(testdat$change, levels=0:3,
+table(a2$change)
+a2$change <- factor(a2$change, levels=0:3,
                          labels= c("no gain","gain","loss","no loss"))
 
 
-testdat$change2 <- factor(ifelse(testdat$change %in% c("no gain", "no loss"),
+a2$change2 <- factor(ifelse(a2$change %in% c("no gain", "no loss"),
                                  "no change", "change"))
 
-prop.table(x=table(testdat$change))
-prop.table(x=table(testdat$change2))
-ss <- ovun.sample(change2~., data = testdat, method = "over")$data
+prop.table(x=table(a2$change))
+prop.table(x=table(a2$change2))
+ss <- ovun.sample(change2~., data = a2, method = "under")$data
 ss2 <- ovun.sample(change2~., data = testdat, method = "under")$data
 
 ## time series classification ???
@@ -840,5 +843,4 @@ ss3 <- downsample(testdat,cat_col = "change2")
 testdatf=data.frame(testdat)
 downsample(testdatf,cat_col = "change")
 
-##SMOTE
-library(DMwR)
+
