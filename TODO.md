@@ -321,3 +321,21 @@ https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0229509
 https://github.com/thengl/GeoMLA
 
 **BMB**: figure out why predictions of training sets have gaps??
+
+## 23 September
+
+- reject H0 of the Hosmer-L test, or if we think when we plot the residuals on the y axis and either the fitted values, or any of the predictors, on the x axis, that we see anything other than a constant flat line, that means that there are patterns in the data that we're not capturing. If not (i.e. we reject or DHARMa::plot(simulateResiduals(model)) shows trends), then we do want to think about a nonlinear model.
+
+* one way is to add quadratic terms to the logistic fit
+* another way is to use a random forest (nonlinear)
+* another way is to use a GAM (generalized additive model), which fits a smooth curve instead of a straight line or a quadratic curve
+
+* mgcv::gam(response ~ s(predictor1) + s(predictor2) + ...)
+
+  where s() stands for "smooth term"
+ 
+* clean up random forest script, include explanations of how we know it's overfitting
+* learn about Rmarkdown (lots on the web)
+
+
+

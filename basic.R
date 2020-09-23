@@ -721,7 +721,7 @@ library(ranger)
 rf_fit <- train(as.factor(change2) ~ ., 
                 data = ss, 
                 method = "ranger")
-rf_fit2 <-ranger(change2 ~ ., data = train, num.trees = 500, mtry = 6, importance = "impurity", min.node.size = 3, replace = TRUE, num.threads = 3)
+rf_fit2 <- ranger(change2 ~ ., data = train, num.trees = 500, mtry = 6, importance = "impurity", min.node.size = 3, replace = TRUE, num.threads = 3)
 save("rf_fit",  file="saved_rf_fit.RData")
 rf_pred <- predict(rf_fit, test)
 confusionMatrix(rf_pred, as.factor(test$change2))
@@ -863,7 +863,7 @@ sp.correlogram(nb200, residuals(), order = 50, method = "I", style
 library(blockCV)
 PA=as.factor(ss$change2)
 classified1=raster("Classified1.tif")
-classified2=raster("Classified2.tif")
+classified2=raster("classified2.tif")
 
 PA_data <- st_as_sf(PA, coords = c("x", "y"), crs = crs(classified1))
 # spatial blocking by specified range with random assignment
