@@ -665,11 +665,11 @@ nrow(a2)
 
 ##generate a sequence of random numbers – it ensures that you get the same result if you start with that same seed each time you run the same process. 
 set.seed(123)
-sample <- sample.split(ss$change, SplitRatio = 0.75)
+sample <- sample.split(ss2$change2, SplitRatio = 0.75)
 
 ##subset=take random samples from a dataset
-train <- subset(ss, sample == TRUE)
-test <- subset(ss, sample == FALSE)
+train <- subset(ss2, sample == TRUE)
+test <- subset(ss2, sample == FALSE)
 
 ## REGRESSION: trying to predict {0,1,2,3} [change values]
 ## this doesn't make sense because
@@ -697,18 +697,23 @@ test <- subset(ss, sample == FALSE)
 if (file.exists("rf.RData")) {
     load("rf.RData")
 } else {
-    rf <- randomForest(formula= factor(change) ~ . - x - y ,
-                       data = train, do.trace=1,
+    rf <- randomForest(formula= factor(change2) ~ . - x - y ,
+                       data = train, n.trees=250,interaction.depth=7, do.trace=1,
                        type="classification", proximity=TRUE)
     save("rf",file="rf.RData")
 }
+
+rf_tune=tuneRF(formula= factor(change2) ~ . - x - y ,
+             data = train, n.trees=c(0,75,200,500),interaction.depth=c(5,6,7,8), do.trace=1,
+             type="classification", proximity=TRUE)
 plot(rf)
 plot(rf$predicted)
-pred <- predict(rf, newdata=test)
-
+#predicting the class for the test data set
+pred <- predict(rf, newdata=test,type="class")
+table(pred,test$change2)
 library(caret)
 ff <- function(x) factor(x,levels=0:3,labels=c("no gain","gain","loss","no loss"))
-conf500= caret::confusionMatrix(ff(pred),ff(test$change))
+conf500= caret::confusionMatrix(ff(pred),ff(test$change2))
 save("conf500",  file="saved_conf-500.RData")
 
 ### fit a random forest model (using ranger)
@@ -827,8 +832,9 @@ a2$change2 <- factor(ifelse(a2$change %in% c("no gain", "no loss"),
 
 prop.table(x=table(a2$change))
 prop.table(x=table(a2$change2))
-ss <- ovun.sample(change2~., data = a2, method = "under")$data
-ss2 <- ovun.sample(change2~., data = testdat, method = "under")$data
+ss <- ovun.sample(change2~., data = a2, method = "both", N=500)$data
+
+ss2 <- ovun.sample(change2~., data = a2, method = "under")$data
 
 ## time series classification ???
 ## install.packages("OSTSC")
