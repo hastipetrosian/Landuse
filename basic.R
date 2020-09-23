@@ -315,11 +315,8 @@ if (FALSE) {
     nrow(dd %>% drop_na(slope))
 }
 
-## we do have lots of 0 and 1 values (which are
-## not-erg -> not-erg  and not-erg -> erg)
-
-
-##loss
+##loss logist regression
+##2014
 logistlost <- run_logist_regression(direction="loss")
 logistgain <- run_logist_regression()
 
@@ -374,16 +371,14 @@ logistgain_quadratic <- run_logist_regression(poly_xy_degree=2)
 summary(logistgain_quadratic)
 tidy(logistgain_quadratic)
 
-
 ## but SEE BELOW: map_dfr() instead of map(); future_map_dfr() instead of map()
 ##all map logistic quadratic (gain, scale=false)
-logist_quad_list <- map(rr_points13, run_logist_regression, poly_xy_degree=2)
+logist_quad_list <- map(rr_points14, run_logist_regression, poly_xy_degree=2)
 tidy_quad_list <-map_dfr(logist_quad_list, tidy)
 save("logist_quad_list", "tidy_quad_list", file="saved_logist_fits.RData")
 
 ## compare models
 AICtab(logistgain,logistgain_linear,logistgain_quadratic)
-try(dwplot(logistgain,logistgain_linear,logistgain_quadratic))
 
 ##Scale=False
 ##quadratic loss(for 2014)
@@ -394,7 +389,7 @@ tidy(logistloss_quadratic)
 
 ##quadratic list lost,Scale=False
 ##Lost
-logist_quad_list_lost <- map(rr_points13, run_logist_regression, poly_xy_degree=2, direction = "loss")
+logist_quad_list_lost <- map(rr_points14, run_logist_regression, poly_xy_degree=2, direction = "loss")
 tidy_quad_list_lost <-map(logist_quad_list_lost, tidy)
 save("logist_quad_list_lost", "tidy_quad_list_lost", file="saved_logist_fits2.RData")
 
@@ -427,7 +422,7 @@ tidy(logistloss_quadraticS)
 ##Lost all the maps (scale=true)
 ##map makes list
 ##map2_dfr make tbl
-logist_quad_list_lostS <- map(rr_points13, run_logist_regression,poly_xy_degree=2,direction="loss", scale = TRUE)
+logist_quad_list_lostS <- map(rr_points14, run_logist_regression,poly_xy_degree=2,direction="loss", scale = TRUE)
 save("logist_quad_list_lostS",file="saved_logist_lost_fitsS.RData")
 
 ##tidy of loss
@@ -435,6 +430,7 @@ save("logist_quad_list_lostS",file="saved_logist_lost_fitsS.RData")
 L <- load("~/Dropbox/saved_logist_lost_fitsS.RData")
 L <- load("saved_logist_lost_fitsS.RData")
 print(L)
+
 ## skip the first year, no loss at all
 ## skip the second year, only 17 pixels lost  
 logist_OK <- logist_quad_list_lostS[-1]
@@ -447,6 +443,9 @@ save("tidy_quad_list_lostS",  file="saved_tidy_lost_fitsS.RData")
 
 ##plots
 library(rms)  
+library(ggstance)
+load("saved_tidy_fitsS.RData")
+load("saved_tidy_lost_fitsS.RData")
 print(ggplot(tidy_quad_listS, aes(x=estimate, y=term, xmin=conf.low, xmax=conf.high, colour=year))
       ## + geom_errorbar()
       + geom_pointrange(position=position_dodgev(height=0.25)))
@@ -455,15 +454,14 @@ print(ggplot(tidy_quad_list_lostS, aes(x=estimate, y=term, xmin=conf.low, xmax=c
       ## + geom_errorbar()
       + geom_pointrange(position= position_dodgev(height=0.25)))
 
+##Simulate=simulate approximate results from a fitted model
 ##residual check:we have to make a model that DHARMa supported it:
-S1=simulate(logistgain_quadraticS, nsim=100)
+S1=simulate(logistgain_quadraticS, nsim=2)
 ##make matrix
 S2=do.call(cbind, S1)
-
-##make a DHARMa fitted model
-##H-P:I recevied an error(I think most error occured because of same problem but I dont find how I can solve it)
-##Error number of observations < 3 ... this rarely makes sense
-##the lenght of  observedResponse = rr_points13$change is zero, but I could not find how it is possible
+##DHRMA= uses a simulation-based approach to createCresiduals for fitted (generalized) model
+##Convert Simulated data To A DHARMa Object
+##H-P:Currently supported are linear and generalized linear (mixed) models
 S3=createDHARMa(simulatedResponse = S2, 
                 observedResponse = Num_gai_quadS,
                 fittedPredictedResponse = predict(logistgain_quadraticS),
@@ -472,12 +470,12 @@ S3=createDHARMa(simulatedResponse = S2,
 S4=plotSimulatedResiduals(S3)
 
 ##Acuracy
-##Hosmer-Lemeshow Test:
-##2014
+##Hosmer-Lemeshow Goodness of Fit (GOF) Test.
+##P-value<0.05; reject H0, means model not well specified or good fit
 ##gain-Scale=TRUE
-## x <- logistgain_quadraticS
+
 load("saved_logist_fitsS.RData")
-x <- logist_quad_listS[["2014"]]
+x <- logist_quad_listS[["2008"]]
 tidy(x)
 
 ##return a data.frame with the variables needed to use formula
@@ -498,6 +496,7 @@ dd <- data.frame(pred=fitted(x),obs=as.numeric(model.frame(x)$change))
 ## the mutate function is used to create a new variable from a data set
 ##breks(from=0, to=1)
 ##bin is based on the predicted values
+##H-P:In prop.test(sum(obs), n()) :Chi-squared approximation may be incorrect
 dd_sum <- (dd
     %>% arrange(pred)
     %>% mutate(bin=cut(pred,breaks=seq(0,1,by=0.05)))
@@ -515,7 +514,7 @@ dd_sum <- (dd
 plot(x)
 
 ##~=tidle right hands of tidle depends on left hand of tidle
-glm(obs~1, data=dd)
+dd1=glm(obs~1, data=dd)
 
 ##midpt=average of bin colume
 ##aes=inputs are quoted to be evaluated in the context of the data. 
@@ -578,7 +577,7 @@ table(model.frame(extra1)$change)
 Num_gai_quadS=as.numeric(model.frame(extra1)$change)
 hoslem.test(Num_gai_quadS, fitted(extra1), g=10)
 
-##plot
+##plot extra aspect
 binnedplot(fitted(extra1), 
              residuals(extra1, type = "response"), 
              nclass = NULL, 
@@ -588,7 +587,7 @@ binnedplot(fitted(extra1),
              cex.pts = 0.8, 
              col.pts = 1, 
              col.int = "gray")
-##settlement
+##extra settlement
 ##not good accuracy
 logist_quad_listS_extra2 <- map(rr_points13,
                                ~run_logist_regression(., poly_xy_degree=2,scale = TRUE, extra_terms="(prop_settle_nbrs^2)"))
@@ -615,13 +614,14 @@ hoslem.test(Num_gai_quadS, fitted(extract2), g=10)
 ## https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
 glm <- run_logist_regression(rr_points14[["2003"]])
 data <- rr_points14[["1987"]]
-datpoint <- SpatialPointsDataFrame(cbind(data$x, data$y), data)
+datpoint <- SpatialPointsDataFrame(cbind(testdat$x, testdat$y), testdat)
 
 library(spdep)
 ## test with smaller data set
 testdat <- filter(rr_points14[["2014"]],
                   x<604000 & y >284000 &  y < 2846000)
-
+##info of min and max value of each parameter
+datpoint <- SpatialPointsDataFrame(cbind(testdatss$x, testdatss$y), testdatss)
 ## get only the points that are being used in the analysis
 ## (e.g. for "gain" regression, only points that start as non-erg)
 ## and make sure to drop NA values, so that the length matches the
@@ -632,7 +632,7 @@ testglm <- run_logist_regression(testdat)
 ## now run the Moran test
 ## Construct weights matrix in weights list form using the 10 nearest neighbors
 lstw  <- nb2listw(knn2nb(knearneigh(testpoint, k = 10)))
-## moran.test(residuals(testglm), lstw)
+moran.test(residuals(testglm), lstw)
 
 ##Histogram
 testdat2 <- na.omit(get_logist_data(testdat, scale=TRUE, direction="gain"))
@@ -790,7 +790,7 @@ testglm <- run_logist_regression(testdat)
 ## now run the Moran test
 ## Construct weights matrix in weights list form using the 10 nearest neighbors
 lstw  <- nb2listw(knn2nb(knearneigh(testpoint, k = 10)))
-## moran.test(residuals(testglm), lstw)
+moran.test(residuals(testglm), lstw)
 
 ##Histogram
 testdat2 <- na.omit(get_logist_data(testdat, scale=TRUE, direction="gain"))
@@ -822,17 +822,17 @@ plot(testpoint$x,testpoint$y,col=rgb(cr(MSE)/255),
 
 ##upsample & downsample
 library(ROSE)
-table(a2$change)
-a2$change <- factor(a2$change, levels=0:3,
+table(testdat$change)
+testdat$change <- factor(testdat$change, levels=0:3,
                          labels= c("no gain","gain","loss","no loss"))
 
 
-a2$change2 <- factor(ifelse(a2$change %in% c("no gain", "no loss"),
+testdat$change2 <- factor(ifelse(testdat$change %in% c("no gain", "no loss"),
                                  "no change", "change"))
 
 prop.table(x=table(a2$change))
 prop.table(x=table(a2$change2))
-ss <- ovun.sample(change2~., data = a2, method = "both", N=500)$data
+testdatss <- ovun.sample(change2~., data = testdat, method = "both", N=1500)$data
 
 ss2 <- ovun.sample(change2~., data = a2, method = "under")$data
 
@@ -856,7 +856,7 @@ m <- a[, c('x', 'y')]
 ##H-P:Data non-numeric
 nb200=dnearneigh(m, d1=200, d2=1000)
 ##H-P:what should I consider as mod1
-sp.correlogram(nb200, residuals(mod1), order = 50, method = "I", style
+sp.correlogram(nb200, residuals(), order = 50, method = "I", style
                = "W", randomisation = TRUE, zero.policy = TRUE, spChk=NULL)
 
 ##Codes for spatial cross-validation
