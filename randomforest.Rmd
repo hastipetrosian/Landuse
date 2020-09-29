@@ -5,7 +5,6 @@ author: "Hasti"
 
 You can type regular text, explanations, etc. outside of "code chunks"
 
-
 ```{r pkgs}
 library(ROSE)
 library(spdep)
@@ -46,17 +45,16 @@ dat_gain <- filter(dat, change %in% c("no gain", "gain"))
 dat_loss <- filter(dat, change %in% c("no loss", "loss"))
 
 ## analyzing gain only, first ...
+if (file.exists("dat_upsample")) {load("dat_upsample")
+} else {
 dat_upsample <- ovun.sample(change ~ ., data = dat_gain, method = "both", N=1500)$data
-
+}
+```
+test and train samples
+```{r}
 set.seed(123)
 ## pkgname::function()
 ## explicitly note which package a function comes from ...
-sample <- caTools::sample.split(dat_upsample$change2, SplitRatio = 0.75)
-
-##subset=take random samples from a dataset
-train <- subset(dat_upsample, sample == TRUE)
-test <- subset(dat_upsample, sample == FALSE)
-
 set.seed(23489)
 train_index <- sample(1:nrow(dat_upsample), 0.9 * nrow(dat_upsample))
 sample_train <- dat_upsample[train_index, ]
