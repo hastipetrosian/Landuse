@@ -57,17 +57,29 @@ sample <- caTools::sample.split(dat_upsample$change2, SplitRatio = 0.75)
 train <- subset(dat_upsample, sample == TRUE)
 test <- subset(dat_upsample, sample == FALSE)
 
+set.seed(23489)
+train_index <- sample(1:nrow(dat_upsample), 0.9 * nrow(dat_upsample))
+sample_train <- dat_upsample[train_index, ]
+sample_test <- dat_upsample[-train_index, ]
+head(sample_train)
+dim(sample_train)
 ## a shorter way to do the same thing ...
 ## train <- subset(dat_upsample, sample)
 ## test  <- subset(dat_upsample,  !sample) ## ! means 'not'
+```
 
-## use all data ...
-rf_fit <- train(as.factor(change2) ~ ., data = dat_upsample,
+Anytime we want to fit a model using train we tell it which model to fit by providing a formula for the first argument (as.factor(old) ~ . means that we want to model old as a function of all of the other variables). Then we need to provide a method (we specify "ranger" to implement randomForest).
+Ranger is a fast implementation of random forests 
+By default, the train function without any arguments re-runs the model over 25 bootstrap samples and across 3 options of the tuning parameter (the tuning parameter for ranger is mtry; the number of randomly selected predictors at each cut in the tree).
+
+```{r}
+## use train data
+rf_fit <- train(as.factor(change2) ~ ., data = sample_train,
                 method = "ranger")
+```
+predict the outcome on a test set
 
-## use only training data ...
-rf_fit2 <- ranger(change2 ~ .,
-                  data = train, num.trees = 500,
-                  mtry = 6, importance = "impurity",
-                  min.node.size = 3, replace = TRUE, num.threads = 3)
+```{r confusion matrix}
+rf_pred <- predict(rf_fit, sample_test)
+con=confusionMatrix(rf_pred, as.factor(sample_test$change2))
 ```
