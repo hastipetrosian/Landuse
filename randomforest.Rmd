@@ -21,8 +21,23 @@ load("rr_points14.RData")
 
 ## test with smaller data set
 dat <- filter(rr_points14[["2014"]],
-                  x<604000 & y >284000 &  y < 2846000)
+              x<604000 & y >284000 &  y < 2846000)
 ```
+
+Is there something funny about the `prop_build_nbrs` variable?
+
+```{r prop_build}
+pb <- dat$prop_build_nbrs
+table(pb>0)
+mean(pb>0,na.rm=TRUE) ## 10%
+hist(pb[pb>0],breaks=50)
+## there are no agri_nbrs
+pa <- dat$prop_agri_nbrs
+table(pa>0)
+mean(pa>0,na.rm=TRUE)
+## hist(pa[pa>0],breaks=50)
+```
+
 For some analyses we have to reduce the response to binary
 
 previously: split into two separate data sets
@@ -50,7 +65,7 @@ dat_upsample <- ovun.sample(change ~ ., data = dat_gain, method = "both", N=1500
 }
 ```
 test and train samples
-```{r train and test sample}
+```{r train_and_test_sample}
 set.seed(123)
 ## pkgname::function()
 ## explicitly note which package a function comes from ...
@@ -67,7 +82,7 @@ dim(sample_train)
 Anytime we want to fit a model using train we tell it which model to fit by providing a formula for the first argument (as.factor(old) ~ . means that we want to model old as a function of all of the other variables). Then we need to provide a method (we specify "ranger" to implement randomForest).
 Ranger is a fast implementation of random forests 
 By default, the train function without any arguments re-runs the model over 25 bootstrap samples and across 3 options of the tuning parameter (the tuning parameter for ranger is mtry; the number of randomly selected predictors at each cut in the tree).
-```{r random forest}
+```{r random_forest,cache=TRUE}
 ## use train data
 rf_fit <- train(as.factor(change2) ~ ., data = sample_train,
                 method = "ranger")
@@ -75,27 +90,52 @@ rf_fit <- train(as.factor(change2) ~ ., data = sample_train,
 predict
 ```{r confusion matrix}
 rf_pred <- predict(rf_fit, sample_test)
-con=confusionMatrix(rf_pred, as.factor(sample_test$change2))
+con <- confusionMatrix(rf_pred, as.factor(sample_test$change2))
 ```
 preprocessing:estimates the required parameters for each operation 
-```{r }
-preprocess=preProcess(sample_train, method = c("center", "scale", "nzv", "pca"))
-preprocess$method
+
+```{r preproc}
+## 1. with prop_agri_nbrs, without 'nzv': error
+## 2. with prop_agri_nbrs, with 'nzv':
+##  wants us to remove "prop_build_nbrs","prop_settle_nbrs","prop_agri_nbrs"
+## 3. without prop_agri_nbrs, without 'nzv': fine ??
+## 4. without prop_agri_nbrs, with 'nzv': wants us to remove the other two
+##
+## selected a subset that has relatively few built neighbors
+##  preProcess is trying to remove variables with fewer than 5% of the minority
+pb <- sample_train$prop_build_nbrs
+table(pb>0)
+length(unique(pb))
+mean(pb>0,na.rm=TRUE) ## 3%
+hist(pb[pb>0],breaks=50)
+
+preprocess=preProcess(
+    ## remove this ourselves!
+    dplyr::select(sample_train, -prop_agri_nbrs),
+    method = c("center", "scale",
+               ## "nzv",
+               "pca"),
+    ## ??? how 
+    ## freqCut=100/1, ## only cut variables if rare <1%
+    ## uniqueCut=5
+)
+preprocess$method$remove
+
 ```
 removed= omit 3 predictors
 scaled=in ranger method the data to the interval between zero and one
 H-P:??centered: subtract mean from values
-```{r}
+```{r }
 sample_train2=subset(sample_train, select=- c(prop_build_nbrs, prop_settle_nbrs, prop_agri_nbrs))
 dim(sample_train2)
 ```
 H-P: is it nessary?PCA
-```{r}
-preprocess$rotation
+```{r rot}
+round(preprocess$rotation,2)
 ```
 
 random forest of data that preprocessed
-```{r}
+```{r rf2,cache=TRUE}
 rf_fit2 <- train(as.factor(change2) ~ ., data = sample_train2,
                 method = "ranger")
 sample_test2=subset(sample_test, select=- c(prop_build_nbrs, prop_settle_nbrs, prop_agri_nbrs))

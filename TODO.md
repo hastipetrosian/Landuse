@@ -337,5 +337,7 @@ https://github.com/thengl/GeoMLA
 * clean up random forest script, include explanations of how we know it's overfitting
 * learn about Rmarkdown (lots on the web)
 
+## 30 September
 
-
+* classification and regression tree (CART) models: classification is for categorical outcomes (like ours)
+* `cart` package (also `partykit` [recursive partitioning])
