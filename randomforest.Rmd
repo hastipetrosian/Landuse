@@ -13,7 +13,7 @@ library(caTools)
 library(ranger)
 library(caret)
 ```
-
+inter data
 ```{r get_data}
 ## get all data (as tables of x,y, predictors, change)
 load("rr_points14.RData")
@@ -22,7 +22,6 @@ load("rr_points14.RData")
 dat <- filter(rr_points14[["2014"]],
                   x<604000 & y >284000 &  y < 2846000)
 ```
-
 For some analyses we have to reduce the response to binary
 
 previously: split into two separate data sets
@@ -31,8 +30,7 @@ advantage: we only have to run one analysis (not two separate analyses, one
 for gain/no gain and one for loss/no loss
 disadvantage: it might not make geological sense to lump (variables leading to dune loss)
 together with (variables leading to dune gain)
-
-```{r}
+```{r upsample data}
 dat$change <- factor(dat$change, levels=0:3,
                      labels= c("no gain","gain","loss","no loss"))
 
@@ -51,7 +49,7 @@ dat_upsample <- ovun.sample(change ~ ., data = dat_gain, method = "both", N=1500
 }
 ```
 test and train samples
-```{r}
+```{r train and test sample}
 set.seed(123)
 ## pkgname::function()
 ## explicitly note which package a function comes from ...
@@ -65,19 +63,48 @@ dim(sample_train)
 ## train <- subset(dat_upsample, sample)
 ## test  <- subset(dat_upsample,  !sample) ## ! means 'not'
 ```
-
 Anytime we want to fit a model using train we tell it which model to fit by providing a formula for the first argument (as.factor(old) ~ . means that we want to model old as a function of all of the other variables). Then we need to provide a method (we specify "ranger" to implement randomForest).
 Ranger is a fast implementation of random forests 
 By default, the train function without any arguments re-runs the model over 25 bootstrap samples and across 3 options of the tuning parameter (the tuning parameter for ranger is mtry; the number of randomly selected predictors at each cut in the tree).
-
-```{r}
+```{r random forest}
 ## use train data
 rf_fit <- train(as.factor(change2) ~ ., data = sample_train,
                 method = "ranger")
 ```
-predict the outcome on a test set
-
+predict
 ```{r confusion matrix}
 rf_pred <- predict(rf_fit, sample_test)
 con=confusionMatrix(rf_pred, as.factor(sample_test$change2))
 ```
+preprocessing:estimates the required parameters for each operation 
+```{r }
+preprocess=preProcess(sample_train, method = c("center", "scale", "nzv", "pca"))
+preprocess$method
+```
+removed= omit 3 predictors
+scaled=in ranger method the data to the interval between zero and one
+H-P:??centered: subtract mean from values
+```{r}
+sample_train2=subset(sample_train, select=- c(prop_build_nbrs, prop_settle_nbrs, prop_agri_nbrs))
+dim(sample_train2)
+rf_fit2 <- train(as.factor(change2) ~ ., data = sample_train2,
+                method = "ranger")
+sample_test2=subset(sample_test, select=- c(prop_build_nbrs, prop_settle_nbrs, prop_agri_nbrs))
+rf_pred2 <- predict(rf_fit2, sample_test2)
+con2=confusionMatrix(rf_pred2, as.factor(sample_test2$change2))
+```
+generate training and testing sets
+```{r}
+grouped=cbind(sample_train2[1:1350, ], group = rep(1:10, each = 5))
+```
+grouped folds(10 folds)
+```{r}
+group_folds=groupKFold(grouped$group, k = 10)
+group_fit_control=trainControl(index = group_folds,method = "cv")
+rf_fit3=train(as.factor(change2) ~ ., data = sample_train2,
+                 method = "ranger",
+                trControl = group_fit_control)
+rf_pred3 <- predict(rf_fit3, sample_test2)
+con3=confusionMatrix(rf_pred3, as.factor(sample_test2$change2))
+```
+
