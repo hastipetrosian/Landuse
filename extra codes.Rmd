@@ -1,0 +1,117 @@
+#extra codes
+##random forest
+```{r}
+library(randomForest)
+library(caTools)
+library(caret)
+library(ranger)
+library(ROSE)
+```
+let's just select the western tip of the study areaget 2014 data
+```{r}
+testdat <- filter(rr_points14[["2014"]],
+                  x<604000 & y >284000 &  y < 2846000)
+```
+upsample & downsample
+```{r}
+table(testdat$change)
+testdat$change <- factor(testdat$change, levels=0:3,
+                         labels= c("no gain","gain","loss","no loss"))
+testdat$change2 <- factor(ifelse(testdat$change %in% c("no gain", "no loss"),
+                                 "no change", "change"))
+prop.table(x=table(a2$change))
+prop.table(x=table(a2$change2))
+testdatss <- ovun.sample(change2~., data = testdat, method = "both", N=1500)$data
+ss2 <- ovun.sample(change2~., data = a2, method = "under")$data
+```
+generate a sequence of random numbers – it ensures that you get the same result if you start with that same seed each time you run the same process.
+```{r}
+set.seed(123)
+sample <- sample.split(ss2$change2, SplitRatio = 0.75)
+```
+subset=take random samples from a dataset
+REGRESSION: trying to predict {0,1,2,3} [change values]this doesn't make sense because
+*0: not-erg before and after (no gain)
+*1: not-erg before, erg after (gain)
+*2: erg before, not-erg after (loss)
+*3: erg before and after (no loss)
+regression might make sense if we treated gain {0,1} and loss {2,3}separately. BUT: classification probably still makes more sense, because a regression framework assumes equal change  in the output variable for the same amount of change in the input variable suppose we have a place that's very unlikely to gain erg (i.e. the prediction
+is close to 0), and we increase some input value that makes gain more likely(e.g. we increase the amount of nearby erg, or upwind erg, or ...) then we expect a big change in the output variable (from say 0.01 to 0.5)
+but if we have a place that's *likely* to gain erg (the prediction is already
+close to 1), then it doesn't make sense to increase the prediction by the
+same amount, because a prediction >1 doesn't really make  sense
+this is why we usually use logistic regression rather than linearregression for binary responseswhich is a long-winded way of saying we should probably do classification instead
+```{r}
+train <- subset(ss2, sample == TRUE)
+test <- subset(ss2, sample == FALSE)
+```
+random forest model
+```{r}
+if (file.exists("rf.RData")) {
+    load("rf.RData")
+} else {
+    rf <- randomForest(formula= factor(change2) ~ . - x - y ,
+                       data = train, n.trees=250,interaction.depth=7, do.trace=1,
+                       type="classification", proximity=TRUE)
+    save("rf",file="rf.RData")
+}
+
+rf_tune=tuneRF(formula= factor(change2) ~ . - x - y ,
+             data = train, n.trees=c(0,75,200,500),interaction.depth=c(5,6,7,8), do.trace=1,
+             type="classification", proximity=TRUE)
+```
+random forests plots
+```{r}
+plot(rf)
+plot(rf$predicted)
+```
+predicting with the test data set
+```{r}
+pred <- predict(rf, newdata=test,type="class")
+table(pred,test$change2)
+```
+confusionMatrix
+```{r}
+ff <- function(x) factor(x,levels=0:3,labels=c("no gain","gain","loss","no loss"))
+conf500= caret::confusionMatrix(ff(pred),ff(test$change2))
+save("conf500",  file="saved_conf-500.RData")
+```
+fit random forest model vy two methods
+```{r}
+rf_fit <- train(as.factor(change2) ~ ., 
+                data = train, 
+                method = "ranger")
+rf_fit2 <- ranger(change2 ~ ., data = train, num.trees = 500, mtry = 6, importance = "impurity", min.node.size = 3, replace = TRUE, num.threads = 3)
+save("rf_fit",  file="saved_rf_fit.RData")
+```
+predicting fit random forest model with the test data set
+```{r}
+rf_pred <- predict(rf_fit, dat_upsample)
+confusionMatrix(rf_pred, as.factor(dat_upsample$change2))
+```
+rf$votes is the number of votes for each category
+for each data point, calculate the proportion of trees that got the right answer
+```{r}
+mm <- match(train$change,0:3) ## which column matches?
+## this gives us the column number we want in each row
+correct_prop <- rf$votes[cbind(seq(nrow(rf$votes)), mm)]
+any(is.na(correct_prop)) ## no missing values
+any(is.na(cr(correct_prop))) ## no missing values
+rr <- rgb(cr(correct_prop)/255) ## no missing values
+any(is.na(rr))
+testpoint <- SpatialPointsDataFrame(cbind(train$x, train$y), train)
+plot(testpoint$x,testpoint$y,col=rgb(cr(correct_prop)/255),
+     pch=16) ##,pch=".",cex=3)
+points(test$x,test$y,pch=".")
+
+head(rf$votes)
+head(a2$change)
+npts <- nrow(rf$votes)
+```
+RMSE (Root Mean Square Error)of this optimal random forest
+```{r}
+sqrt(rf$mse[which.min(rf$mse)])
+testpoint <- SpatialPointsDataFrame(cbind(a2$x, a2$y), a2)
+plot(testpoint$x,testpoint$y,col=rgb(cr(res)/255),
+     pch=16) ##,pch=".",cex=3)
+```
