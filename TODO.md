@@ -339,5 +339,10 @@ https://github.com/thengl/GeoMLA
 
 ## 30 September
 
+* random forest:
+   * out-of-bag error (OOB)
+   * variable importance
+   * try running for the whole spatial set ...
 * classification and regression tree (CART) models: classification is for categorical outcomes (like ours)
 * `cart` package (also `partykit` [recursive partitioning])
+

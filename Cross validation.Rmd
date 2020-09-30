@@ -4,6 +4,12 @@
 
 ```{r}
 library(blockCV)
+PA=as.factor(ss$change2)
+classified1=raster("Classified1.tif")
+classified2=raster("classified2.tif")
+
+PA_data <- st_as_sf(PA, coords = c("x", "y"), crs = crs(classified1))
+
 ```
 H-P:Error in UseMethod("st_as_sf") : 
 no applicable method for 'st_as_sf' applied to an object of class "factor"
