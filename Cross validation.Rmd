@@ -1,0 +1,34 @@
+---
+#title: "Cross validation"
+---
+
+```{r}
+library(blockCV)
+```
+H-P:Error in UseMethod("st_as_sf") : 
+no applicable method for 'st_as_sf' applied to an object of class "factor"
+```{r}
+PA=as.factor(ss$change2)
+```
+Import classified maps
+```{r}
+classified1=raster("Classified1.tif")
+classified2=raster("classified2.tif")
+```
+
+```{r}
+PA_data <- st_as_sf(PA, coords = c("x", "y"), crs = crs(classified1))
+```
+spatial blocking by specified range with random assignment
+```{r}
+sb <- spatialBlock(speciesData = PA_data,
+                   species = "change2",
+                   rasterLayer = classified1,
+                   theRange = 70000, # size of the blocks
+                   k = 5,
+                   selection = "random",
+                   iteration = 100, # find evenly dispersed folds
+                   biomod2Format = TRUE,
+                   xOffset = 0, # shift the blocks horizontally
+                   yOffset = 0)
+```
