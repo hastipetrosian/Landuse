@@ -87,13 +87,16 @@ H-P:??centered: subtract mean from values
 ```{r}
 sample_train2=subset(sample_train, select=- c(prop_build_nbrs, prop_settle_nbrs, prop_agri_nbrs))
 dim(sample_train2)
+```
+random forest of data that preprocessed
+```{r}
 rf_fit2 <- train(as.factor(change2) ~ ., data = sample_train2,
                 method = "ranger")
 sample_test2=subset(sample_test, select=- c(prop_build_nbrs, prop_settle_nbrs, prop_agri_nbrs))
 rf_pred2 <- predict(rf_fit2, sample_test2)
 con2=confusionMatrix(rf_pred2, as.factor(sample_test2$change2))
 ```
-generate training and testing sets
+k-fold=generate training and testing sets
 ```{r}
 grouped=cbind(sample_train2[1:1350, ], group = rep(1:10, each = 5))
 ```
@@ -101,10 +104,21 @@ grouped folds(10 folds)
 ```{r}
 group_folds=groupKFold(grouped$group, k = 10)
 group_fit_control=trainControl(index = group_folds,method = "cv")
+```
+random forest of new set of data
+```{r}
 rf_fit3=train(as.factor(change2) ~ ., data = sample_train2,
                  method = "ranger",
                 trControl = group_fit_control)
+max(rf_fit3$results$Accuracy)
 rf_pred3 <- predict(rf_fit3, sample_test2)
 con3=confusionMatrix(rf_pred3, as.factor(sample_test2$change2))
+```
+check overfiiting:if training error is lower than our approximation of generalization error via the test error, we have over fitting
+```{r acuuracy of train data}
+rf_pred_train= predict(rf_fit3, sample_train2)
+contftrain=confusionMatrix(rf_pred_train, as.factor(sample_train2$change2))
+rf_pred_test <- predict(rf_fit3, sample_test2)
+conftest=confusionMatrix(rf_pred3, as.factor(sample_test2$change2))
 ```
 
