@@ -89,6 +89,11 @@ H-P:??centered: subtract mean from values
 sample_train2=subset(sample_train, select=- c(prop_build_nbrs, prop_settle_nbrs, prop_agri_nbrs))
 dim(sample_train2)
 ```
+H-P: is it nessary?PCA
+```{r}
+preprocess$rotation
+```
+
 random forest of data that preprocessed
 ```{r}
 rf_fit2 <- train(as.factor(change2) ~ ., data = sample_train2,
@@ -121,5 +126,15 @@ rf_pred_train= predict(rf_fit3, sample_train2)
 contftrain=confusionMatrix(rf_pred_train, as.factor(sample_train2$change2))
 rf_pred_test <- predict(rf_fit3, sample_test2)
 conftest=confusionMatrix(rf_pred3, as.factor(sample_test2$change2))
+```
+H-p=ggplot?
+```{r acuuracy of train data}
+```
+```{r}
+ggplot(  ) + 
+  geom_point( aes(x = sample_test2$landuse, y = ?, color = 'red', alpha = 0.5) ) + 
+  geom_point( aes(x =  sample_test2$landuse , y = rf_pred3, color = 'blue',  alpha = 0.5)) + 
+  labs(x = "Carat", y = "Price", color = "", alpha = 'Transperency') +
+  scale_color_manual(labels = c( "Predicted", "Real"), values = c("blue", "red"))
 ```
 
