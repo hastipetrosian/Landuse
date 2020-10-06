@@ -13,9 +13,13 @@ library(tidyverse)
 library(caTools)
 library(ranger)
 library(caret)
+library(randomForest)
 ```
 inter data
 ```{r get_data}
+## increase memory
+if (.Platform$OS.type=="windows") memory.limit(1000000)
+
 ## get all data (as tables of x,y, predictors, change)
 load("rr_points14.RData")
 
@@ -82,7 +86,7 @@ dim(sample_train)
 Anytime we want to fit a model using train we tell it which model to fit by providing a formula for the first argument (as.factor(old) ~ . means that we want to model old as a function of all of the other variables). Then we need to provide a method (we specify "ranger" to implement randomForest).
 Ranger is a fast implementation of random forests 
 By default, the train function without any arguments re-runs the model over 25 bootstrap samples and across 3 options of the tuning parameter (the tuning parameter for ranger is mtry; the number of randomly selected predictors at each cut in the tree).
-```{r random_forest,cache=TRUE}
+```{r fitted random_forest, cache=TRUE}
 ## use train data
 rf_fit <- train(as.factor(change2) ~ ., data = sample_train,
                 method = "ranger")
@@ -93,7 +97,6 @@ rf_pred <- predict(rf_fit, sample_test)
 con <- confusionMatrix(rf_pred, as.factor(sample_test$change2))
 ```
 preprocessing:estimates the required parameters for each operation 
-
 ```{r preproc}
 ## 1. with prop_agri_nbrs, without 'nzv': error
 ## 2. with prop_agri_nbrs, with 'nzv':
@@ -124,16 +127,10 @@ preprocess$method$remove
 ```
 removed= omit 3 predictors
 scaled=in ranger method the data to the interval between zero and one
-H-P:??centered: subtract mean from values
 ```{r }
 sample_train2=subset(sample_train, select=- c(prop_build_nbrs, prop_settle_nbrs, prop_agri_nbrs))
 dim(sample_train2)
 ```
-H-P: is it nessary?PCA
-```{r rot}
-round(preprocess$rotation,2)
-```
-
 random forest of data that preprocessed
 ```{r rf2,cache=TRUE}
 rf_fit2 <- train(as.factor(change2) ~ ., data = sample_train2,
@@ -167,6 +164,25 @@ contftrain=confusionMatrix(rf_pred_train, as.factor(sample_train2$change2))
 rf_pred_test <- predict(rf_fit3, sample_test2)
 conftest=confusionMatrix(rf_pred3, as.factor(sample_test2$change2))
 ```
+not fitted random forest
+```{r not fitted random forest}
+if (file.exists("rf.RData")) {
+    load("rf.RData")
+} else {
+    rf <- randomForest(formula= factor(change2) ~ . - x - y ,
+                       data = sample_train, n.trees=250,interaction.depth=7, do.trace=1,
+                       type="classification", proximity=TRUE)
+    save("rf",file="rf.RData")
+}
+
+```
+importance of predictors
+```{r}
+importance(rf)
+varImpPlot(rf)
+```
+
+
 H-p=ggplot?
 ```{r acuuracy of train data}
 ```
