@@ -181,6 +181,10 @@ importance of predictors
 importance(rf)
 varImpPlot(rf)
 ```
+OOB error
+```{r out of bag error}
+rf$err.rate[,1]
+```
 
 
 H-p=ggplot?
