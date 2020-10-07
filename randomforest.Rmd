@@ -45,7 +45,7 @@ advantage: we only have to run one analysis (not two separate analyses, one
 for gain/no gain and one for loss/no loss
 disadvantage: it might not make geological sense to lump (variables leading to dune loss)
 together with (variables leading to dune gain)
-```{r upsample data}
+```{r upsample_data}
 dat$change <- factor(dat$change, levels=0:3,
                      labels= c("no gain","gain","loss","no loss"))
 
@@ -82,12 +82,11 @@ Anytime we want to fit a model using train we tell it which model to fit by prov
 Ranger is a fast implementation of random forests 
 By default, the train function without any arguments re-runs the model over 25 bootstrap samples and across 3 options of the tuning parameter (the tuning parameter for ranger is mtry; the number of randomly selected predictors at each cut in the tree).
 ```{r fitted random_forest, cache=TRUE}
-## use train data
 rf_fit <- train(as.factor(change2) ~ ., data = sample_train,
                 method = "ranger")
 ```
 predict
-```{r confusion matrix}
+```{r confusion_matrix}
 rf_pred <- predict(rf_fit, sample_test)
 con <- confusionMatrix(rf_pred, as.factor(sample_test$change2))
 ```
@@ -122,7 +121,7 @@ preprocess$method$remove
 ```
 removed= omit 3 predictors
 scaled=in ranger method the data to the interval between zero and one
-```{r }
+```{r traindata}
 sample_train2=subset(sample_train, select=- c(prop_build_nbrs, prop_settle_nbrs, prop_agri_nbrs))
 dim(sample_train2)
 ```
@@ -135,11 +134,11 @@ rf_pred2 <- predict(rf_fit2, sample_test2)
 con2=confusionMatrix(rf_pred2, as.factor(sample_test2$change2))
 ```
 k-fold=generate training and testing sets
-```{r}
+```{r make_a_group}
 grouped=cbind(sample_train2[1:1350, ], group = rep(1:10, each = 5))
 ```
 grouped folds(10 folds)
-```{r}
+```{r make_fold}
 group_folds=groupKFold(grouped$group, k = 10)
 group_fit_control=trainControl(index = group_folds,method = "cv")
 ```
@@ -153,14 +152,14 @@ rf_pred3 <- predict(rf_fit3, sample_test2)
 con3=confusionMatrix(rf_pred3, as.factor(sample_test2$change2))
 ```
 check overfiiting:if training error is lower than our approximation of generalization error via the test error, we have over fitting
-```{r acuuracy of train data}
+```{r acuuracy_of_train_data}
 rf_pred_train= predict(rf_fit3, sample_train2)
 contftrain=confusionMatrix(rf_pred_train, as.factor(sample_train2$change2))
 rf_pred_test <- predict(rf_fit3, sample_test2)
 conftest=confusionMatrix(rf_pred3, as.factor(sample_test2$change2))
 ```
 not fitted random forest
-```{r not fitted random forest}
+```{r not_fitted_random_forest}
 if (file.exists("rf.RData")) {
     load("rf.RData")
 } else {
@@ -172,12 +171,12 @@ if (file.exists("rf.RData")) {
 
 ```
 importance of predictors
-```{r}
+```{r importance}
 importance(rf)
 varImpPlot(rf)
 ```
 OOB error
-```{r out of bag error}
+```{r out_of_bag_error}
 rf$err.rate[,1]
 str(rf$err.rate[,1])
 plot(rf$err.rate[,1], type = "l")
