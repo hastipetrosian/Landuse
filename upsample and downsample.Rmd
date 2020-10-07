@@ -7,27 +7,26 @@ library(ROSE)
 library("OSTSC")
 ```
 
-
-```{r}
+```{r import_data}
 testdat <- filter(rr_points14[["2014"]],
                   x<604000 & y >284000 &  y < 2846000)
 ```
 change
-```{r introduce change}
+```{r change}
 testdat$change <- factor(testdat$change, levels=0:3,
                          labels= c("no gain","gain","loss","no loss"))
 table(testdat$change)
 prop.table(x=table(testdat$change))
 ```
 change2
-```{r introduce change 2}
+```{r change 2}
 testdat$change2 <- factor(ifelse(testdat$change %in% c("no gain", "no loss"),
                                  "no change", "change"))
 table(testdat$change2)
 prop.table(x=table(testdat$change2))
 ```
 upsample, downsample nad both
-```{r upsample and downsampe}
+```{r upsample_downsampe}
 testdatss <- ovun.sample(change2~., data = testdat, method = "both", N=1500)$data
 
 testdatss2<- ovun.sample(change2~., data = testdat, method = "under")$data
