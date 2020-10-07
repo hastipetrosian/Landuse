@@ -346,3 +346,15 @@ https://github.com/thengl/GeoMLA
 * classification and regression tree (CART) models: classification is for categorical outcomes (like ours)
 * `cart` package (also `partykit` [recursive partitioning])
 
+
+
+## 7 October
+
+Morrissey, Michael B. ; Ruxton, and Graeme D. Ruxton. “Multiple Regression Is Not Multiple Regressions: The Meaning of Multiple Regression and the Non-Problem of Collinearity.” Philosophy, Theory, and Practice in Biology 10 (2018). http://dx.doi.org/10.3998/ptpbio.16039257.0010.003.
+
+* figure out spatial blocking -> figure out how to compute cross-validation error appropriately across spatial blocks (Roberts et al 2016 paper)
+* would like to figure out error metrics that don't get too screwed up by imbalance (ROC/AUC; deviance) -> whichever we pick, we need to compute for spatial cross-validation blocks for whatever methods we use to model (logistic regression, RF, etc. ...)
+* long run/big picture:
+    * create the 'best' model or models we can (random forest, logistic regression, lasso/penalized regression, ...)
+	* make sure that we are incorporating and/or accounting for spatial correlation appropriately
+	* discuss results!

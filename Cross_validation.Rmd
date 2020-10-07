@@ -5,6 +5,8 @@
 ```{r {r package}}
 library(blockCV)
 library(sf)
+library(raster)
+source("functions.R")
 ```
 
 ```{r input_data}
@@ -17,6 +19,7 @@ load("rr_points14.RData")
 ## test with smaller data set
 dat <- filter(rr_points14[["2014"]],
               x<604000 & y >284000 &  y < 2846000)
+dat$change2 <- change_fun(dat$change)
 ```
 
 ```{r classified_maps}
@@ -27,16 +30,17 @@ classified2=raster("classified2.tif")
 H-P:?Unknown or uninitialised column: `change2`.Error in UseMethod("st_as_sf") : 
   no applicable method for 'st_as_sf' applied to an object of class "c('double', 'numeric')"
 ```{r}
-PA=as.numeric(dat$change2)
-PA_data <- st_as_sf(PA, coords = c("x", "y"), crs = crs(classified1))
-PA=as.factor(dat$change2)
+## PA=as.numeric(dat$change2)
+PA_data <- st_as_sf(dat, coords = c("x", "y"), crs = crs(classified1))
+##PA=as.factor(dat$change2)
 ```
 spatial blocking by specified range with random assignment
 ```{r}
 sb <- spatialBlock(speciesData = PA_data,
                    species = "change2",
                    rasterLayer = classified1,
-                   theRange = 70000, # size of the blocks
+                   ## theRange = 70000, # size of the blocks
+                   theRange = 5000, # size of the blocks                   
                    k = 5,
                    selection = "random",
                    iteration = 100, # find evenly dispersed folds

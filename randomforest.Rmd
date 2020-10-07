@@ -3,8 +3,6 @@ title: "random forests"
 author: "Hasti"
 ---
 
-You can type regular text, explanations, etc. outside of "code chunks"
-
 ```{r pkgs}
 library(ROSE)
 library(spdep)
@@ -13,6 +11,8 @@ library(caTools)
 library(ranger)
 library(caret)
 library(randomForest)
+library(rpart.plot)
+library(rpart)
 ```
 inter data
 ```{r get_data}
@@ -151,7 +151,7 @@ max(rf_fit3$results$Accuracy)
 rf_pred3 <- predict(rf_fit3, sample_test2)
 con3=confusionMatrix(rf_pred3, as.factor(sample_test2$change2))
 ```
-check overfiiting:if training error is lower than our approximation of generalization error via the test error, we have over fitting
+check overfitting:if training error is lower than our approximation of generalization error via the test error, we have over fitting
 ```{r acuuracy_of_train_data}
 rf_pred_train= predict(rf_fit3, sample_train2)
 contftrain=confusionMatrix(rf_pred_train, as.factor(sample_train2$change2))
@@ -160,34 +160,43 @@ conftest=confusionMatrix(rf_pred3, as.factor(sample_test2$change2))
 ```
 not fitted random forest
 ```{r not_fitted_random_forest}
+## if you want to clear this file so that
+##  we actually re-run the RF fit, then file.remove("rf.RData")
+##  (or do it from your computer)
+## we could also use cache=TRUE here
 if (file.exists("rf.RData")) {
     load("rf.RData")
 } else {
-    rf <- randomForest(formula= factor(change2) ~ . - x - y ,
+    rf <- randomForest(formula= factor(change2) ~ . - x - y - landuse - change,
                        data = sample_train, n.trees=250,interaction.depth=7, do.trace=1,
                        type="classification", proximity=TRUE)
     save("rf",file="rf.RData")
 }
-
 ```
 importance of predictors
 ```{r importance}
 importance(rf)
+## type = 2 (impurity) because we're doing classification and not regression
 varImpPlot(rf)
 ```
+
 OOB error
 ```{r out_of_bag_error}
-rf$err.rate[,1]
-str(rf$err.rate[,1])
+## rf$err.rate[,1]
 plot(rf$err.rate[,1], type = "l")
 ```
-Tree Model
-```{r packages}
-library(rpart.plot)
-library(rpart)
-```
+
+## Tree Model
 
 ```{r tree_model}
-set_tree = rpart(change2 ~ ., data =sample_train)
+set_tree = rpart(change2 ~ . -change -landuse -x-y,
+                 data =sample_train)
 rpart.plot(set_tree)
+```
+
+```{r side_by_side}
+op <- par(mfrow=c(1,2))
+varImpPlot(rf)
+rpart.plot(set_tree)
+par(op) ## restore original parameter
 ```

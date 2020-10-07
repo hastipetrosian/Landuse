@@ -179,3 +179,10 @@ plot_preds <- function(model, focal_var="prop_settle_nbrs",n_bins=20) {
         ggtitle(focal_var)
     
 }
+
+change_fun <- function(x) {
+    case_when(x == 0 ~ "no gain",
+              x == 1 ~ "gain",
+              x == 2 ~ "loss",
+              x == 3 ~ "no loss")
+}

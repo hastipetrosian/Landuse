@@ -1,0 +1,58 @@
+---
+title: "Running random forests for the whole spatial set "
+---
+```{r}
+library(purrr)
+library(dplyr)
+```
+
+```{r input_data}
+## increase memory
+if (.Platform$OS.type=="windows") memory.limit(1000000)
+## get all data (as tables of x,y, predictors, change)
+load("rr_points14.RData")
+```
+filter all data
+```{r filter}
+change_fun <- function(x) {
+    case_when(x == 0 ~ "no gain",
+              x == 1 ~ "gain",
+              x == 2 ~ "loss",
+              x == 3 ~ "no loss")
+}
+datal <- map(rr_points14, filter, x<604000 & y >284000 &  y < 2846000)
+datal <- map(datal, ~mutate_at(.,"change", change_fun))
+```
+
+## filter gain data
+
+```{r filter_gain}
+datalgain <- map(datal, filter, change %in% c("no gain", "gain"))
+sapply(datalgain, nrow)
+```
+## upsample all data
+
+```{r upsampling}
+datal_upsample <- list()  
+for (i in 1:length(datalgain)) {
+    datal_upsample[[i]] <- 
+        ovun.sample(change ~ ., data = datalgain[[i]], method = "both", N=1500)$data
+    datal_upsample[[i]]$year <- names(datalgain)[[i]]
+}
+## check number of rows
+lapply(datal_upsample,nrow)
+## put 
+datal_upsample <- bind_rows(datal_upsample)
+nrow(datal_upsample)
+table(datal_upsample$year)
+## datal_upsample <- map_dfr(datalgain,
+## normally we can use ~ .... (.) ....
+## where . stands for the data (i.e. the particular year's data) that we want
+## to process
+## it probably won't work here because . is also used in the regression formula
+##  to mean "all of the predictor variables"
+## ~ovun.sample(change ~ ., data = ?datalgain, method = "both", N=1500)$data)
+##                      upsamp_function,
+##                      .id="year")
+```
+
