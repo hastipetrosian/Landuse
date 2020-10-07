@@ -2,28 +2,34 @@
 #title: "Cross validation"
 ---
 
-```{r}
+```{r {r package}}
 library(blockCV)
-PA=as.factor(ss$change2)
+library(sf)
+```
+
+```{r input_data}
+## increase memory
+if (.Platform$OS.type=="windows") memory.limit(1000000)
+
+## get all data (as tables of x,y, predictors, change)
+load("rr_points14.RData")
+
+## test with smaller data set
+dat <- filter(rr_points14[["2014"]],
+              x<604000 & y >284000 &  y < 2846000)
+```
+
+```{r classified_maps}
 classified1=raster("Classified1.tif")
 classified2=raster("classified2.tif")
+```
 
+H-P:?Unknown or uninitialised column: `change2`.Error in UseMethod("st_as_sf") : 
+  no applicable method for 'st_as_sf' applied to an object of class "c('double', 'numeric')"
+```{r}
+PA=as.numeric(dat$change2)
 PA_data <- st_as_sf(PA, coords = c("x", "y"), crs = crs(classified1))
-
-```
-H-P:Error in UseMethod("st_as_sf") : 
-no applicable method for 'st_as_sf' applied to an object of class "factor"
-```{r}
-PA=as.factor(ss$change2)
-```
-Import classified maps
-```{r}
-classified1=raster("Classified1.tif")
-classified2=raster("classified2.tif")
-```
-
-```{r}
-PA_data <- st_as_sf(PA, coords = c("x", "y"), crs = crs(classified1))
+PA=as.factor(dat$change2)
 ```
 spatial blocking by specified range with random assignment
 ```{r}
