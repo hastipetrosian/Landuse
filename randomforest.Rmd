@@ -181,3 +181,13 @@ rf$err.rate[,1]
 str(rf$err.rate[,1])
 plot(rf$err.rate[,1], type = "l")
 ```
+Tree Model
+```{r packages}
+library(rpart.plot)
+library(rpart)
+```
+
+```{r}
+set_tree = rpart(change2 ~ ., data =sample_train)
+rpart.plot(set_tree)
+```
