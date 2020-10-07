@@ -187,7 +187,7 @@ library(rpart.plot)
 library(rpart)
 ```
 
-```{r}
+```{r tree_model}
 set_tree = rpart(change2 ~ ., data =sample_train)
 rpart.plot(set_tree)
 ```
