@@ -5,7 +5,6 @@ author: "Hasti"
 
 You can type regular text, explanations, etc. outside of "code chunks"
 
-
 ```{r pkgs}
 library(ROSE)
 library(spdep)
@@ -27,9 +26,7 @@ load("rr_points14.RData")
 dat <- filter(rr_points14[["2014"]],
               x<604000 & y >284000 &  y < 2846000)
 ```
-
 Is there something funny about the `prop_build_nbrs` variable?
-
 ```{r prop_build}
 pb <- dat$prop_build_nbrs
 table(pb>0)
@@ -41,9 +38,7 @@ table(pa>0)
 mean(pa>0,na.rm=TRUE)
 ## hist(pa[pa>0],breaks=50)
 ```
-
 For some analyses we have to reduce the response to binary
-
 previously: split into two separate data sets
 here we lump "gain" and "loss" together into "change" ...
 advantage: we only have to run one analysis (not two separate analyses, one
