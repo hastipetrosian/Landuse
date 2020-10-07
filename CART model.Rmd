@@ -1,0 +1,61 @@
+---
+title: "classification and regression tree (CART) models"
+---
+```{r package}
+library(caret)
+```
+inter data
+```{r get_data}
+## increase memory
+if (.Platform$OS.type=="windows") memory.limit(1000000)
+
+## get all data (as tables of x,y, predictors, change)
+load("rr_points14.RData")
+
+## test with smaller data set
+dat <- filter(rr_points14[["2014"]],
+              x<604000 & y >284000 &  y < 2846000)
+```
+upsampling
+```{r upsample data}
+dat$change <- factor(dat$change, levels=0:3,
+                     labels= c("no gain","gain","loss","no loss"))
+
+## choice 1.
+dat$change2 <- factor(ifelse(dat$change %in% c("no gain", "no loss"),
+                                 "no change", "change"))
+
+## choice 2.
+dat_gain <- filter(dat, change %in% c("no gain", "gain")) 
+dat_loss <- filter(dat, change %in% c("no loss", "loss"))
+
+## analyzing gain only, first ...
+if (file.exists("dat_upsample")) {load("dat_upsample")
+} else {
+dat_upsample <- ovun.sample(change ~ ., data = dat_gain, method = "both", N=1500)$data
+}
+```
+test and train samples
+```{r train_and_test_sample}
+set.seed(123)
+## pkgname::function()
+## explicitly note which package a function comes from ...
+set.seed(23489)
+train_index <- sample(1:nrow(dat_upsample), 0.9 * nrow(dat_upsample))
+sample_train <- dat_upsample[train_index, ]
+sample_test <- dat_upsample[-train_index, ]
+```
+creat trainControl parameter
+```{r traincontrol}
+trainCtrl=trainControl(method = "cv", number=10)
+```
+creat model
+```{r model}
+cartmodel=caret::train(change2~., data = sample_train, 
+                    trControl = trainCtrl, method = "rpart")
+```
+Predicting data and checking results
+```{r confusion matrix}
+cartpred <- predict(cartmodel, sample_test)
+confusionMatrix(sample_test$change2,cartpred)
+```
