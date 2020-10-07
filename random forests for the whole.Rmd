@@ -16,13 +16,13 @@ filter all data
 ```{r filter}
 datal=map(rr_points14, filter, x<604000 & y >284000 &  y < 2846000)
 ```
-filte gain data
-```{r}
+filter gain data
+```{r filter_gain}
 datalgain=map(datal, filter, change %in% c("no gain", "gain"))
 ```
 upsample all data
 H-P:error;1: change ~ 1987.x
-```{r}
+```{r upsampling}
 datal_upsample <- map(?datalgain, ovun.sample(change ~ ., data = ?datalgain, method = "both", N=1500)$data)
 
 ```
