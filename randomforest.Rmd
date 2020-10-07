@@ -184,17 +184,6 @@ varImpPlot(rf)
 OOB error
 ```{r out of bag error}
 rf$err.rate[,1]
+str(rf$err.rate[,1])
+plot(rf$err.rate[,1], type = "l")
 ```
-
-
-H-p=ggplot?
-```{r acuuracy of train data}
-```
-```{r}
-ggplot(  ) + 
-  geom_point( aes(x = sample_test2$landuse, y = ?, color = 'red', alpha = 0.5) ) + 
-  geom_point( aes(x =  sample_test2$landuse , y = rf_pred3, color = 'blue',  alpha = 0.5)) + 
-  labs(x = "Carat", y = "Price", color = "", alpha = 'Transperency') +
-  scale_color_manual(labels = c( "Predicted", "Real"), values = c("blue", "red"))
-```
-
