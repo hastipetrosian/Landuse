@@ -1,15 +1,21 @@
 ---
-#title: "Cross validation"
+title: "Cross validation"
 ---
 
-```{r {r package}}
+```{r packages}
+library(tidyverse) ## load filter(), ... function
 library(blockCV)
 library(sf)
 library(raster)
-source("functions.R")
 library(ggplot2)
-library(shiny)
+library(shiny) ## what for ... ??
+library(ROSE)
+library(caret)
+source("functions.R")
 ```
+
+To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
+
 
 ```{r input_data}
 ## increase memory
@@ -19,35 +25,40 @@ if (.Platform$OS.type=="windows") memory.limit(1000000)
 load("rr_points14.RData")
 
 ## test with smaller data set
-dat <- filter(rr_points14[["2014"]],
-              x<604000 & y >284000 &  y < 2846000)
+dat <- dplyr::filter(rr_points14[["2014"]],
+                     x<604000 & y >284000 &  y < 2846000)
 dat$change2 <- change_fun(dat$change)
 ```
 
-```{r}
-dat_gain <- filter(dat, change %in% c("no gain", "gain")) 
+```{r upsample}
+dat_gain <- dplyr::filter(dat, change2 %in% c("no gain", "gain")) 
 
 ## analyzing gain only, first ...
-if (file.exists("dat_upsample")) {load("dat_upsample")
-} else {
-dat_upsample <- ovun.sample(change ~ ., data = dat_gain, method = "both", N=1500)$data
+if (file.exists("dat_upsample")) {
+    load("dat_upsample")
+}  else {
+    dat_upsample <- ROSE::ovun.sample(change ~ ., data = dat_gain, method = "both", N=1500)$data
 }
 ```
-classified maps
+
+## classified maps
+
 ```{r classified_maps}
 classified1=raster("Classified1.tif")
 classified2=raster("classified2.tif")
 ```
-make a SpatialPointsDataFrame object from data.frame
-```{r}
+
+Make a `SpatialPointsDataFrame` object from data.frame:
+
+```{r spatialpointsdataframe}
 ## PA=as.numeric(dat$change2)
 PA_data <- st_as_sf(dat_upsample, coords = c("x", "y"), crs = crs(classified1))
 ##PA=as.factor(dat$change2)
 ```
-spatial blocking by specified range with random assignment
-```{r}
-if (file.exists("sb.RData")){load("sb.RData")
-} else {
+
+Spatial blocking by specified range with random assignment
+
+```{r spatial_blocking, cache=TRUE}
 sb <- spatialBlock(speciesData = PA_data,
                    species = "change2",
                    rasterLayer = classified1,
@@ -59,12 +70,13 @@ sb <- spatialBlock(speciesData = PA_data,
                    biomod2Format = TRUE,
                    xOffset = 0, # shift the blocks horizontally
                    yOffset = 0)
-}
-
-traincontrolsb=trainControl(index = sb,method="CV")
+## select *first* (training) set of indices for each fold
+## IS THIS THE RIGHT WAY TO DO THIS ???
+trainfolds <- lapply(sb$folds, function(x) x[[1]])
+traincontrolsb <- caret::trainControl(index = trainfolds,method="CV")
 ```
 
-```{r}
+```{r envBlock}
 eb <- envBlock(rasterLayer = classified1,
                speciesData = PA_data,
                species = "change2",
@@ -74,11 +86,23 @@ eb <- envBlock(rasterLayer = classified1,
                numLimit = 50)
 traincontroleb=trainControl(index = eb,method="CV")
 ```
-H-p:error  `index` should be lists of integers.
+
+```{r train_vs_test}
+set.seed(23489)
+train_index <- sample(1:nrow(dat_upsample), 0.9 * nrow(dat_upsample))
+sample_train <- dat_upsample[train_index, ]
+sample_test  <- dat_upsample[-train_index, ]
+```
+
+H-p: error  `index` should be lists of integers.
+
+
 ```{r random_forest}
-rf_fit4=train(as.factor(change2) ~ ., data = sample_train,
-          method = "ranger",
-          trControl = traincontrolsb)
+rf_fit4=train(as.factor(change2) ~ .,
+              data = dat_upsample, ## use the same data here as we used in spatialBlock()?
+              method = "ranger",
+              trControl = traincontrolsb)
+
 rf_pred4 <- predict(rf_fit4, sample_test)
 con4=confusionMatrix(rf_pred4, as.factor(sample_test$change2))
 ```
@@ -87,7 +111,9 @@ adding points on saptialBlock plot
 sb$plots + geom_sf(data = PA_data, alpha = 0.5)
 ```
 visualising the generated folds on a map
+
 ```{r folds_in_spatialk}
-fold=foldExplorer(eb, classified1, PA_data)
+if (interactive()) fold=foldExplorer(eb, classified1, PA_data)
+print(fold)
 ```
 
