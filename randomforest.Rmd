@@ -13,6 +13,7 @@ library(caret)
 library(randomForest)
 library(rpart.plot)
 library(rpart)
+library(pROC)
 ```
 inter data
 ```{r get_data}
@@ -26,7 +27,9 @@ load("rr_points14.RData")
 dat <- filter(rr_points14[["2014"]],
               x<604000 & y >284000 &  y < 2846000)
 ```
+
 Is there something funny about the `prop_build_nbrs` variable?
+
 ```{r prop_build}
 pb <- dat$prop_build_nbrs
 table(pb>0)
@@ -45,6 +48,7 @@ advantage: we only have to run one analysis (not two separate analyses, one
 for gain/no gain and one for loss/no loss
 disadvantage: it might not make geological sense to lump (variables leading to dune loss)
 together with (variables leading to dune gain)
+
 ```{r upsample_data}
 dat$change <- factor(dat$change, levels=0:3,
                      labels= c("no gain","gain","loss","no loss"))
@@ -64,6 +68,7 @@ dat_upsample <- ovun.sample(change ~ ., data = dat_gain, method = "both", N=1500
 }
 ```
 test and train samples
+
 ```{r train_and_test_sample}
 set.seed(123)
 ## pkgname::function()
@@ -71,26 +76,30 @@ set.seed(123)
 set.seed(23489)
 train_index <- sample(1:nrow(dat_upsample), 0.9 * nrow(dat_upsample))
 sample_train <- dat_upsample[train_index, ]
-sample_test <- dat_upsample[-train_index, ]
+sample_test  <- dat_upsample[-train_index, ]
 head(sample_train)
 dim(sample_train)
 ## a shorter way to do the same thing ...
 ## train <- subset(dat_upsample, sample)
 ## test  <- subset(dat_upsample,  !sample) ## ! means 'not'
 ```
+
 Anytime we want to fit a model using train we tell it which model to fit by providing a formula for the first argument (as.factor(old) ~ . means that we want to model old as a function of all of the other variables). Then we need to provide a method (we specify "ranger" to implement randomForest).
 Ranger is a fast implementation of random forests 
 By default, the train function without any arguments re-runs the model over 25 bootstrap samples and across 3 options of the tuning parameter (the tuning parameter for ranger is mtry; the number of randomly selected predictors at each cut in the tree).
-```{r fitted random_forest, cache=TRUE}
+
+```{r fitted_random_forest, cache=TRUE}
 rf_fit <- train(as.factor(change2) ~ ., data = sample_train,
                 method = "ranger")
 ```
 predict
+
 ```{r confusion_matrix}
 rf_pred <- predict(rf_fit, sample_test)
 con <- confusionMatrix(rf_pred, as.factor(sample_test$change2))
 ```
-preprocessing:estimates the required parameters for each operation 
+Preprocessing: estimates the required parameters for each operation 
+
 ```{r preproc}
 ## 1. with prop_agri_nbrs, without 'nzv': error
 ## 2. with prop_agri_nbrs, with 'nzv':
@@ -119,12 +128,16 @@ preprocess=preProcess(
 preprocess$method$remove
 
 ```
-removed= omit 3 predictors
-scaled=in ranger method the data to the interval between zero and one
+
+Removed= omit 3 predictors
+
+Scaled=in ranger method the data to the interval between zero and one
+
 ```{r traindata}
 sample_train2=subset(sample_train, select=- c(prop_build_nbrs, prop_settle_nbrs, prop_agri_nbrs))
 dim(sample_train2)
 ```
+
 random forest of data that preprocessed
 ```{r rf2,cache=TRUE}
 rf_fit2 <- train(as.factor(change2) ~ ., data = sample_train2,
@@ -138,26 +151,33 @@ k-fold=generate training and testing sets
 grouped=cbind(sample_train2[1:1350, ], group = rep(1:10, each = 5))
 ```
 grouped folds(10 folds)
+
 ```{r make_fold}
 group_folds=groupKFold(grouped$group, k = 10)
 group_fit_control=trainControl(index = group_folds,method = "cv")
 ```
-random forest of new set of data
-```{r}
-rf_fit3=train(as.factor(change2) ~ ., data = sample_train,
+
+Random forest of new set of data:
+
+```{r train_rf}
+rf_fit3 <- train(as.factor(change2) ~ .,
+                 data = sample_train2,
                  method = "ranger",
-                trControl = group_fit_control)
+                 trControl = group_fit_control)
 max(rf_fit3$results$Accuracy)
 rf_pred3 <- predict(rf_fit3, sample_test)
 con3=confusionMatrix(rf_pred3, as.factor(sample_test$change2))
 ```
-check overfitting:if training error is lower than our approximation of generalization error via the test error, we have over fitting
-```{r acuuracy_of_train_data}
-rf_pred_train= predict(rf_fit3, sample_train2)
-contftrain=confusionMatrix(rf_pred_train, as.factor(sample_train2$change2))
+
+Check overfitting: if training error is lower than our approximation of generalization error via the test error, we have over fitting
+
+```{r accuracy_of_train_data}
+rf_pred_train <- predict(rf_fit3, sample_train2)
+contftrain <- confusionMatrix(rf_pred_train, as.factor(sample_train2$change2))
 rf_pred_test <- predict(rf_fit3, sample_test2)
 conftest=confusionMatrix(rf_pred3, as.factor(sample_test2$change2))
 ```
+
 not fitted random forest
 ```{r not_fitted_random_forest}
 ## if you want to clear this file so that
@@ -209,7 +229,7 @@ probs=predict(rf,
 head(probs)
 ##Receiver Operating Characteristic(ROC)
 ## based on the true positive rate and false positive rate
-rocCurve<- roc(sample_test$change2,probs[,"change"])
+rocCurve<- pROC::roc(sample_test$change2,probs[,"change"])
 plot(rocCurve ,col=c(4))
 ###calculate the area under curve (bigger is better)
 auc(rocCurve)
