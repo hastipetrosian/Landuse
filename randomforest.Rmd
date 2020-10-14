@@ -144,12 +144,12 @@ group_fit_control=trainControl(index = group_folds,method = "cv")
 ```
 random forest of new set of data
 ```{r}
-rf_fit3=train(as.factor(change2) ~ ., data = sample_train2,
+rf_fit3=train(as.factor(change2) ~ ., data = sample_train,
                  method = "ranger",
                 trControl = group_fit_control)
 max(rf_fit3$results$Accuracy)
-rf_pred3 <- predict(rf_fit3, sample_test2)
-con3=confusionMatrix(rf_pred3, as.factor(sample_test2$change2))
+rf_pred3 <- predict(rf_fit3, sample_test)
+con3=confusionMatrix(rf_pred3, as.factor(sample_test$change2))
 ```
 check overfitting:if training error is lower than our approximation of generalization error via the test error, we have over fitting
 ```{r acuuracy_of_train_data}
