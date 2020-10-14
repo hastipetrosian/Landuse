@@ -200,3 +200,18 @@ varImpPlot(rf)
 rpart.plot(set_tree)
 par(op) ## restore original parameter
 ```
+H-P=ERROR=Setting levels: control = change, case = no change
+Setting direction: controls > cases
+```{r ROC_AUC}
+probs=predict(rf,
+                   newdata=sample_test,
+                   type="prob")
+head(probs)
+##Receiver Operating Characteristic(ROC)
+## based on the true positive rate and false positive rate
+rocCurve<- roc(sample_test$change2,probs[,"change"])
+plot(rocCurve ,col=c(4))
+###calculate the area under curve (bigger is better)
+auc(rocCurve)
+```
+
