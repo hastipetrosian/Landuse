@@ -3,7 +3,7 @@ title: "random forests"
 author: "Hasti"
 ---
 
-```{r pkgs}
+```{r pkgs, message=FALSE}
 library(ROSE)
 library(spdep)
 library(tidyverse)
@@ -15,6 +15,15 @@ library(rpart.plot)
 library(rpart)
 library(pROC)
 ```
+
+```{r cleanup}
+file.remove("rf.RData")
+```
+
+```{r set_seed}
+set.seed(101)  ## set random number sequence
+```
+
 inter data
 ```{r get_data}
 ## increase memory
@@ -89,10 +98,12 @@ Ranger is a fast implementation of random forests
 By default, the train function without any arguments re-runs the model over 25 bootstrap samples and across 3 options of the tuning parameter (the tuning parameter for ranger is mtry; the number of randomly selected predictors at each cut in the tree).
 
 ```{r fitted_random_forest, cache=TRUE}
-rf_fit <- train(as.factor(change2) ~ ., data = sample_train,
+rf_fit <- train(as.factor(change2) ~ .,
+                data = sample_train,
                 method = "ranger")
 ```
-predict
+
+Prediction
 
 ```{r confusion_matrix}
 rf_pred <- predict(rf_fit, sample_test)
@@ -179,7 +190,8 @@ conftest=confusionMatrix(rf_pred3, as.factor(sample_test2$change2))
 ```
 
 not fitted random forest
-```{r not_fitted_random_forest}
+
+```{r not_fitted_random_forest,results="hide"}
 ## if you want to clear this file so that
 ##  we actually re-run the RF fit, then file.remove("rf.RData")
 ##  (or do it from your computer)
@@ -188,12 +200,15 @@ if (file.exists("rf.RData")) {
     load("rf.RData")
 } else {
     rf <- randomForest(formula= factor(change2) ~ . - x - y - landuse - change,
-                       data = sample_train, n.trees=250,interaction.depth=7, do.trace=1,
+                       data = sample_train, n.trees=250,interaction.depth=7,
+                       ## do.trace=1,
                        type="classification", proximity=TRUE)
     save("rf",file="rf.RData")
 }
 ```
+
 importance of predictors
+
 ```{r importance}
 importance(rf)
 ## type = 2 (impurity) because we're doing classification and not regression
@@ -220,12 +235,11 @@ varImpPlot(rf)
 rpart.plot(set_tree)
 par(op) ## restore original parameter
 ```
-H-P=ERROR=Setting levels: control = change, case = no change
-Setting direction: controls > cases
+
 ```{r ROC_AUC}
 probs=predict(rf,
-                   newdata=sample_test,
-                   type="prob")
+              newdata=sample_test,
+              type="prob")
 head(probs)
 ##Receiver Operating Characteristic(ROC)
 ## based on the true positive rate and false positive rate
