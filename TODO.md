@@ -358,3 +358,31 @@ Morrissey, Michael B. ; Ruxton, and Graeme D. Ruxton. “Multiple Regression I
     * create the 'best' model or models we can (random forest, logistic regression, lasso/penalized regression, ...)
 	* make sure that we are incorporating and/or accounting for spatial correlation appropriately
 	* discuss results!
+
+## 14 October
+
+- can we understand small differences in AUC/ROC curve between results on different systems, even when `set.seed(101)` is done on both to make sure that we have the same random-number stream?  (There can often be small computational differences between operating systems, versions of R, versions of packages ...)
+- are we overfitting if we have a large AUC?
+    - if we are calculating AUC on the *training* set, then this is probably overfitting
+	- if we are calculating AUC on the *testing* set, **and the observations in the training set are independent of the observations in the training set**, then we're not overfitting
+	- but ... when I have a SPATIAL data set, this probably isn't true any more; I have to pick my testing sets in a spatially structured way (like with spatial blocks)
+
+papers about spatial blocking etc:
+
+---
+Wenger, Seth J., and Julian D. Olden. “Assessing Transferability of Ecological Models: An Underappreciated Aspect of Statistical Validation.” Methods in Ecology and Evolution 3, no. 2 (April 2012): 260–67. https://doi.org/10.1111/j.2041-210X.2011.00170.x.
+
+Harris, David J. “Generating Realistic Assemblages with a Joint Species Distribution Model.” Methods in Ecology and Evolution 6, no. 4 (April 1, 2015): 465–73. https://doi.org/10.1111/2041-210X.12332 . (Figure 2 shows spatial test vs train)
+
+Roberts, David R., Volker Bahn, Simone Ciuti, Mark S. Boyce, Jane Elith, Gurutzeta Guillera-Arroita, Severin Hauenstein, et al. “Cross-Validation Strategies for Data with Temporal, Spatial, Hierarchical, or Phylogenetic Structure.” Ecography, December 1, 2016, n/a-n/a. https://doi.org/10.1111/ecog.02881.
+
+---
+
+Are existing papers that analyze landscape change making this mistake?
+
+* spatial blocking like this is important at two stages:
+     * if using cross-validation for model development, then the blocks should be *spatial* blocks (each fold needs to be spatially separated)
+	 * if using a test set to quantify model performance (e.g. AUC), then the test set needs to be spatially separated from the training set
+
+* visualize folds
+
