@@ -44,21 +44,13 @@ if (file.exists("dat_upsample")) {
 ## classified maps
 
 ```{r classified_maps}
-classified1=raster("Classified1.tif")
-classified2=raster("classified2.tif")
+Classified1=raster("Classified1.tif")
+Classified2=raster("classified2.tif")
 ```
 <<<<<<< HEAD
 make a SpatialPointsDataFrame object from data.frame
 ```{r numeric_data}
-=======
-
-Make a `SpatialPointsDataFrame` object from data.frame:
-
-```{r spatialpointsdataframe}
->>>>>>> 4d0c2d2ef63f51ed23b2f7898905df1f8999a689
-## PA=as.numeric(dat$change2)
 PA_data <- st_as_sf(dat_upsample, coords = c("x", "y"), crs = crs(classified1))
-##PA=as.factor(dat$change2)
 ```
 
 Spatial blocking by specified range with random assignment
@@ -99,9 +91,6 @@ sample_train <- dat_upsample[train_index, ]
 sample_test  <- dat_upsample[-train_index, ]
 ```
 
-H-p: error  `index` should be lists of integers.
-
-
 ```{r random_forest}
 rf_fit4=train(as.factor(change2) ~ .,
               data = dat_upsample, ## use the same data here as we used in spatialBlock()?
@@ -118,7 +107,7 @@ sb$plots + geom_sf(data = PA_data, alpha = 0.5)
 visualising the generated folds on a map
 
 ```{r folds_in_spatialk}
-if (interactive()) fold=foldExplorer(eb, classified1, PA_data)
+if (interactive()) fold=foldExplorer(eb, Classified1, PA_data)
 print(fold)
 ```
 
