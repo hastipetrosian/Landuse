@@ -249,3 +249,27 @@ plot(rocCurve ,col=c(4))
 auc(rocCurve)
 ```
 
+An example of non-independent test and train:
+
+```{r nonind_tt}
+plot(sample_train$x,sample_train$y)
+points(sample_test$x,sample_test$y,col=2,pch=16)
+legend("bottomleft",pch=c(1,16),col=c(1,2),
+       legend=c("train","test"))
+```
+
+```{r nonind_tt}
+plot(sample_train$x,sample_train$y)
+points(sample_test$x,sample_test$y,col=2,pch=16)
+legend("bottomleft",pch=c(1,16),col=c(1,2),
+       legend=c("train","test"))
+```
+
+
+```{r}
+bn <- rep(1:10, length.out=nrow(dat_upsample))
+bns <- sample(bn)  ## permutation: random order
+cvec <- palette.colors(10, "Tableau 10")
+plot(dat_upsample$x, dat_upsample$y, col=cvec[bns], pch=16, type="n")
+text(dat_upsample$x, dat_upsample$y, bns, col=cvec[bns],cex=2)
+```
