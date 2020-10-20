@@ -39,7 +39,7 @@ classified1=raster("Classified1.tif")
 classified2=raster("classified2.tif")
 ```
 make a SpatialPointsDataFrame object from data.frame
-```{r}
+```{r numeric_data}
 ## PA=as.numeric(dat$change2)
 PA_data <- st_as_sf(dat_upsample, coords = c("x", "y"), crs = crs(classified1))
 ##PA=as.factor(dat$change2)
