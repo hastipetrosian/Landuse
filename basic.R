@@ -723,8 +723,8 @@ rf_fit <- train(as.factor(change2) ~ .,
                 method = "ranger")
 rf_fit2 <- ranger(change2 ~ ., data = train, num.trees = 500, mtry = 6, importance = "impurity", min.node.size = 3, replace = TRUE, num.threads = 3)
 save("rf_fit",  file="saved_rf_fit.RData")
-rf_pred <- predict(rf_fit, test)
-confusionMatrix(rf_pred, as.factor(test$change2))
+rf_pred <- predict(rf_fit, dat_upsample)
+confusionMatrix(rf_pred, as.factor(dat_upsample$change2))
 ## importance of each predictor
 importance(rf)
 
