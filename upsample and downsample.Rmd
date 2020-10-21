@@ -2,14 +2,15 @@
 #title: "upsampel and downsample"
 ---
 
-```{r}
+```{r packages}
 library(ROSE)
 library("OSTSC")
+library(spdep)
 ```
-
 ```{r import_data}
-testdat <- filter(rr_points14[["2014"]],
-                  x<604000 & y >284000 &  y < 2846000)
+load("rr_points14.RData")
+testdat <- dplyr::filter(rr_points14[["2014"]],
+                     x<604000 & y >284000 &  y < 2846000)
 ```
 change
 ```{r change}
