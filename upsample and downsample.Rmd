@@ -29,7 +29,5 @@ prop.table(x=table(testdat$change2))
 upsample, downsample nad both
 ```{r upsample_downsampe}
 testdatss <- ovun.sample(change2~., data = testdat, method = "both", N=1500)$data
-
 testdatss2<- ovun.sample(change2~., data = testdat, method = "under")$data
-
 ```
