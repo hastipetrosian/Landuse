@@ -12,6 +12,7 @@ library(shiny) ## what for ... ??
 library(ROSE)
 library(caret)
 source("functions.R")
+library(randomForest)
 ```
 To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
 ```{r input_data}
@@ -42,11 +43,19 @@ if (file.exists("dat_upsample")) {
 Classified1=raster("Classified1.tif")
 Classified2=raster("classified2.tif")
 ```
-make a SpatialPointsDataFrame object from data.frame
+The appropriate format of species data for the blockCV package is simple features (sf) or SpatialPointsDataFrame.pamake a SpatialPointsDataFrame object from data.frame
 ```{r numeric_data}
 PA_data <- st_as_sf(dat_upsample, coords = c("x", "y"), crs = crs(Classified1))
 ```
+
+```{r train_vs_test}
+set.seed(23489)
+train_index <- sample(1:nrow(PA_data), 0.9 * nrow(dat_upsample))
+sample_train <- PA_data[train_index, ]
+sample_test  <- PA_data[-train_index, ]
+```
 Spatial blocking by specified range with random assignment
+creates spatially separated folds based on a pre-specified distance (cell size of the blocks).
 ```{r spatial_blocking, cache=TRUE}
 sb <- spatialBlock(speciesData = PA_data,
                    species = "change2",
@@ -61,10 +70,10 @@ sb <- spatialBlock(speciesData = PA_data,
                    yOffset = 0)
 ## select *first* (training) set of indices for each fold
 ## IS THIS THE RIGHT WAY TO DO THIS ???
-trainfolds <- lapply(sb$folds, function(x) x[[1]])
-traincontrolsb <- caret::trainControl(index = trainfolds,method="CV")
+trainfoldsb <- lapply(sb$folds, function(x) x[[1]])
+traincontrolsb <- caret::trainControl(index = trainfoldsb,method="CV")
 ```
-
+specify sets of similar environmental conditions based on the input covariates. Species data corresponding to any of these groups or clusters are assigned to a fold.
 ```{r envBlock}
 eb <- envBlock(rasterLayer = Classified1,
                speciesData = PA_data,
@@ -73,14 +82,41 @@ eb <- envBlock(rasterLayer = Classified1,
                standardization = "standard", # rescale variables between 0 and 1
                rasterBlock = FALSE,
                numLimit = 50)
-traincontroleb=trainControl(index = eb,method="CV")
+trainfoldeb <- lapply(eb$folds, function(x) x[[1]])
+traincontrolsb <- caret::trainControl(index = trainfoldeb,method="CV")
 ```
+generates spatially separated training and testing folds by considering buffers of specified distance around each observation point. 
+```{r biffering}
+bf <- buffering(speciesData = PA_data,
+                  theRange = 700,#ideally the range of spatial autocorrelation
+                  species = "change2", # to count the number of presences and absences/backgrounds
+                  spDataType = "PA", # presence-absence  data type
+                  progress = TRUE)
+# extract the folds (list)SpatialBlock object 
+folds <- bf$folds
 
-```{r train_vs_test}
-set.seed(23489)
-train_index <- sample(1:nrow(dat_upsample), 0.9 * nrow(dat_upsample))
-sample_train <- dat_upsample[train_index, ]
-sample_test  <- dat_upsample[-train_index, ]
+for(k in seq_len(length(folds))){
+  # extracting the training and testing indices
+  # this way works with folds list (but not foldID)
+  trainSet <- unlist(folds[[k]][1]) # training set indices
+  testSet <- unlist(folds[[k]][2])} # testing set indices
+a=PA_data[trainSet,]
+a$geometry <- NULL
+b=PA_data[testSet, ]
+b$geometry <- NULL
+rfcv <- randomForest(formula= factor(change2) ~ .  - landuse - change,
+                       data = a, n.trees=250,interaction.depth=7,
+                       ## do.trace=1,
+                       type="classification", proximity=TRUE) # model fitting on training set
+predcv<- predict(rfcv, newdata=b, type = "prob")
+head(predcv)
+```
+h-p:Idont know that why my parametres are nit correct
+```{r roc}
+rocCurve<- pROC::roc(b$change2,predcv[,"change"])
+plot(rocCurve ,col=c(4))
+###calculate the area under curve (bigger is better)
+auc(rocCurve)
 ```
 
 ```{r random_forest_sbfolds}
@@ -108,7 +144,6 @@ coneb=confusionMatrix(rf_predeb, as.factor(sample_test$change2))
 sb$plots + geom_sf(data = PA_data, alpha = 0.5)
 ```
 visualising the generated folds on a map
-
 ```{r folds_in_spatialk}
 fold=foldExplorer(eb, Classified1, PA_data)
 print(fold)
