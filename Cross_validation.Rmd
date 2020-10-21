@@ -111,14 +111,14 @@ rfcv <- randomForest(formula= factor(change2) ~ .  - landuse - change,
 predcv<- predict(rfcv, newdata=b, type = "prob")
 head(predcv)
 ```
-h-p:Idont know that why my parametres are nit correct
+h-p:Idont know that why my parametres are not correct
 ```{r roc}
 rocCurve<- pROC::roc(b$change2,predcv[,"change"])
 plot(rocCurve ,col=c(4))
 ###calculate the area under curve (bigger is better)
 auc(rocCurve)
 ```
-
+may be this method is not coorect for cross validation
 ```{r random_forest_sbfolds}
 rf_sb=train(as.factor(change2) ~ .,
               data = dat_upsample, ## use the same data here as we used in spatialBlock()?
