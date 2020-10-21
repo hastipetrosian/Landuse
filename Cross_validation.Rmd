@@ -86,34 +86,112 @@ trainfoldeb <- lapply(eb$folds, function(x) x[[1]])
 traincontrolsb <- caret::trainControl(index = trainfoldeb,method="CV")
 ```
 generates spatially separated training and testing folds by considering buffers of specified distance around each observation point. 
-```{r biffering}
+
+```{r buffering, cache=TRUE}
 bf <- buffering(speciesData = PA_data,
-                  theRange = 700,#ideally the range of spatial autocorrelation
-                  species = "change2", # to count the number of presences and absences/backgrounds
-                  spDataType = "PA", # presence-absence  data type
-                  progress = TRUE)
+                theRange = 700,#ideally the range of spatial autocorrelation
+                species = "change2", # to count the number of presences and absences/backgrounds
+                spDataType = "PA", # presence-absence  data type
+                progress = TRUE)
+```
+
+```{r plot_buffer}
+dd1 <- bf$folds[[1]] ## first fold
+plot(y~x, data=dat_upsample[dd1[[1]],])  ## training data
+## testing data
+## data points that aren't in test or in train
+excluded <- setdiff(seq(nrow(dat_upsample)), c(dd1[[1]],dd1[[2]]))
+with(dat_upsample[excluded,], points(x,y,col=4))
+with(dat_upsample[dd1[[2]],], points(x,y,col=2,pch=16,cex=2))
+```
+
+```{r plot_buffer_2}
+ctr <- list(x=601023, y=2844924)  ## a focal point
+dist_to_ctr <- sqrt((dat_upsample$x-ctr$x)^2 + (dat_upsample$y-ctr$y)^2)
+pts <- seq(nrow(dat_upsample))
+test <- pts[dist_to_ctr<1000]
+excluded <- pts[dist_to_ctr>1000 & dist_to_ctr<2000]
+train <- pts[dist_to_ctr>2000]
+plot(y~x,data=dat_upsample[train,])
+grid(nx=4,ny=4,col=5)
+with(dat_upsample[excluded,], points(x,y,col=4))
+with(dat_upsample[test,], points(x,y,col=2,pch=16))
+```
+
+```{r plot_blockCV}
+corners <- list(x=c(598503.1,601478.4),
+                y=c(2842969,2839360))
+pts <- seq(nrow(dat_upsample))
+test <- pts[dat_upsample$x > corners$x[1] &
+            dat_upsample$x < corners$x[2] &
+            dat_upsample$y < corners$y[1] &
+            dat_upsample$y > corners$y[2]]
+train <- setdiff(pts,test)
+plot(y~x,data=dat_upsample[train,])
+grid(nx=4,ny=4,col=5)
+with(dat_upsample[test,], points(x,y,col=2,pch=16))
+```
+
+```{r fit_rf_buffer}
 # extract the folds (list)SpatialBlock object 
 folds <- bf$folds
+fvec <- seq_len(length(folds))
+for (k in fvec) {
+    ## extracting the training and testing indices
+    ## this way works with folds list (but not foldID)
+    trainSet <- unlist(folds[[k]][1]) # training set indices
+    testSet <- unlist(folds[[k]][2]) # testing set indices
+}
+## BMB: when this finishes, we have
+trainSet <- unlist(folds[[1500]][1])
+testSet <- unlist(folds[[1500]][2])
 
-for(k in seq_len(length(folds))){
-  # extracting the training and testing indices
-  # this way works with folds list (but not foldID)
-  trainSet <- unlist(folds[[k]][1]) # training set indices
-  testSet <- unlist(folds[[k]][2])} # testing set indices
-a=PA_data[trainSet,]
+## if you want to run the rf for lots of folds
+## rf_list <- list()
+## for (k in 1:nfolds) {
+##    ## extract train set
+##    ## run rf on train set
+##    rf_list[[k]] <- ## random forest model you just fitted
+## }
+## if you have 10 folds, this will save 10 fitted random forest models
+
+## aucvec <- rep(NA,nfolds)
+## for (k in 1:nfolds) {
+##   get test set data for fold k
+##   get predictions from rf_list[[k]]
+##   pp <- pROC::roc
+##   aucvec[k] <- c(pp$auc)
+## }
+## mean(aucvec)
+##
+## averaging the ROC curves is harder ...
+
+
+a <- PA_data[trainSet,]
 a$geometry <- NULL
-b=PA_data[testSet, ]
+b <- PA_data[testSet, ]
 b$geometry <- NULL
 rfcv <- randomForest(formula= factor(change2) ~ .  - landuse - change,
                        data = a, n.trees=250,interaction.depth=7,
                        ## do.trace=1,
-                       type="classification", proximity=TRUE) # model fitting on training set
+                     type="classification", proximity=TRUE) # model fitting on training set
+## test set is only 1 point
 predcv<- predict(rfcv, newdata=b, type = "prob")
 head(predcv)
 ```
+
 h-p:Idont know that why my parametres are not correct
+
 ```{r roc}
-rocCurve<- pROC::roc(b$change2,predcv[,"change"])
+rocCurve <- pROC::roc(factor(b$change2,levels=c("gain","nogain")),
+                      predcv[,"gain"])
+
+pp <- pROC::roc(sample(0:1,size=50,replace=TRUE), pred=runif(50))
+plot(pp)
+plot(pROC::roc(c(1,1,0,0), pred=c(0.2,0.4,0.1,0.2)))
+plot(pROC::roc(c(1,0), pred=c(0.2,0.2)))
+
+
 plot(rocCurve ,col=c(4))
 ###calculate the area under curve (bigger is better)
 auc(rocCurve)
