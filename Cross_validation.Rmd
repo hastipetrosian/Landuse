@@ -89,29 +89,26 @@ generates spatially separated training and testing folds by considering buffers 
 
 ```{r buffering, cache=TRUE}
 bf <- buffering(speciesData = PA_data,
-<<<<<<< HEAD
                   theRange = 1000,#ideally the range of spatial autocorrelation
                   species = "change2", # to count the number of presences and absences/backgrounds
                   spDataType = "PA", # presence-absence  data type
                   progress = TRUE)
-=======
-                theRange = 700,#ideally the range of spatial autocorrelation
-                species = "change2", # to count the number of presences and absences/backgrounds
-                spDataType = "PA", # presence-absence  data type
-                progress = TRUE)
 ```
 
 ```{r plot_buffer}
 dd1 <- bf$folds[[1]] ## first fold
-plot(y~x, data=dat_upsample[dd1[[1]],])  ## training data
+## training data
+plot(y~x, data=dat_upsample[dd1[[1]],])  
 ## testing data
 ## data points that aren't in test or in train
 excluded <- setdiff(seq(nrow(dat_upsample)), c(dd1[[1]],dd1[[2]]))
+##plot
 with(dat_upsample[excluded,], points(x,y,col=4))
 with(dat_upsample[dd1[[2]],], points(x,y,col=2,pch=16,cex=2))
 ```
 
 ```{r plot_buffer_2}
+##not convenience
 ctr <- list(x=601023, y=2844924)  ## a focal point
 dist_to_ctr <- sqrt((dat_upsample$x-ctr$x)^2 + (dat_upsample$y-ctr$y)^2)
 pts <- seq(nrow(dat_upsample))
@@ -124,22 +121,26 @@ with(dat_upsample[excluded,], points(x,y,col=4))
 with(dat_upsample[test,], points(x,y,col=2,pch=16))
 ```
 
-```{r plot_blockCV}
+```{r plot_buffer_3}
+##introsucing the specific block 
 corners <- list(x=c(598503.1,601478.4),
-                y=c(2842969,2839360))
+                y=c(2842969,2839900))
 pts <- seq(nrow(dat_upsample))
+##introducinf test data in the introduced block
 test <- pts[dat_upsample$x > corners$x[1] &
             dat_upsample$x < corners$x[2] &
             dat_upsample$y < corners$y[1] &
             dat_upsample$y > corners$y[2]]
+##grid study area
+grid(nx=4,ny=4,col=5)
+##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
 train <- setdiff(pts,test)
 plot(y~x,data=dat_upsample[train,])
 grid(nx=4,ny=4,col=5)
 with(dat_upsample[test,], points(x,y,col=2,pch=16))
 ```
 
-```{r fit_rf_buffer}
->>>>>>> 17919e09d71688ae04f380dbf8177669736fad6c
+```{r random_forest_buffer1}
 # extract the folds (list)SpatialBlock object 
 folds <- bf$folds
 fvec <- seq_len(length(folds))
@@ -187,9 +188,7 @@ predcv<- predict(rfcv, newdata=b, type = "prob")
 head(predcv)
 ```
 
-h-p:Idont know that why my parametres are not correct
-
-```{r roc}
+```{r roc_random_forest_buffer1}
 rocCurve <- pROC::roc(factor(b$change2,levels=c("gain","nogain")),
                       predcv[,"gain"])
 
@@ -233,4 +232,18 @@ visualising the generated folds on a map
 fold=foldExplorer(eb, Classified1, PA_data)
 print(fold)
 ```
+
+```{r random_forest_buffer3}
+umFolds <- trainControl(method = "cv", number = 10)
+a <- PA_data[train,]
+b <- PA_data[test, ]
+a$geometry <- NULL
+b$geometry <- NULL
+rf_b=train(as.factor(change2) ~ .  - landuse - change,
+            data = a, ## use the same data here as we used in spatialBlock()?
+            method = "ranger",
+            trControl = umFolds)
+pred_b=predict(rf_b, newdata=b)
+```
+
 
