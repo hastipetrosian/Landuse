@@ -88,7 +88,7 @@ traincontrolsb <- caret::trainControl(index = trainfoldeb,method="CV")
 generates spatially separated training and testing folds by considering buffers of specified distance around each observation point. 
 ```{r biffering}
 bf <- buffering(speciesData = PA_data,
-                  theRange = 700,#ideally the range of spatial autocorrelation
+                  theRange = 1000,#ideally the range of spatial autocorrelation
                   species = "change2", # to count the number of presences and absences/backgrounds
                   spDataType = "PA", # presence-absence  data type
                   progress = TRUE)
