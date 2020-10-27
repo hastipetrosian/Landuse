@@ -386,3 +386,10 @@ Are existing papers that analyze landscape change making this mistake?
 
 * visualize folds
 
+## 21 October 2020
+
+* "buffering" approach: is there a way to do this with a smaller number of folds, where the testing set in each case has a reasonable number of points in it (say, 50)? (Compare with the figure from the Harris 'mistnet' paper (2015). The reason to do it this way is so that we only have to do 10-fold (rather than 1500-fold! cross-validation)
+* buffering is a good way to do it. Block CV might be good enough ...
+* we want reasonably independent train and test sets, and we want a reasonable number of folds (5-20), however we get this done is fine with me ...
+
+* we can average AUC across folds
