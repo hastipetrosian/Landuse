@@ -93,10 +93,8 @@ rf_eb=train(as.factor(change2) ~ .,
               method = "ranger",
               trControl = traincontroleb)
 ```
-
 generates spatially separated training and testing folds by considering buffers of specified distance around each observation point. 
-
-```{r buffering, cache=TRUE}
+```{r define_buffers, cache=TRUE}
 bf <- buffering(speciesData = PA_data,
                   theRange = 1000,#ideally the range of spatial autocorrelation
                   species = "change2", # to count the number of presences and absences/backgrounds
@@ -114,20 +112,6 @@ excluded <- setdiff(seq(nrow(dat_upsample)), c(dd1[[1]],dd1[[2]]))
 ##plot
 with(dat_upsample[excluded,], points(x,y,col=4))
 with(dat_upsample[dd1[[2]],], points(x,y,col=2,pch=16,cex=2))
-```
-
-```{r plot_buffer_2}
-##not convenience
-ctr <- list(x=601023, y=2844924)  ## a focal point
-dist_to_ctr <- sqrt((dat_upsample$x-ctr$x)^2 + (dat_upsample$y-ctr$y)^2)
-pts <- seq(nrow(dat_upsample))
-test <- pts[dist_to_ctr<1000]
-excluded <- pts[dist_to_ctr>1000 & dist_to_ctr<2000]
-train <- pts[dist_to_ctr>2000]
-plot(y~x,data=dat_upsample[train,])
-grid(nx=4,ny=4,col=5)
-with(dat_upsample[excluded,], points(x,y,col=4))
-with(dat_upsample[test,], points(x,y,col=2,pch=16))
 ```
 
 ```{r random_forest_buffer1}
@@ -169,13 +153,13 @@ a <- PA_data[trainSet,]
 a$geometry <- NULL
 b <- PA_data[testSet, ]
 b$geometry <- NULL
-rfcv <- randomForest(formula= factor(change2) ~ .  - landuse - change,
+rfb1 <- randomForest(formula= factor(change2) ~ .  - landuse - change,
                        data = a, n.trees=250,interaction.depth=7,
                        ## do.trace=1,
                      type="classification", proximity=TRUE) # model fitting on training set
 ## test set is only 1 point
-predcv<- predict(rfcv, newdata=b, type = "prob")
-head(predcv)
+predb1<- predict(rfb1, newdata=b, type = "prob")
+head(predb1)
 ```
 
 ```{r plot}
@@ -185,6 +169,20 @@ visualising the generated folds on a map
 ```{r folds_in_spatialk}
 fold=foldExplorer(eb, Classified1, PA_data)
 print(fold)
+```
+buffer based on the defined boders=buffer 2
+```{r buffer_2}
+##not convenience
+ctr <- list(x=601023, y=2844924)  ## a focal point
+dist_to_ctr <- sqrt((dat_upsample$x-ctr$x)^2 + (dat_upsample$y-ctr$y)^2)
+pts <- seq(nrow(dat_upsample))
+test <- pts[dist_to_ctr<1000]
+excluded <- pts[dist_to_ctr>1000 & dist_to_ctr<2000]
+train <- pts[dist_to_ctr>2000]
+plot(y~x,data=dat_upsample[train,])
+grid(nx=4,ny=4,col=5)
+with(dat_upsample[excluded,], points(x,y,col=4))
+with(dat_upsample[test,], points(x,y,col=2,pch=16))
 ```
 buffer based on the defined boders=buffer 3
 ```{r determine_data}
@@ -207,23 +205,27 @@ with(dat_upsample[test,], points(x,y,col=2,pch=16))
 determine train and test data 
 ```{r train_testdata}
 umFolds <- trainControl(method = "cv", number = 10)
-train2 <- dat_upsample[train,]
-test2 <- dat_upsample[test, ]
 
-rf_b <- train(as.factor(change2) ~ .  - landuse - change,
+train2 <- PA_data[train,]
+test2 <- PA_data[test, ]
+train2$geometry <- NULL
+test2$geometry <- NULL
+```
+
+```{r}
+rfb3 <- train(as.factor(change2) ~ .  - landuse - change,
             data = train2, ## use the same data here as we used in spatialBlock()?
             method = "ranger",
             trControl = umFolds)
-plot(rf_b)
-pred <- predict(rf_b, newdata=test2, typeprobs="prob")
-conb <- confusionMatrix(pred, as.factor(test2$change2))
-table(test2$change2, pred)
-
+plot(rfb3)
+predb3 <- predict(rfb3, newdata=test2, typeprobs="prob")
+conb <- confusionMatrix(predb3, as.factor(test2$change2))
+table(test2$change2, predb3)
 ```
 H-P:Error in ROC
-```{r ROC_Curve}
+```{r roc_random_forest_buffer3, message=TRUE}
 rocCurve <- pROC::roc(factor(test2$change,levels=c("change","no change")),
-                      pred[,"change"])
+                      predb3[,"change"])
 
 
 pp <- pROC::roc(sample(0:1,size=50,replace=TRUE), pred=runif(50))
@@ -236,12 +238,10 @@ plot(rocCurve ,col=c(4))
 ###calculate the area under curve (bigger is better)
 auc(rocCurve)
 ```
-
-
 H-P:Error in predcv[, "gain"] : subscript out of bounds
 ```{r roc_random_forest_buffer1}
 rocCurve <- pROC::roc(factor(b$change2,levels=c("gain","nogain")),
-                      predcv[,"gain"])
+                      predb1[,"gain"])
 
 pp <- pROC::roc(sample(0:1,size=50,replace=TRUE), pred=runif(50))
 plot(pp)
@@ -253,7 +253,7 @@ plot(rocCurve ,col=c(4))
 ###calculate the area under curve (bigger is better)
 auc(rocCurve)
 ```
-may be this method is not coorect for cross validation
+may be below method is not coorect for cross validation
 ```{r random_forest_sbfolds}
 rf_sb=train(as.factor(change2) ~ .,
               data = dat_upsample, ## use the same data here as we used in spatialBlock()?
