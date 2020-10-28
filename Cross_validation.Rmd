@@ -253,6 +253,10 @@ plot(rocCurve ,col=c(4))
 ###calculate the area under curve (bigger is better)
 auc(rocCurve)
 ```
+H-P:Error: `data` and `reference` should be factors with the same levels.
+```{r}
+conb1 <- confusionMatrix(predb1, as.factor(b$change2))
+```
 may be below method is not coorect for cross validation
 ```{r random_forest_sbfolds}
 rf_sb=train(as.factor(change2) ~ .,
