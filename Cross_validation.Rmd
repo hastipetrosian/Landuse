@@ -39,6 +39,7 @@ if (file.exists("dat_upsample")) {
 }
 ```
 
+
 ```{r classified_maps}
 Classified1=raster("Classified1.tif")
 Classified2=raster("classified2.tif")
