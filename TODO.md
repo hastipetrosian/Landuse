@@ -393,3 +393,18 @@ Are existing papers that analyze landscape change making this mistake?
 * we want reasonably independent train and test sets, and we want a reasonable number of folds (5-20), however we get this done is fine with me ...
 
 * we can average AUC across folds
+
+## 28 October 2020
+
+* make sure that names (change/no change, gain/no gain), 0/1 are consistent; make sure that in predb3, no gain and gain are correctly assigned
+* compute spatial autocorrelation function of residuals from random forest? (don't know if random forest gives residuals, but it should be possible to get predicted *probabilities* (rather than 0/1 predictions); then the residuals are just (change (0/1) - predicted_prob), e.g. if pred_prob=0.9 and change=1, then the residual is 0.1; residuals will range from -1 to 1
+
+* recompute random forests etc. making sure that the buffering object is being computed consistently
+
+predict() might give 0/1 by default, there might be an option to ask it to give you probabilities instead
+
+let's say that for observation 571 we get a _predicted_ probability from the fitted RF model of 0.9. Then if there actually was a gain of dune (i.e. change=1) then the residual is 0.1
+
+could plot the residuals in space (x,y)
+
+compute spatial autocorrelation function of residuals. That's what will tell us how we ought to be buffering ...

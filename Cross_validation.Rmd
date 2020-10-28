@@ -95,9 +95,10 @@ rf_eb=train(as.factor(change2) ~ .,
               trControl = traincontroleb)
 ```
 generates spatially separated training and testing folds by considering buffers of specified distance around each observation point. 
-```{r define_buffers, cache=TRUE}
+```{r define_buffers}
+set.seed(101)
 bf <- buffering(speciesData = PA_data,
-                  theRange = 1000,#ideally the range of spatial autocorrelation
+                  theRange = 2000,#ideally the range of spatial autocorrelation
                   species = "change2", # to count the number of presences and absences/backgrounds
                   spDataType = "PA", # presence-absence  data type
                   progress = TRUE)
@@ -105,14 +106,22 @@ bf <- buffering(speciesData = PA_data,
 
 ```{r plot_buffer_1}
 dd1 <- bf$folds[[1]] ## first fold
+
+## double-check correspondence of data ...
+head(PA_data$geometry)
+head(dat_upsample[,c("x","y")])
+## seems OK?
+
 ## training data
-plot(y~x, data=dat_upsample[dd1[[1]],])  
+plot(y~x, data=dat_upsample[dd1[[1]],],
+     xlim=range(dat_upsample$x),
+     ylim=range(dat_upsample$y))
 ## testing data
 ## data points that aren't in test or in train
 excluded <- setdiff(seq(nrow(dat_upsample)), c(dd1[[1]],dd1[[2]]))
 ##plot
-with(dat_upsample[excluded,], points(x,y,col=4))
 with(dat_upsample[dd1[[2]],], points(x,y,col=2,pch=16,cex=2))
+with(dat_upsample[excluded,], points(x,y,col=4))
 ```
 
 ```{r random_forest_buffer1}
@@ -168,8 +177,10 @@ sb$plots + geom_sf(data = PA_data, alpha = 0.5)
 ```
 visualising the generated folds on a map
 ```{r folds_in_spatialk}
-fold=foldExplorer(eb, Classified1, PA_data)
-print(fold)
+if (FALSE) {
+    fold=foldExplorer(eb, Classified1, PA_data)
+    print(fold)
+}
 ```
 buffer based on the defined boders=buffer 2
 ```{r buffer_2}
@@ -224,9 +235,23 @@ conb <- confusionMatrix(predb3, as.factor(test2$change2))
 table(test2$change2, predb3)
 ```
 H-P:Error in ROC
-```{r roc_random_forest_buffer3, message=TRUE}
-rocCurve <- pROC::roc(factor(test2$change,levels=c("change","no change")),
-                      predb3[,"change"])
+ ```{r roc_random_forest_buffer3, message=TRUE}
+ff <-  factor(test2$change,
+              ## 0 = no gain,  1 = gain
+              levels=c(0,1),  ## these are the values in the original vector
+              labels=c("no gain","gain") ## these will be the names in the new vector
+              )
+table(test2$change)
+table(ff)
+## convert a two-level factor back to 0/1
+to_binary <- function(x) { as.numeric(x) -1 }
+rocCurve <- pROC::roc(to_binary(ff),
+                      ## predb3[,"change"]
+                      to_binary(predb3))
+## gain/no gain  vs.  change/no change
+plot(rocCurve)
+
+## undebug(pROC:::roc.default)
 
 
 pp <- pROC::roc(sample(0:1,size=50,replace=TRUE), pred=runif(50))
@@ -237,6 +262,8 @@ plot(pROC::roc(c(1,0), pred=c(0.2,0.2)))
 
 plot(rocCurve ,col=c(4))
 ###calculate the area under curve (bigger is better)
+## extract AUC and drop extra information
+auc <- function(x) c(x$auc)
 auc(rocCurve)
 ```
 H-P:Error in predcv[, "gain"] : subscript out of bounds
@@ -256,13 +283,10 @@ auc(rocCurve)
 ```
 H-P:Error: `data` and `reference` should be factors with the same levels.
 ```{r}
-conb1 <- confusionMatrix(predb1, as.factor(b$change2))
-conb2=confusionMatrix(
-  factor(predb1, levels = 1:3),
-  factor(b$change2, levels = 1:3)
-)
+conb1 <- confusionMatrix(ff, predb3)
 ```
-may be below method is not coorect for cross validation
+
+may be below method is not correct for cross validation
 ```{r random_forest_sbfolds}
 rf_sb=train(as.factor(change2) ~ .,
               data = dat_upsample, ## use the same data here as we used in spatialBlock()?
