@@ -94,11 +94,18 @@ rf_eb=train(as.factor(change2) ~ .,
               method = "ranger",
               trControl = traincontroleb)
 ```
+The function works by automatically fitting variograms to each continuous raster and finding the effective range of spatial autocorrelation. 
+```{r range_of_spatial_autocorrelation}
+range3 <- spatialAutoRange(rasterLayer = Classified1,
+                           sampleNumber = 5000,
+                           doParallel = FALSE,
+                            progress = TRUE)
+```
 generates spatially separated training and testing folds by considering buffers of specified distance around each observation point. 
 ```{r define_buffers}
 set.seed(101)
 bf <- buffering(speciesData = PA_data,
-                  theRange = 2000,#ideally the range of spatial autocorrelation
+                  theRange = 1000,#ideally the range of spatial autocorrelation
                   species = "change2", # to count the number of presences and absences/backgrounds
                   spDataType = "PA", # presence-absence  data type
                   progress = TRUE)
@@ -199,8 +206,8 @@ with(dat_upsample[test,], points(x,y,col=2,pch=16))
 buffer based on the defined boders=buffer 3
 ```{r determine_data}
 ##introsucing the specific block 
-corners <- list(x=c(598503.1,601478.4),
-                y=c(2842969,2839900))
+corners <- list(x=c(601500,605000),
+                y=c(2840000,2837000))
 pts <- seq(nrow(dat_upsample))
 ##introducinf test data in the introduced block
 test <- pts[dat_upsample$x > corners$x[1] &
@@ -232,10 +239,10 @@ rfb3 <- train(as.factor(change2) ~ .  - landuse - change,
 plot(rfb3)
 predb3 <- predict(rfb3, newdata=test2, typeprobs="prob")
 conb <- confusionMatrix(predb3, as.factor(test2$change2))
-table(test2$change2, predb3)
+table3=table(test2$change2, predb3)
 ```
 H-P:Error in ROC
- ```{r roc_random_forest_buffer3, message=TRUE}
+```{r roc_random_forest_buffer3, message=TRUE}
 ff <-  factor(test2$change,
               ## 0 = no gain,  1 = gain
               levels=c(0,1),  ## these are the values in the original vector
