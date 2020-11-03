@@ -13,6 +13,7 @@ library(ROSE)
 library(caret)
 source("functions.R")
 library(randomForest)
+library(rpart.plot)
 ```
 To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
 ```{r input_data}
@@ -231,7 +232,7 @@ test2 <- PA_data[test, ]
 train2$geometry <- NULL
 test2$geometry <- NULL
 ```
-
+p
 ```{r}
 rfb3=randomForest(formula= factor(change2) ~ . - landuse - change,
                        data = train2, n.trees=250,interaction.depth=7,
@@ -242,6 +243,9 @@ varImpPlot(rfb3)
 predb3 <- predict(rfb3, newdata=test2, typeprobs="prob")
 conb <- confusionMatrix(predb3, as.factor(test2$change2))
 table3=table(test2$change2, predb3)
+set_tree = rpart(change2 ~ . -change -landuse ,
+                 data =train2)
+rpart.plot(set_tree)
 ```
 H-P:Error in ROC
 ```{r roc_random_forest_buffer3, message=TRUE}
@@ -290,10 +294,6 @@ plot(rocCurve ,col=c(4))
 ###calculate the area under curve (bigger is better)
 auc(rocCurve)
 ```
-H-P:Error: `data` and `reference` should be factors with the same levels.
-```{r}
-conb1 <- confusionMatrix(ff, predb3)
-```
 may be below method is not correct for cross validation
 ```{r random_forest_sbfolds}
 rf_sb=train(as.factor(change2) ~ .,
@@ -304,10 +304,13 @@ rf_sb=train(as.factor(change2) ~ .,
 rf_predsb <- predict(rf_sb, sample_test)
 consb=confusionMatrix(rf_predsb, as.factor(sample_test$change2))
 ```
-residual
+residual & Moran I
 ```{r}
+testpoint <- SpatialPointsDataFrame(cbind(dat_gain$x, dat_gain$y), dat_gain)
+lstw  <- nb2listw(knn2nb(knearneigh(testpoint, k = 10)))
 res=train2$change2 - predict(rfb3) # residuals
 train2$change2 - predict(rfb3) # residuals
-
+res2=as.numeric(res)
+moran.test(res2, lstw)
 ```
 
