@@ -1,7 +1,10 @@
 ---
 title: "Cross validation"
 ---
-
+## 0: not-erg before and after (no gain)
+## 1: not-erg before, erg after (gain)
+## 2: erg before, not-erg after (loss)
+## 3: erg before and after (no loss)
 ```{r packages}
 library(tidyverse) ## load filter(), ... function
 library(blockCV)
