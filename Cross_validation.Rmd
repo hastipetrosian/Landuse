@@ -223,8 +223,9 @@ with(dat_upsample[test,], points(x,y,col=2,pch=16))
 ```
 determine train and test data 
 ```{r train_testdata}
+##number of k
 umFolds <- trainControl(method = "cv", number = 10)
-
+##trainand
 train2 <- PA_data[train,]
 test2 <- PA_data[test, ]
 train2$geometry <- NULL
@@ -232,11 +233,12 @@ test2$geometry <- NULL
 ```
 
 ```{r}
-rfb3 <- train(as.factor(change2) ~ .  - landuse - change,
-            data = train2, ## use the same data here as we used in spatialBlock()?
-            method = "ranger",
-            trControl = umFolds)
+rfb3=randomForest(formula= factor(change2) ~ . - landuse - change,
+                       data = train2, n.trees=250,interaction.depth=7,
+                       ## do.trace=1,
+                       type="classification", proximity=TRUE, trcontrol=umFolds)
 plot(rfb3)
+varImpPlot(rfb3)
 predb3 <- predict(rfb3, newdata=test2, typeprobs="prob")
 conb <- confusionMatrix(predb3, as.factor(test2$change2))
 table3=table(test2$change2, predb3)
@@ -292,7 +294,6 @@ H-P:Error: `data` and `reference` should be factors with the same levels.
 ```{r}
 conb1 <- confusionMatrix(ff, predb3)
 ```
-
 may be below method is not correct for cross validation
 ```{r random_forest_sbfolds}
 rf_sb=train(as.factor(change2) ~ .,
@@ -303,3 +304,10 @@ rf_sb=train(as.factor(change2) ~ .,
 rf_predsb <- predict(rf_sb, sample_test)
 consb=confusionMatrix(rf_predsb, as.factor(sample_test$change2))
 ```
+residual
+```{r}
+res=train2$change2 - predict(rfb3) # residuals
+train2$change2 - predict(rfb3) # residuals
+
+```
+
