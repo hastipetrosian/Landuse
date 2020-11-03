@@ -235,8 +235,8 @@ test2 <- PA_data[test, ]
 train2$geometry <- NULL
 test2$geometry <- NULL
 ```
-p
-```{r}
+random forest
+```{r random_forest_buffer3}
 rfb3=randomForest(formula= factor(change2) ~ . - landuse - change,
                        data = train2, n.trees=250,interaction.depth=7,
                        ## do.trace=1,
