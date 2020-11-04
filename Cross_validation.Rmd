@@ -205,7 +205,9 @@ for (k in 1:nfolds) {
                          data = a, n.trees=250,interaction.depth=7,
                          type="classification", proximity=TRUE)
     ## first row, "gain" column probability
-    rf_predprob[k] <-  predict(rfb_k, newdata=b, type = "prob")[1,"gain"]
+    pp <- predict(rfb_k, newdata=b, type = "prob")
+    print(pp)
+    rf_predprob[k] <-  pp[1,"gain"]
     rf_obs[k] <- b$change2
 }
 ```
