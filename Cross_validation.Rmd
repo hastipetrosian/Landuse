@@ -272,15 +272,19 @@ Random forest
 rfb3 <- randomForest(formula= factor(change2) ~ . - landuse - change,
                        data = train2, n.trees=250,interaction.depth=7,
                        ## do.trace=1,
-                       type="classification", proximity=TRUE, trcontrol=umFolds)
+                       type="classification", proximity=TRUE, trcontrol=umFolds, keep.inbag = TRUE)
 plot(rfb3)
 varImpPlot(rfb3)
-predb3 <- predict(rfb3, newdata=test2, typeprobs="prob")
+predb3 <- predict(rfb3, newdata=test2, typeprobs="prob", predict.all=TRUE)
 conb <- confusionMatrix(predb3, as.factor(test2$change2))
 table3=table(test2$change2, predb3)
 set_tree = rpart(change2 ~ . -change -landuse ,
                  data =train2)
 rpart.plot(set_tree)
+```
+```{r out_of_bag_error}
+rfb3$err.rate[,1]
+plot(rfb3$err.rate[,1], type = "l")
 ```
 H-P:Error in roc.default(to_binary(ff), to_binary(predb3)) : 
   'response' must have two levels
