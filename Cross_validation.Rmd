@@ -188,7 +188,7 @@ head(predb1)
 ```
 
 If we want to do things like plot ROC curves for these data, we have to run the random forest lots of times and save the test set and predictions for every fold ...
-
+H-P=Error in pp[1, "gain"] : subscript out of bounds
 ```{r many_folds}
 nfolds <- 5 ## not going to do all 1500 folds because it will be way too slow!
 rf_predprob <- rep(NA, nfolds)
@@ -282,7 +282,8 @@ set_tree = rpart(change2 ~ . -change -landuse ,
                  data =train2)
 rpart.plot(set_tree)
 ```
-
+H-P:Error in roc.default(to_binary(ff), to_binary(predb3)) : 
+  'response' must have two levels
 ```{r roc_random_forest_buffer3_roc, message=TRUE}
 ff <-  factor(test2$change,
               ## 0 = no gain,  1 = gain
