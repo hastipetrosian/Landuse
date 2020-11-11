@@ -9,7 +9,7 @@ title: "Cross validation"
 ## 3: erg before and after (no loss)
 ```
 
-```{r packages}
+```{r packages, message=FALSE, warning=FALSE}
 library(tidyverse) ## load filter(), ... function
 library(blockCV)
 library(sf)
@@ -23,8 +23,11 @@ library(randomForest)
 library(rpart.plot)
 library(spdep)
 library(rfPermute)
+library(metRology)
 ```
+
 To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
+
 ```{r input_data}
 ## increase memory
 if (.Platform$OS.type=="windows") memory.limit(1000000)
@@ -232,7 +235,7 @@ if (FALSE) {
     print(fold)
 }
 ```
-buffer based on the defined boders=buffer 2
+buffer based on the defined borders=buffer 2
 ```{r buffer_2}
 ##not convenience
 ctr <- list(x=601023, y=2844924)  ## a focal point
@@ -252,7 +255,7 @@ buffer based on the defined boders=buffer 3
 corners <- list(x=c(601500,605000),
                 y=c(2840000,2837000))
 pts <- seq(nrow(dat_upsample))
-##introducinf test data in the introduced block
+##introducing test data in the introduced block
 test <- pts[dat_upsample$x > corners$x[1] &
             dat_upsample$x < corners$x[2] &
             dat_upsample$y < corners$y[1] &
@@ -267,7 +270,7 @@ with(dat_upsample[test,], points(x,y,col=2,pch=16))
 determine train and test data 
 ```{r train_testdata}
 ##number of k
-umFolds <- trainControl(method = "cv", number = 10)
+numFolds <- trainControl(method = "cv", number = 10)
 ##trainand
 train2 <- PA_data[train,]
 test2 <- PA_data[test, ]
@@ -322,6 +325,7 @@ to_binary <- function(x) { as.numeric(x) -1 }
 rocCurve <- pROC::roc(to_binary(ff),
                       ## predb3[,"change"]
                       to_binary(predb3$aggregate))
+caret::confusionMatrix(ff, predb3$aggregate)
 ## gain/no gain  vs.  change/no change
 plot(rocCurve)
 
@@ -336,7 +340,6 @@ plot(pROC::roc(c(1,0), pred=c(0.2,0.2)))
 ## we need at least one observation in each level
 try(plot(pROC::roc(factor(1, levels=0:1), pred=0.2)), silent=TRUE)
  
-
 plot(rocCurve ,col=c(4))
 ###calculate the area under curve (bigger is better)
 ## extract AUC and drop extra information
@@ -399,7 +402,6 @@ create_rfplot(rfb3, type = 2)
 ```
 
 ```{r}
-library(metRology)
 ## BMB: not sure what this is doing ...
 ## uncertMC(rfb3)
 ## from ?uncertMC
@@ -410,6 +412,7 @@ library(metRology)
 ##        u: A named list or named vector of length ‘length(x)’ of
 ##          standard uncertainties.
 ```
+
 Residual & Moran I
 ```{r resid_moranI}
 testpoint <- SpatialPointsDataFrame(cbind(dat_gain$x, dat_gain$y), dat_gain)
