@@ -31,6 +31,10 @@ if (.Platform$OS.type=="windows") memory.limit(1000000)
 
 ## get all data (as tables of x,y, predictors, change)
 load("rr_points14.RData")
+## need
+## R CMD BATCH --vanilla climate.R
+## R CMD BATCH --vanilla winddir.R
+## R CMD BATCH --vanilla basic.R
 
 ## test with smaller data set
 dat <- dplyr::filter(rr_points14[["2014"]],
@@ -277,13 +281,19 @@ rfb3 <- randomForest(formula= factor(change2) ~ . - landuse - change,
 plot(rfb3)
 varImpPlot(rfb3)
 predb3 <- predict(rfb3, newdata=test2, typeprobs="prob", predict.all=TRUE)
-##conb <- confusionMatrix(predb3, as.factor(test2$change2))
-##save("conb",file="conb")
-load("conb")
+if (!file.exists("conb")) {
+    conb <- caret::confusionMatrix(predb3$aggregate, as.factor(test2$change2))
+    save("conb",file="conb.rda")
+} else {
+    load("conb.rda")
+}
 
-##table3=table(test2$change2, predb3)
-##save("table3",file="table3")
-load("table3")
+if (!file.exists("table3.rda")) {
+    table3=table(test2$change2, predb3$aggregate)
+    save("table3",file="table3.rda")
+} else {
+    load("table3.rda")
+}
 set_tree = rpart(change2 ~ . -change -landuse ,
                  data =train2)
 rpart.plot(set_tree)
@@ -307,7 +317,7 @@ table(ff)
 to_binary <- function(x) { as.numeric(x) -1 }
 rocCurve <- pROC::roc(to_binary(ff),
                       ## predb3[,"change"]
-                      to_binary(predb3))
+                      to_binary(predb3$aggregate))
 ## gain/no gain  vs.  change/no change
 plot(rocCurve)
 
@@ -352,7 +362,7 @@ may be below method is not correct for cross validation
 ```{r random_forest_sbfolds}
 ## leave out x and y, manually (ugh) (formula   ~ . - x - y doesn't seem to work?)
 dat_upsample_noxy <- dat_upsample[!names(dat_upsample) %in% c("x","y")]
-rf_sb=train(as.factor(change2) ~ .,
+rf_sb <- train(as.factor(change2) ~ .,
             ## don't include lat/long in the model
             data = dat_upsample_noxy, ## use the same data here as we used in spatialBlock()?
             method = "ranger",
@@ -360,8 +370,9 @@ rf_sb=train(as.factor(change2) ~ .,
 
 rf_predsb <- predict(rf_sb, sample_test)
 
-consb=confusionMatrix(rf_predsb, as.factor(sample_test$change2))
+consb <- caret::confusionMatrix(rf_predsb, as.factor(sample_test$change2))
 ```
+
 The basic idea is to consider a variable important if it has a positive effect on the prediction accuracy (classification)
 ```{r Permutation_importance}
 create_rfplot <- function(rf, type){
@@ -385,7 +396,15 @@ create_rfplot(rfb3, type = 2)
 
 ```{r}
 library(metRology)
-uncertMC(rfb3)
+## BMB: not sure what this is doing ...
+## uncertMC(rfb3)
+## from ?uncertMC
+##    expr: An expression, function, or formula with no left-hand side
+##          (e.g.  ‘~a*x+b*x^2’) which can be evaluated in the
+##          environment ‘x’ to provide a numeric value.
+##        x: A named list or vector of parameters supplied to ‘expr’.
+##        u: A named list or named vector of length ‘length(x)’ of
+##          standard uncertainties.
 ```
 
 
@@ -406,9 +425,11 @@ num_pred <- num_pred[good_pred]
 res2 = num_obs - num_pred
 lstw2 <- lstw ## make a copy
 lstw2$neighbours <- lstw2$neighbours[good_pred]
+class(lstw2$neighbours) <- "nb" ## restore class
 lstw2$weights <- lstw2$weights[good_pred]
 attributes(lstw2$weights) <- attributes(lstw$weights)
 length(res2)
 length(lstw2$neighbours)
-moran.test(res2, lstw2)
+## BMB: still not sure how to make this work ...
+## moran.test(res2, lstw2)
 ```
