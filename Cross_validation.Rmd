@@ -383,6 +383,13 @@ create_rfplot <- function(rf, type){
 create_rfplot(rfb3, type = 2)
 ```
 
+```{r}
+library(metRology)
+uncertMC(rfb3)
+```
+
+
+
 Residual & Moran I
 
 ```{r resid_moranI}
