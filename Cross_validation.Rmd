@@ -50,6 +50,7 @@ dat_gain <- dplyr::filter(dat, change2 %in% c("no gain", "gain"))
 if (file.exists("dat_upsample.rda")) {
     load("dat_upsample.rda")
 }  else {
+    set.seed(101)
     dat_upsample <- ROSE::ovun.sample(change ~ ., data = dat_gain, method = "both", N=1500)$data
 save(dat_upsample, file="dat_upsample.rda")
 }
