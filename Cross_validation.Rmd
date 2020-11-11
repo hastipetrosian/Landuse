@@ -22,6 +22,7 @@ source("functions.R")
 library(randomForest)
 library(rpart.plot)
 library(spdep)
+library(rfPermute)
 ```
 To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
 ```{r input_data}
@@ -276,13 +277,18 @@ rfb3 <- randomForest(formula= factor(change2) ~ . - landuse - change,
 plot(rfb3)
 varImpPlot(rfb3)
 predb3 <- predict(rfb3, newdata=test2, typeprobs="prob", predict.all=TRUE)
-conb <- confusionMatrix(predb3, as.factor(test2$change2))
-save("conb",file="conb")
-table3=table(test2$change2, predb3)
+##conb <- confusionMatrix(predb3, as.factor(test2$change2))
+##save("conb",file="conb")
+load("conb")
+
+##table3=table(test2$change2, predb3)
+##save("table3",file="table3")
+load("table3")
 set_tree = rpart(change2 ~ . -change -landuse ,
                  data =train2)
 rpart.plot(set_tree)
 ```
+
 ```{r out_of_bag_error}
 rfb3$err.rate[,1]
 plot(rfb3$err.rate[,1], type = "l")
@@ -323,30 +329,7 @@ plot(rocCurve ,col=c(4))
 auc <- function(x) c(x$auc)
 auc(rocCurve)
 ```
-
-```{r}
-create_rfplot <- function(rf, type){
-+   
-+   imp <- importance(rf, type = type, scale = F)
-+   
-+   featureImportance <- data.frame(Feature = row.names(imp), Importance = imp[,1])
-+   
-+   p <- ggplot(featureImportance, aes(x = reorder(Feature, Importance), y = Importance)) +
-+        geom_bar(stat = "identity", fill = "#53cfff", width = 0.65) +
-+        coord_flip() + 
-+        theme_light(base_size = 20) +
-+        theme(axis.title.x = element_text(size = 15, color = "black"),
-+              axis.title.y = element_blank(),
-+              axis.text.x  = element_text(size = 15, color = "black"),
-+              axis.text.y  = element_text(size = 15, color = "black")) 
-+   return(p)
-+ }
-create_rfplot(rfb3, type = 2)
-```
-
-
-
-
+ROC_random_forest_buffer1
 ```{r roc_random_forest_buffer1}
 fg <- factor(b$change2,levels=c("gain","nogain"))
 str(fg)
@@ -366,7 +349,6 @@ plot(rocCurve ,col=c(4))
 auc(rocCurve)
 ```
 may be below method is not correct for cross validation
-
 ```{r random_forest_sbfolds}
 ## leave out x and y, manually (ugh) (formula   ~ . - x - y doesn't seem to work?)
 dat_upsample_noxy <- dat_upsample[!names(dat_upsample) %in% c("x","y")]
