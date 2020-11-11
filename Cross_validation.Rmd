@@ -40,17 +40,20 @@ load("rr_points14.RData")
 dat <- dplyr::filter(rr_points14[["2014"]],
                      x<604000 & y >284000 &  y < 2846000)
 dat$change2 <- change_fun(dat$change)
+
 ```
 
 ```{r upsample}
 dat_gain <- dplyr::filter(dat, change2 %in% c("no gain", "gain")) 
 
 ## analyzing gain only, first ...
-if (file.exists("dat_upsample")) {
-    load("dat_upsample")
+if (file.exists("dat_upsample.rda")) {
+    load("dat_upsample.rda")
 }  else {
     dat_upsample <- ROSE::ovun.sample(change ~ ., data = dat_gain, method = "both", N=1500)$data
+save(dat_upsample, file="dat_upsample.rda")
 }
+
 ```
 
 
@@ -283,9 +286,9 @@ varImpPlot(rfb3)
 predb3 <- predict(rfb3, newdata=test2, typeprobs="prob", predict.all=TRUE)
 if (!file.exists("conb")) {
     conb <- caret::confusionMatrix(predb3$aggregate, as.factor(test2$change2))
-    save("conb",file="conb.rda")
+    save("conb",file="conb")
 } else {
-    load("conb.rda")
+    load("conb")
 }
 
 if (!file.exists("table3.rda")) {
@@ -406,11 +409,7 @@ library(metRology)
 ##        u: A named list or named vector of length ‘length(x)’ of
 ##          standard uncertainties.
 ```
-
-
-
 Residual & Moran I
-
 ```{r resid_moranI}
 testpoint <- SpatialPointsDataFrame(cbind(dat_gain$x, dat_gain$y), dat_gain)
 lstw  <- spdep::nb2listw(knn2nb(knearneigh(testpoint, k = 10)))
