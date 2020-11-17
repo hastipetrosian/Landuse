@@ -310,8 +310,8 @@ rpart.plot(set_tree)
 rfb3$err.rate[,1]
 plot(rfb3$err.rate[,1], type = "l")
 ```
-H-P:Error in roc.default(to_binary(ff), to_binary(predb3)) : 
-  'response' must have two levels
+
+
 ```{r roc_random_forest_buffer3_roc, message=TRUE}
 ff <-  factor(test2$change,
               ## 0 = no gain,  1 = gain
