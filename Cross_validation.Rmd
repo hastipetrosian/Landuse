@@ -252,7 +252,6 @@ with(dat_upsample[test,], points(x,y,col=2,pch=16))
 buffer based on the defined boders=buffer 3
 ```{r determine_data}
 ##introsucing the specific block 
-set.seed(23489)
 corners <- list(x=c(601500,605000),
                 y=c(2839300,2836000))
 pts <- seq(nrow(dat_upsample))
