@@ -1,4 +1,81 @@
+
+```{r packages, message=FALSE, warning=FALSE}
+library(tidyverse) ## load filter(), ... function
+library(blockCV)
+library(sf)
+library(raster)
+library(ggplot2)
+library(shiny) ## what for ... ??
+library(ROSE)
+library(caret)
+source("functions.R")
+library(randomForest)
+library(rpart.plot)
+library(spdep)
+library(rfPermute)
+library(metRology)
+```
+
+To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
+
+```{r input_data}
+## increase memory
+if (.Platform$OS.type=="windows") memory.limit(1000000)
+
+## get all data (as tables of x,y, predictors, change)
+load("rr_points14.RData")
+## need
+## R CMD BATCH --vanilla climate.R
+## R CMD BATCH --vanilla winddir.R
+## R CMD BATCH --vanilla basic.R
+
+## test with smaller data set
+dat <- dplyr::filter(rr_points14[["2014"]],
+                     x<604000 & y >284000 &  y < 2846000)
+dat$change2 <- change_fun(dat$change)
+
+```
+
+```{r upsample}
+dat_gain <- dplyr::filter(dat, change2 %in% c("no gain", "gain")) 
+
+## analyzing gain only, first ...
+if (file.exists("dat_upsample.rda")) {
+    load("dat_upsample.rda")
+}  else {
+    set.seed(101)
+    dat_upsample <- ROSE::ovun.sample(change ~ ., data = dat_gain, method = "both", N=1500)$data
+save(dat_upsample, file="dat_upsample.rda")
+}
+
+```
+
+
+```{r classified_maps}
+Classified1=raster("Classified1.tif")
+Classified2=raster("classified2.tif")
+```
+The appropriate format of species data for the blockCV package is simple features (sf) or SpatialPointsDataFrame.pamake a SpatialPointsDataFrame object from data.frame
+```{r numeric_data}
+PA_data <- st_as_sf(dat_upsample, coords = c("x", "y"), crs = crs(Classified1))
+```
+
+```{r train_vs_test}
+set.seed(23489)
+train_index <- sample(1:nrow(PA_data), 0.9 * nrow(dat_upsample))
+sample_train <- PA_data[train_index, ]
+sample_test  <- PA_data[-train_index, ]
+```
+
+```{r range_of_spatial_autocorrelation}
+range3 <- spatialAutoRange(rasterLayer = Classified1,
+                           sampleNumber = 5000,
+                           doParallel = FALSE,
+                           progress = TRUE)
+```
+
 ```{r}
+set.seed(101)
 corners1 <- list(x=c(601500,605000),
                 y=c(2835800,2833500))
 pts1 <- seq(nrow(dat_upsample))
@@ -13,7 +90,26 @@ train1 <- setdiff(pts,test)
 plot(y~x,data=dat_upsample[train1,])
 grid(nx=4,ny=4,col=5)
 with(dat_upsample[test1,], points(x,y,col=2,pch=16))
+##no gain data
 ```
+
+```{r}
+corners1 <- list(x=c(601500,605000),
+                y=c(2842800,2839500))
+pts1 <- seq(nrow(dat_upsample))
+##introducing test data in the introduced block
+test1 <- pts[dat_upsample$x > corners1$x[1] &
+            dat_upsample$x < corners1$x[2] &
+            dat_upsample$y < corners1$y[1] &
+            dat_upsample$y > corners1$y[2]]
+
+##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
+train1 <- setdiff(pts,test)
+plot(y~x,data=dat_upsample[train1,])
+grid(nx=4,ny=4,col=5)
+with(dat_upsample[test1,], points(x,y,col=2,pch=16))
+```
+
 
 ```{r train_testdata}
 ##number of k
@@ -35,25 +131,7 @@ rfbc3 <- randomForest(formula= factor(change2) ~ . - landuse - change,
 plot(rfbc3)
 varImpPlot(rfbc3)
 predbc3 <- predict(rfbc3, newdata=test3, typeprobs="prob", predict.all=TRUE)
-if (!file.exists("conb")) {
-    conb <- caret::confusionMatrix(predb3$aggregate, as.factor(test3$change2))
-    save("conb",file="conb")
-} else {
-    load("conb")
-}
-
-if (!file.exists("table4.rda")) {
-    table4=table(test3$change2, predb3$aggregate)
-    save("table4",file="table4.rda")
-} else {
-    load("table3.rda")
-}
-set_tree = rpart(change2 ~ . -change -landuse ,
-                 data =train3)
-rpart.plot(set_tree)
 ```
-
-
 ROC_random_forest_buffer
 ```{r roc_random_forest_buffer3_roc, message=TRUE}
 ff3 <-  factor(test3$change,
@@ -68,39 +146,92 @@ to_binary3 <- function(x) { as.numeric(x) -1 }
 rocCurve3 <- pROC::roc(to_binary(ff3),
                       ## predb3[,"change"]
                       to_binary(predbc3$aggregate))
-caret::confusionMatrix(ff, predbc3$aggregate)
-## gain/no gain  vs.  change/no change
-plot(rocCurve)
-
-## undebug(pROC:::roc.default)
-
-
-pp <- pROC::roc(sample(0:1,size=50,replace=TRUE), pred=runif(50))
-plot(pp)
-plot(pROC::roc(c(1,1,0,0), pred=c(0.2,0.4,0.1,0.2)))
-plot(pROC::roc(c(1,0), pred=c(0.2,0.2)))
-## we know this won't work because it only has one data point,
-## we need at least one observation in each level
-try(plot(pROC::roc(factor(1, levels=0:1), pred=0.2)), silent=TRUE)
- 
-plot(rocCurve ,col=c(4))
-###calculate the area under curve (bigger is better)
-## extract AUC and drop extra information
+plot(rocCurve3)
 auc <- function(x) c(x$auc)
-auc(rocCurve)
+auc(rocCurve3)
 ```
 
-nge2 ~ . -change -landuse ,
-                 data =train2)
-rpart.plot(set_tree)
+
+
+```{r}
+corners1 <- list(x=c(601500,605000),
+                y=c(28465000,2843000))
+pts1 <- seq(nrow(dat_upsample))
+##introducing test data in the introduced block
+test1 <- pts[dat_upsample$x > corners1$x[1] &
+            dat_upsample$x < corners1$x[2] &
+            dat_upsample$y < corners1$y[1] &
+            dat_upsample$y > corners1$y[2]]
+
+##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
+train1 <- setdiff(pts,test)
+plot(y~x,data=dat_upsample[train1,])
+grid(nx=4,ny=4,col=5)
+with(dat_upsample[test1,], points(x,y,col=2,pch=16))
+##no gain
 ```
 
-```{r out_of_bag_error}
-rfb3$err.rate[,1]
-plot(rfb3$err.rate[,1], type = "l")
+
+```{r}
+corners1 <- list(x=c(598500,601000),
+                y=c(2842800,2839500))
+pts1 <- seq(nrow(dat_upsample))
+##introducing test data in the introduced block
+test1 <- pts[dat_upsample$x > corners1$x[1] &
+            dat_upsample$x < corners1$x[2] &
+            dat_upsample$y < corners1$y[1] &
+            dat_upsample$y > corners1$y[2]]
+
+##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
+train1 <- setdiff(pts,test)
+plot(y~x,data=dat_upsample[train1,])
+grid(nx=4,ny=4,col=5)
+with(dat_upsample[test1,], points(x,y,col=2,pch=16))
+##no gain
 ```
-H-P:Error in roc.default(to_binary(ff), to_binary(predb3)) : 
-  'response' must have two levels
+
+
+
+
+
+```{r train_testdata}
+##number of k
+numFolds <- trainControl(method = "cv", number = 10)
+##trainand
+train3 <- PA_data[train1,]
+test3 <- PA_data[test1, ]
+train3$geometry <- NULL
+test3$geometry <- NULL
+```
+
+Random forest
+
+```{r random_forest_buffer3}
+rfbc3 <- randomForest(formula= factor(change2) ~ . - landuse - change,
+                       data = train3, n.trees=250,interaction.depth=7,
+                       ## do.trace=1,
+                       type="classification", proximity=TRUE, trcontrol=umFolds, keep.inbag = TRUE)
+plot(rfbc3)
+varImpPlot(rfbc3)
+predbc3 <- predict(rfbc3, newdata=test3, typeprobs="prob", predict.all=TRUE)
+```
+ROC_random_forest_buffer
 ```{r roc_random_forest_buffer3_roc, message=TRUE}
-
+ff3 <-  factor(test3$change,
+              ## 0 = no gain,  1 = gain
+              levels=c(0,1),  ## these are the values in the original vector
+              labels=c("no gain","gain") ## these will be the names in the new vector
+              )
+table(test3$change)
+table(ff3)
+caret::confusionMatrix(ff3, predbc3$aggregate)
+c3=caret::confusionMatrix(predbc3$aggregate, as.factor(test3$change2))
+## convert a two-level factor back to 0/1
+to_binary3 <- function(x) { as.numeric(x) -1 }
+rocCurve3 <- pROC::roc(to_binary(ff3),
+                      ## predb3[,"change"]
+                      to_binary(predbc3$aggregate))
+plot(rocCurve3)
+auc <- function(x) c(x$auc)
+auc(rocCurve3)
 ```
