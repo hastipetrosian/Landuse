@@ -253,7 +253,7 @@ buffer based on the defined boders=buffer 3
 ```{r determine_data}
 ##introsucing the specific block 
 corners <- list(x=c(601500,605000),
-                y=c(2839300,2836000))
+                y=c(2840000,2837000))
 pts <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
 test <- pts[dat_upsample$x > corners$x[1] &
