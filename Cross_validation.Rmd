@@ -253,7 +253,7 @@ buffer based on the defined boders=buffer 3
 ```{r determine_data}
 ##introsucing the specific block 
 corners <- list(x=c(601500,605000),
-                y=c(2840000,2837000))
+                y=c(2840000,2836000))
 pts <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
 test <- pts[dat_upsample$x > corners$x[1] &
@@ -284,7 +284,7 @@ Random forest
 rfb3 <- randomForest(formula= factor(change2) ~ . - landuse - change,
                        data = train2, n.trees=250,interaction.depth=7,
                        ## do.trace=1,
-                       type="classification", proximity=TRUE, trcontrol=umFolds, keep.inbag = TRUE)
+                       type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
 plot(rfb3)
 varImpPlot(rfb3)
 predb3 <- predict(rfb3, newdata=test2, typeprobs="prob", predict.all=TRUE)
@@ -344,7 +344,7 @@ plot(rocCurve ,col=c(4))
 ###calculate the area under curve (bigger is better)
 ## extract AUC and drop extra information
 auc <- function(x) c(x$auc)
-auc(rocCurve)
+a1=auc(rocCurve)
 ```
 ROC_random_forest_buffer1
 ```{r roc_random_forest_buffer1}
