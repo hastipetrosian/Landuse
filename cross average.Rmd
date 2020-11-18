@@ -50,7 +50,6 @@ save(dat_upsample, file="dat_upsample.rda")
 
 ```
 
-
 ```{r classified_maps}
 Classified1=raster("Classified1.tif")
 Classified2=raster("classified2.tif")
@@ -66,172 +65,334 @@ train_index <- sample(1:nrow(PA_data), 0.9 * nrow(dat_upsample))
 sample_train <- PA_data[train_index, ]
 sample_test  <- PA_data[-train_index, ]
 ```
+main buffer
+```{r determine_data}
+##introsucing the specific block 
+corners <- list(x=c(601500,605000),
+                y=c(2840000,2836000))
+pts <- seq(nrow(dat_upsample))
+##introducing test data in the introduced block
+test <- pts[dat_upsample$x > corners$x[1] &
+            dat_upsample$x < corners$x[2] &
+            dat_upsample$y < corners$y[1] &
+            dat_upsample$y > corners$y[2]]
 
-```{r range_of_spatial_autocorrelation}
-range3 <- spatialAutoRange(rasterLayer = Classified1,
-                           sampleNumber = 5000,
-                           doParallel = FALSE,
-                           progress = TRUE)
+##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
+train <- setdiff(pts,test)
+plot(y~x,data=dat_upsample[train,])
+grid(nx=4,ny=4,col=5)
+with(dat_upsample[test,], points(x,y,col=2,pch=16))
+```
+determine train and test data 
+```{r train_testdata}
+##number of k
+numFolds <- trainControl(method = "cv", number = 10)
+##trainand
+train2 <- PA_data[train,]
+test2 <- PA_data[test, ]
+train2$geometry <- NULL
+test2$geometry <- NULL
 ```
 
+```{r random_forest_buffer3}
+rfb3 <- randomForest(formula= factor(change2) ~ . - landuse - change,
+                       data = train2, n.trees=250,interaction.depth=7,
+                       ## do.trace=1,
+                       type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
+```
+
+```{r roc_random_forest_buffer3_roc, message=TRUE}
+predb3 <- predict(rfb3, newdata=test2, typeprobs="prob", predict.all=TRUE)
+ff <-  factor(test2$change,
+              ## 0 = no gain,  1 = gain
+              levels=c(0,1),  ## these are the values in the original vector
+              labels=c("no gain","gain") ## these will be the names in the new vector
+              )
+table(test2$change)
+table(ff)
+## convert a two-level factor back to 0/1
+to_binary <- function(x) { as.numeric(x) -1 }
+rocCurve <- pROC::roc(to_binary(ff),
+                      ## predb3[,"change"]
+                      to_binary(predb3$aggregate))
+caret::confusionMatrix(ff, predb3$aggregate)
+auc <- function(x) c(x$auc)
+a1=auc(rocCurve)
+```
+block 1
 ```{r}
 set.seed(101)
-corners1 <- list(x=c(601500,605000),
+corn1 <- list(x=c(601500,605000),
                 y=c(2835800,2833500))
 pts1 <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
-test1 <- pts[dat_upsample$x > corners1$x[1] &
-            dat_upsample$x < corners1$x[2] &
-            dat_upsample$y < corners1$y[1] &
-            dat_upsample$y > corners1$y[2]]
+test1 <- pts1[dat_upsample$x > corn1$x[1] &
+            dat_upsample$x < corn1$x[2] &
+            dat_upsample$y < corn1$y[1] &
+            dat_upsample$y > corn1$y[2]]
 
 ##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
-train1 <- setdiff(pts,test)
+train1 <- setdiff(pts1,test1)
 plot(y~x,data=dat_upsample[train1,])
 grid(nx=4,ny=4,col=5)
 with(dat_upsample[test1,], points(x,y,col=2,pch=16))
 ##no gain data
 ```
-
+block2
 ```{r}
-corners1 <- list(x=c(601500,605000),
-                y=c(2842800,2839500))
-pts1 <- seq(nrow(dat_upsample))
+corn2 <- list(x=c(601500,605000),
+                y=c(2843000,2839200))
+pts2 <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
-test1 <- pts[dat_upsample$x > corners1$x[1] &
-            dat_upsample$x < corners1$x[2] &
-            dat_upsample$y < corners1$y[1] &
-            dat_upsample$y > corners1$y[2]]
+test2 <- pts2[dat_upsample$x > corn2$x[1] &
+            dat_upsample$x < corn2$x[2] &
+            dat_upsample$y < corn2$y[1] &
+            dat_upsample$y > corn2$y[2]]
 
 ##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
-train1 <- setdiff(pts,test)
-plot(y~x,data=dat_upsample[train1,])
+train2 <- setdiff(pts2,test2)
+plot(y~x,data=dat_upsample[train2,])
 grid(nx=4,ny=4,col=5)
-with(dat_upsample[test1,], points(x,y,col=2,pch=16))
+with(dat_upsample[test2,], points(x,y,col=2,pch=16))
 ```
 
-
-```{r train_testdata}
-##number of k
+```{r train_testdata_block2}
 numFolds <- trainControl(method = "cv", number = 10)
-##trainand
-train3 <- PA_data[train1,]
-test3 <- PA_data[test1, ]
-train3$geometry <- NULL
-test3$geometry <- NULL
+train22 <- PA_data[train2,]
+test22 <- PA_data[test2, ]
+train22$geometry <- NULL
+test22$geometry <- NULL
 ```
 
-Random forest
-
-```{r random_forest_buffer3}
-rfbc3 <- randomForest(formula= factor(change2) ~ . - landuse - change,
-                       data = train3, n.trees=250,interaction.depth=7,
+```{r random_forest_block2}
+rfbc2 <- randomForest(formula= factor(change2) ~ . - landuse - change,
+                       data = train22, n.trees=250,interaction.depth=7,
                        ## do.trace=1,
-                       type="classification", proximity=TRUE, trcontrol=umFolds, keep.inbag = TRUE)
-plot(rfbc3)
-varImpPlot(rfbc3)
-predbc3 <- predict(rfbc3, newdata=test3, typeprobs="prob", predict.all=TRUE)
+                       type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
+plot(rfbc2)
+varImpPlot(rfbc2)
+predbc2 <- predict(rfbc2, newdata=test22, typeprobs="prob", predict.all=TRUE)
+conb2 <- caret::confusionMatrix(predbc2$aggregate, as.factor(test22$change2))
 ```
 ROC_random_forest_buffer
-```{r roc_random_forest_buffer3_roc, message=TRUE}
-ff3 <-  factor(test3$change,
+```{r roc_block2, message=TRUE}
+ff2 <-  factor(test22$change,
               ## 0 = no gain,  1 = gain
               levels=c(0,1),  ## these are the values in the original vector
               labels=c("no gain","gain") ## these will be the names in the new vector
               )
-table(test3$change)
-table(ff3)
+table(test22$change)
+table(ff2)
 ## convert a two-level factor back to 0/1
-to_binary3 <- function(x) { as.numeric(x) -1 }
-rocCurve3 <- pROC::roc(to_binary(ff3),
+to_binary <- function(x) { as.numeric(x) -1 }
+rocCurve2 <- pROC::roc(to_binary(ff2),
                       ## predb3[,"change"]
-                      to_binary(predbc3$aggregate))
-plot(rocCurve3)
+                      to_binary(predbc2$aggregate))
+plot(rocCurve2)
 auc <- function(x) c(x$auc)
-auc(rocCurve3)
+a2=auc(rocCurve2)
 ```
-
-
-
+block3
 ```{r}
-corners1 <- list(x=c(601500,605000),
+corn3 <- list(x=c(601500,605000),
                 y=c(28465000,2843000))
-pts1 <- seq(nrow(dat_upsample))
+pts3 <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
-test1 <- pts[dat_upsample$x > corners1$x[1] &
-            dat_upsample$x < corners1$x[2] &
-            dat_upsample$y < corners1$y[1] &
-            dat_upsample$y > corners1$y[2]]
+test3 <- pts3[dat_upsample$x > corn3$x[1] &
+            dat_upsample$x < corn3$x[2] &
+            dat_upsample$y < corn3$y[1] &
+            dat_upsample$y > corn3$y[2]]
 
-##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
-train1 <- setdiff(pts,test)
-plot(y~x,data=dat_upsample[train1,])
+train3 <- setdiff(pts3,test3)
+plot(y~x,data=dat_upsample[train3,])
 grid(nx=4,ny=4,col=5)
-with(dat_upsample[test1,], points(x,y,col=2,pch=16))
+with(dat_upsample[test3,], points(x,y,col=2,pch=16))
 ##no gain
 ```
-
-
+block4
 ```{r}
-corners1 <- list(x=c(598500,601000),
+corn4 <- list(x=c(598500,601000),
                 y=c(2842800,2839500))
-pts1 <- seq(nrow(dat_upsample))
+pts4 <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
-test1 <- pts[dat_upsample$x > corners1$x[1] &
-            dat_upsample$x < corners1$x[2] &
-            dat_upsample$y < corners1$y[1] &
-            dat_upsample$y > corners1$y[2]]
+test4 <- pts4[dat_upsample$x > corn4$x[1] &
+            dat_upsample$x < corn4$x[2] &
+            dat_upsample$y < corn4$y[1] &
+            dat_upsample$y > corn4$y[2]]
 
 ##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
-train1 <- setdiff(pts,test)
-plot(y~x,data=dat_upsample[train1,])
+train4 <- setdiff(pts4,test4)
+plot(y~x,data=dat_upsample[train4,])
 grid(nx=4,ny=4,col=5)
-with(dat_upsample[test1,], points(x,y,col=2,pch=16))
+with(dat_upsample[test4,], points(x,y,col=2,pch=16))
 ##no gain
 ```
 
-
-
-
-
-```{r train_testdata}
+```{r train_testdata_block4}
 ##number of k
 numFolds <- trainControl(method = "cv", number = 10)
 ##trainand
-train3 <- PA_data[train1,]
-test3 <- PA_data[test1, ]
-train3$geometry <- NULL
-test3$geometry <- NULL
+train44 <- PA_data[train4,]
+test44 <- PA_data[test4, ]
+train44$geometry <- NULL
+test44$geometry <- NULL
 ```
-
 Random forest
-
-```{r random_forest_buffer3}
-rfbc3 <- randomForest(formula= factor(change2) ~ . - landuse - change,
-                       data = train3, n.trees=250,interaction.depth=7,
+```{r random_forest_block4}
+rfbc4 <- randomForest(formula= factor(change2) ~ . - landuse - change,
+                       data = train44, n.trees=250,interaction.depth=7,
                        ## do.trace=1,
-                       type="classification", proximity=TRUE, trcontrol=umFolds, keep.inbag = TRUE)
-plot(rfbc3)
-varImpPlot(rfbc3)
-predbc3 <- predict(rfbc3, newdata=test3, typeprobs="prob", predict.all=TRUE)
+                       type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
+plot(rfbc4)
+varImpPlot(rfbc4)
+predbc4 <- predict(rfbc4, newdata=test44, typeprobs="prob", predict.all=TRUE)
+conb4 <- caret::confusionMatrix(predbc4$aggregate, as.factor(test44$change2))
 ```
-ROC_random_forest_buffer
-```{r roc_random_forest_buffer3_roc, message=TRUE}
-ff3 <-  factor(test3$change,
+
+```{r roc_block4, message=TRUE}
+ff4 <-  factor(test44$change,
               ## 0 = no gain,  1 = gain
               levels=c(0,1),  ## these are the values in the original vector
               labels=c("no gain","gain") ## these will be the names in the new vector
               )
-table(test3$change)
-table(ff3)
-caret::confusionMatrix(ff3, predbc3$aggregate)
-c3=caret::confusionMatrix(predbc3$aggregate, as.factor(test3$change2))
-## convert a two-level factor back to 0/1
-to_binary3 <- function(x) { as.numeric(x) -1 }
-rocCurve3 <- pROC::roc(to_binary(ff3),
+to_binary4 <- function(x) { as.numeric(x) -1 }
+rocCurve4 <- pROC::roc(to_binary(ff4),
                       ## predb3[,"change"]
-                      to_binary(predbc3$aggregate))
-plot(rocCurve3)
+                      to_binary(predbc4$aggregate))
+plot(rocCurve4)
 auc <- function(x) c(x$auc)
-auc(rocCurve3)
+a3=auc(rocCurve4)
 ```
+block5
+```{r}
+corn5 <- list(x=c(598500,601500),
+                y=c(2839500,2836000))
+pts5 <- seq(nrow(dat_upsample))
+##introducing test data in the introduced block
+test5 <- pts5[dat_upsample$x > corn5$x[1] &
+            dat_upsample$x < corn5$x[2] &
+            dat_upsample$y < corn5$y[1] &
+            dat_upsample$y > corn5$y[2]]
+
+##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
+train5 <- setdiff(pts5,test5)
+plot(y~x,data=dat_upsample[train5,])
+grid(nx=4,ny=4,col=5)
+with(dat_upsample[test5,], points(x,y,col=2,pch=16))
+##no gain
+```
+block6
+```{r}
+corn6 <- list(x=c(598500,601500),
+                y=c(28465000,2843000))
+pts6 <- seq(nrow(dat_upsample))
+##introducing test data in the introduced block
+test6 <- pts6[dat_upsample$x > corn6$x[1] &
+            dat_upsample$x < corn6$x[2] &
+            dat_upsample$y < corn6$y[1] &
+            dat_upsample$y > corn6$y[2]]
+
+##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
+train6 <- setdiff(pts6,test6)
+plot(y~x,data=dat_upsample[train6,])
+grid(nx=4,ny=4,col=5)
+with(dat_upsample[test6,], points(x,y,col=2,pch=16))
+##no gain
+```
+
+```{r train_testdata_block6}
+##number of k
+numFolds <- trainControl(method = "cv", number = 10)
+##trainand
+train66 <- PA_data[train6,]
+test66 <- PA_data[test6, ]
+train66$geometry <- NULL
+test66$geometry <- NULL
+```
+Random forest
+```{r random_forest_block6}
+rfbc6 <- randomForest(formula= factor(change2) ~ . - landuse - change,
+                       data = train66, n.trees=250,interaction.depth=7,
+                       ## do.trace=1,
+                       type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
+plot(rfbc4)
+varImpPlot(rfbc6)
+predbc6 <- predict(rfbc4, newdata=test66, typeprobs="prob", predict.all=TRUE)
+conb6 <- caret::confusionMatrix(predbc6$aggregate, as.factor(test66$change2))
+```
+
+```{r roc_block6, message=TRUE}
+ff6 <-  factor(test66$change,
+              ## 0 = no gain,  1 = gain
+              levels=c(0,1),  ## these are the values in the original vector
+              labels=c("no gain","gain") ## these will be the names in the new vector
+              )
+to_binary6 <- function(x) { as.numeric(x) -1 }
+rocCurve6 <- pROC::roc(to_binary(ff6),
+                      ## predb3[,"change"]
+                      to_binary(predbc6$aggregate))
+plot(rocCurve6)
+auc <- function(x) c(x$auc)
+a4=auc(rocCurve6)
+```
+block7
+```{r}
+corn7 <- list(x=c(595500,598500),
+                y=c(2843000,2835000))
+pts7 <- seq(nrow(dat_upsample))
+##introducing test data in the introduced block
+test7 <- pts7[dat_upsample$x > corn7$x[1] &
+            dat_upsample$x < corn7$x[2] &
+            dat_upsample$y < corn7$y[1] &
+            dat_upsample$y > corn7$y[2]]
+
+##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
+train7 <- setdiff(pts7,test7)
+plot(y~x,data=dat_upsample[train7,])
+grid(nx=4,ny=4,col=5)
+with(dat_upsample[test7,], points(x,y,col=2,pch=16))
+##no gain
+```
+
+```{r train_testdata_block7}
+##number of k
+numFolds <- trainControl(method = "cv", number = 10)
+##trainand
+train77 <- PA_data[train7,]
+test77 <- PA_data[test7, ]
+train77$geometry <- NULL
+test77$geometry <- NULL
+```
+Random forest
+```{r random_forest_block7}
+rfbc7 <- randomForest(formula= factor(change2) ~ . - landuse - change,
+                       data = train77, n.trees=250,interaction.depth=7,
+                       ## do.trace=1,
+                       type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
+plot(rfbc7)
+varImpPlot(rfbc7)
+predbc7 <- predict(rfbc7, newdata=test77, typeprobs="prob", predict.all=TRUE)
+conb7 <- caret::confusionMatrix(predbc7$aggregate, as.factor(test77$change2))
+```
+
+```{r roc_block7, message=TRUE}
+ff7 <-  factor(test77$change,
+              ## 0 = no gain,  1 = gain
+              levels=c(0,1),  ## these are the values in the original vector
+              labels=c("no gain","gain") ## these will be the names in the new vector
+              )
+to_binary7 <- function(x) { as.numeric(x) -1 }
+rocCurve7 <- pROC::roc(to_binary(ff7),
+                      ## predb3[,"change"]
+                      to_binary(predbc7$aggregate))
+plot(rocCurve7)
+auc <- function(x) c(x$auc)
+a5=auc(rocCurve7)
+```
+
+```{r}
+x=c(a1,a2,a3,a4,a5)
+mean(x)
+```
+
+
