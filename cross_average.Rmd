@@ -1,3 +1,6 @@
+---
+title: "averaging AUC across folds"
+---
 
 ```{r packages, message=FALSE, warning=FALSE}
 library(tidyverse) ## load filter(), ... function
@@ -122,6 +125,8 @@ a1=auc(rocCurve)
 block 1
 ```{r}
 set.seed(101)
+## can we find the corners of block 1 automatically?
+
 corn1 <- list(x=c(601500,605000),
                 y=c(2836000,2833500))
 pts1 <- seq(nrow(dat_upsample))
@@ -388,7 +393,7 @@ a5=auc(rocCurve7)
 ```
 
 blpck8
-```{r determine_data}
+```{r determine_data_2}
 ##introsucing the specific block 
 corner8 <- list(x=c(593500,595500),
                 y=c(28465000,2843000))
