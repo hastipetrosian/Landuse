@@ -282,7 +282,7 @@ with(dat_upsample[test5,], points(x,y,col=2,pch=16))
 ```
 block6
 ```{r}
-corn6 <- list(x=c(598500,601600),
+corn6 <- list(x=c(596000,598500),
                 y=c(28465000,2842800))
 pts6 <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
@@ -410,7 +410,7 @@ grid(nx=4,ny=4,col=5)
 with(dat_upsample[test8,], points(x,y,col=2,pch=16))
 ```
 
-```{r train_testdata_block7}
+```{r train_testdata_block8}
 ##number of k
 numFolds <- trainControl(method = "cv", number = 10)
 ##trainand
@@ -420,7 +420,7 @@ train88$geometry <- NULL
 test88$geometry <- NULL
 ```
 Random forest
-```{r random_forest_block7}
+```{r random_forest_block8}
 rfbc8 <- randomForest(formula= factor(change2) ~ . - landuse - change,
                        data = train88, n.trees=350,interaction.depth=7,
                        ## do.trace=1,
@@ -431,7 +431,7 @@ predbc8 <- predict(rfbc8, newdata=test88, typeprobs="prob", predict.all=TRUE)
 conb8 <- caret::confusionMatrix(predbc8$aggregate, as.factor(test88$change2))
 ```
 
-```{r roc_block7, message=TRUE}
+```{r roc_block8, message=TRUE}
 ff8 <-  factor(test88$change,
               ## 0 = no gain,  1 = gain
               levels=c(0,1),  ## these are the values in the original vector
