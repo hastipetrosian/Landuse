@@ -387,10 +387,6 @@ auc <- function(x) c(x$auc)
 a5=auc(rocCurve7)
 ```
 
-```{r}
-x=c(a1,a2,a3,a4,a5,a6)
-mean(x)
-```
 blpck8
 ```{r determine_data}
 ##introsucing the specific block 
@@ -444,4 +440,10 @@ rocCurve8 <- pROC::roc(to_binary(ff8),
 plot(rocCurve7)
 auc <- function(x) c(x$auc)
 a6=auc(rocCurve8)
+```
+
+```{r}
+x=c(a1,a2,a3,a4,a5,a6)
+y=mean(x)
+print(y)
 ```
