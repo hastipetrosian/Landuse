@@ -65,7 +65,7 @@ train_index <- sample(1:nrow(PA_data), 0.9 * nrow(dat_upsample))
 sample_train <- PA_data[train_index, ]
 sample_test  <- PA_data[-train_index, ]
 ```
-main buffer
+main block
 ```{r determine_data}
 ##introsucing the specific block 
 corners <- list(x=c(601500,605000),
@@ -123,7 +123,7 @@ block 1
 ```{r}
 set.seed(101)
 corn1 <- list(x=c(601500,605000),
-                y=c(2835800,2833500))
+                y=c(2836000,2833500))
 pts1 <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
 test1 <- pts1[dat_upsample$x > corn1$x[1] &
@@ -141,7 +141,7 @@ with(dat_upsample[test1,], points(x,y,col=2,pch=16))
 block2
 ```{r}
 corn2 <- list(x=c(601500,605000),
-                y=c(2843000,2839200))
+                y=c(2843000,2839800))
 pts2 <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
 test2 <- pts2[dat_upsample$x > corn2$x[1] &
@@ -166,7 +166,7 @@ test22$geometry <- NULL
 
 ```{r random_forest_block2}
 rfbc2 <- randomForest(formula= factor(change2) ~ . - landuse - change,
-                       data = train22, n.trees=250,interaction.depth=7,
+                       data = train22, n.trees=400,interaction.depth=7,
                        ## do.trace=1,
                        type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
 plot(rfbc2)
@@ -212,7 +212,7 @@ with(dat_upsample[test3,], points(x,y,col=2,pch=16))
 block4
 ```{r}
 corn4 <- list(x=c(598500,601000),
-                y=c(2842800,2839500))
+                y=c(2842800,2839000))
 pts4 <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
 test4 <- pts4[dat_upsample$x > corn4$x[1] &
@@ -225,7 +225,6 @@ train4 <- setdiff(pts4,test4)
 plot(y~x,data=dat_upsample[train4,])
 grid(nx=4,ny=4,col=5)
 with(dat_upsample[test4,], points(x,y,col=2,pch=16))
-##no gain
 ```
 
 ```{r train_testdata_block4}
@@ -240,7 +239,7 @@ test44$geometry <- NULL
 Random forest
 ```{r random_forest_block4}
 rfbc4 <- randomForest(formula= factor(change2) ~ . - landuse - change,
-                       data = train44, n.trees=250,interaction.depth=7,
+                       data = train44, n.trees=350,interaction.depth=7,
                        ## do.trace=1,
                        type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
 plot(rfbc4)
@@ -283,8 +282,8 @@ with(dat_upsample[test5,], points(x,y,col=2,pch=16))
 ```
 block6
 ```{r}
-corn6 <- list(x=c(598500,601500),
-                y=c(28465000,2843000))
+corn6 <- list(x=c(598500,601600),
+                y=c(28465000,2842800))
 pts6 <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
 test6 <- pts6[dat_upsample$x > corn6$x[1] &
@@ -297,7 +296,6 @@ train6 <- setdiff(pts6,test6)
 plot(y~x,data=dat_upsample[train6,])
 grid(nx=4,ny=4,col=5)
 with(dat_upsample[test6,], points(x,y,col=2,pch=16))
-##no gain
 ```
 
 ```{r train_testdata_block6}
@@ -312,12 +310,12 @@ test66$geometry <- NULL
 Random forest
 ```{r random_forest_block6}
 rfbc6 <- randomForest(formula= factor(change2) ~ . - landuse - change,
-                       data = train66, n.trees=250,interaction.depth=7,
+                       data = train66, n.trees=350,interaction.depth=7,
                        ## do.trace=1,
                        type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
 plot(rfbc4)
 varImpPlot(rfbc6)
-predbc6 <- predict(rfbc4, newdata=test66, typeprobs="prob", predict.all=TRUE)
+predbc6 <- predict(rfbc6, newdata=test66, typeprobs="prob", predict.all=TRUE)
 conb6 <- caret::confusionMatrix(predbc6$aggregate, as.factor(test66$change2))
 ```
 
@@ -338,7 +336,7 @@ a4=auc(rocCurve6)
 block7
 ```{r}
 corn7 <- list(x=c(595500,598500),
-                y=c(2843000,2835000))
+                y=c(2843500,2835000))
 pts7 <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
 test7 <- pts7[dat_upsample$x > corn7$x[1] &
@@ -351,7 +349,6 @@ train7 <- setdiff(pts7,test7)
 plot(y~x,data=dat_upsample[train7,])
 grid(nx=4,ny=4,col=5)
 with(dat_upsample[test7,], points(x,y,col=2,pch=16))
-##no gain
 ```
 
 ```{r train_testdata_block7}
@@ -366,7 +363,7 @@ test77$geometry <- NULL
 Random forest
 ```{r random_forest_block7}
 rfbc7 <- randomForest(formula= factor(change2) ~ . - landuse - change,
-                       data = train77, n.trees=250,interaction.depth=7,
+                       data = train77, n.trees=350,interaction.depth=7,
                        ## do.trace=1,
                        type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
 plot(rfbc7)
@@ -391,8 +388,60 @@ a5=auc(rocCurve7)
 ```
 
 ```{r}
-x=c(a1,a2,a3,a4,a5)
+x=c(a1,a2,a3,a4,a5,a6)
 mean(x)
 ```
+blpck8
+```{r determine_data}
+##introsucing the specific block 
+corner8 <- list(x=c(593500,595500),
+                y=c(28465000,2843000))
+pts <- seq(nrow(dat_upsample))
+##introducing test data in the introduced block
+test8 <- pts[dat_upsample$x > corner8$x[1] &
+            dat_upsample$x < corner8$x[2] &
+            dat_upsample$y < corner8$y[1] &
+            dat_upsample$y > corner8$y[2]]
 
+##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
+train8 <- setdiff(pts,test8)
+plot(y~x,data=dat_upsample[train8,])
+grid(nx=4,ny=4,col=5)
+with(dat_upsample[test8,], points(x,y,col=2,pch=16))
+```
 
+```{r train_testdata_block7}
+##number of k
+numFolds <- trainControl(method = "cv", number = 10)
+##trainand
+train88 <- PA_data[train8,]
+test88 <- PA_data[test8, ]
+train88$geometry <- NULL
+test88$geometry <- NULL
+```
+Random forest
+```{r random_forest_block7}
+rfbc8 <- randomForest(formula= factor(change2) ~ . - landuse - change,
+                       data = train88, n.trees=350,interaction.depth=7,
+                       ## do.trace=1,
+                       type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
+plot(rfbc8)
+varImpPlot(rfbc8)
+predbc8 <- predict(rfbc8, newdata=test88, typeprobs="prob", predict.all=TRUE)
+conb8 <- caret::confusionMatrix(predbc8$aggregate, as.factor(test88$change2))
+```
+
+```{r roc_block7, message=TRUE}
+ff8 <-  factor(test88$change,
+              ## 0 = no gain,  1 = gain
+              levels=c(0,1),  ## these are the values in the original vector
+              labels=c("no gain","gain") ## these will be the names in the new vector
+              )
+to_binary8 <- function(x) { as.numeric(x) -1 }
+rocCurve8 <- pROC::roc(to_binary(ff8),
+                      ## predb3[,"change"]
+                      to_binary(predbc8$aggregate))
+plot(rocCurve7)
+auc <- function(x) c(x$auc)
+a6=auc(rocCurve8)
+```
