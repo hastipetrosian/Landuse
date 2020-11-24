@@ -408,3 +408,22 @@ let's say that for observation 571 we get a _predicted_ probability from the fit
 could plot the residuals in space (x,y)
 
 compute spatial autocorrelation function of residuals. That's what will tell us how we ought to be buffering ...
+
+## 18 Nov 2020
+
+- figure out how to stack all the #@%@#$ rasters
+- think about goodness-of-fit/accuracy measures other than AUC (deviance? R^2? ? want measures that are not just binary classifiers [i.e. they incorporate the distance of the prediction from the outcome, not just whether you predicted correctly or not])
+- think about scaling up to the full landscape (need better computing resources for this)
+- consider whether we really want to upsample ...
+- start writing up methods
+- construct ordered list of things we want to do in the project, e.g.
+    - scale up and finish random forest prediction across the whole landscape
+	- scale up to fitting on all years (maybe simultaneously or maybe separately)
+	- draw pretty prediction maps?
+	- draw coefficient plots or coefficient importance plots
+    - try with logistic regression as well?
+
+### BMB
+
+- make `cross_average.rmd` use a loop instead of repeating the code every time
+- how do we extract block coordinates from autorange or spatialblock objects?
