@@ -118,7 +118,12 @@ rf_eb=train(as.factor(change2) ~ .,
 The function works by automatically fitting variograms to each continuous raster and finding the effective range of spatial autocorrelation. 
 
 ```{r stack_all_maps}
+rasterfiles <- list.files(pattern="*.tif$",recursive=TRUE)
+years <- parse_number(rasterfiles)
+years <- years[years>1900] ## leave out DEM file
+years2 <- unique(years)
 rr_list <- map(years2 , get_categorical_raster, list_cats=TRUE)
+raster2018=raster("2018R/2018raster.tif")
 dem <- raster("dem/Extract_dem11.tif")
 demR <- projectRaster(dem, rr_list[[1]])
 extent_dem <- extent(dem)
@@ -127,7 +132,7 @@ aspect <- terrain(demR, opt="aspect", unit="radians", neighbors=8)
 wind2018 <- raster("wind/2018W.tif")
 pre2018 <- raster("precipitation/2018PR.tif")
 tem2018 <- raster("Average_temperature/2018AT.tif")
-stack=raster::stack(slope,aspect,raster2018,pre2018,win2018,tem2018)
+stack=raster::stack(slope,aspect,raster2018,pre2018,wind2018,tem2018)
 stack <- stack[[1:5]]
 save(stack, file="stack.rda")
 load("stack.rda")
@@ -454,5 +459,7 @@ length(lstw2$neighbours)
 ## BMB: still not sure how to make this work ...
 ## moran.test(res2, lstw2)
 ```
+
+
 
 
