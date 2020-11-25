@@ -18,30 +18,7 @@ library(spdep)
 library(rfPermute)
 library(metRology)
 library(caTools)
-library(sf)
-library(rgeos)
-library(readxl)
-library(raster)
-library(tidyverse) ## includes purrr, readr, dplyr, ...
-library(fasterize)  ## may need to install this
-library(rasterVis)
-library(foreign)
-library(cowplot)
-library(lulcc)
-library(sp)
-library(broom)
-library(ggplot2); theme_set(theme_bw())
-library(dotwhisker)
-library(future)
-library(furrr)
-library(bbmle)
-library(DHARMa)
-library(ResourceSelection)
-library(arm)
-library(brglm2)
-library(SparseM)
-library(Hmisc)
-library(rms)
+library(MASS)
 
 ```
 
@@ -496,4 +473,5 @@ x2=c(oob1,oob2,oob3,oob4,oob5,oob6)
 y2=mean(x2)
 print(y2)
 x3=c(rfb3,rfbc2,rfbc4,rfbc6,rfbc7,rfbc8)
+
 ```
