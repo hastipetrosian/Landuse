@@ -1,0 +1,135 @@
+---
+title: "averaging AUC across folds"
+---
+
+```{r packages, message=FALSE, warning=FALSE}
+library(tidyverse) ## load filter(), ... function
+library(blockCV)
+library(sf)
+library(raster)
+library(ggplot2)
+library(shiny) ## what for ... ??
+library(ROSE)
+library(caret)
+source("functions.R")
+library(randomForest)
+library(rpart.plot)
+library(spdep)
+library(rfPermute)
+library(metRology)
+library(caTools)
+library(MASS)
+```
+
+To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
+
+```{r input_data}
+## increase memory
+if (.Platform$OS.type=="windows") memory.limit(1000000)
+
+## get all data (as tables of x,y, predictors, change)
+load("rr_points14.RData")
+## need
+## R CMD BATCH --vanilla climate.R
+## R CMD BATCH --vanilla winddir.R
+## R CMD BATCH --vanilla basic.R
+
+## test with smaller data set
+dat <- dplyr::filter(rr_points14[["2014"]],
+                     x<604000 & y >284000 &  y < 2846000)
+dat$change2 <- change_fun(dat$change)
+```
+
+```{r upsample}
+dat_gain <- dplyr::filter(dat, change2 %in% c("no gain", "gain")) 
+## analyzing gain only, first ...
+if (file.exists("dat_upsample.rda")) {
+    load("dat_upsample.rda")
+}  else {
+    set.seed(101)
+    dat_upsample <- ROSE::ovun.sample(change ~ ., data = dat_gain, method = "both", N=1500)$data
+    save(dat_upsample, file="dat_upsample.rda")
+}
+```
+
+```{r classified_maps}
+Classified1=raster("Classified1.tif")
+Classified2=raster("classified2.tif")
+```
+The appropriate format of species data for the blockCV package is simple features (sf) or SpatialPointsDataFrame.pamake a SpatialPointsDataFrame object from data.frame
+```{r numeric_data}
+PA_data <- st_as_sf(dat_upsample, coords = c("x", "y"), crs = crs(Classified1))
+```
+
+```{r}
+to_binary <- function(x) { as.numeric(x) -1 }
+auc <- function(x) c(x$auc)
+corners <- matrix(c(601500,605000,2839900,2835800,
+                    601500,605000,2836000,2833500,
+                    601500,605000,2843000,2839600,
+                    601500,605000,2846500,2843000,
+                    598500,601700,2843100,2839500,
+                    598500,601500,2839500,2836000,
+                    596000,598500,2846500,2842800,
+                    595500,598500,2843500,2835000,
+                    593500,595500,2846500,2843000),
+                    ncol=4, byrow=TRUE,
+                    dimnames=list(NULL,c("x1","x2","y1","y2")))
+aucvec <- rep(NA,nrow(corners))
+rflist <- list()                  
+pts <- seq(nrow(dat_upsample))
+for (i in seq(nrow(corners))) {
+    cat(i,"\n")
+    test <- pts[dat_upsample$x > corners[i,"x1"] &
+            dat_upsample$x < corners[i,"x2"] &
+            dat_upsample$y < corners[i,"y1"] &
+            dat_upsample$y > corners[i,"y2"]]
+    train <- setdiff(pts,test)
+    numFolds <- trainControl(method = "cv", number = 10)
+    train2 <- PA_data[train,]
+    test2 <- PA_data[test, ]
+    train2$geometry <- NULL
+    test2$geometry <- NULL
+    rflist[[i]] <- randomForest(formula= factor(change2) ~ . - landuse - change,
+                        data = train2,
+                        n.trees=400,interaction.depth=7,
+                        ## do.trace=1,
+                        type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
+    predbc <- predict(rflist[[i]], newdata=test2, typeprobs="prob", predict.all=TRUE)
+    ff2 <-  factor(test2$change,
+                   ## 0 = no gain,  1 = gain
+                   levels=c(0,1),  ## these are the values in the original vector
+                   labels=c("no gain","gain") ## these will be the names in the new vector
+                   )
+    rocCurve2 <- try(pROC::roc(to_binary(ff2),
+                      to_binary(predbc$aggregate)))
+    if (!inherits(rocCurve2, "try-error")) aucvec[i] <- auc(rocCurve2)
+}
+```
+
+```{r}
+x=c(a1,a2,a3,a4,a5,a6)
+y=mean(x)
+print(y)
+```
+
+Out of bag (OOB) score is a way of validating the Random forest model.
+
+```{r Out_of_Bag_error, eval=FALSE}
+err1=rfb3$err.rate
+oob1=err[nrow(err),"OOB"]
+err2=rfbc2$err.rate
+oob2=err[nrow(err2),"OOB"]
+err3=rfbc4$err.rate
+oob3=err[nrow(err3),"OOB"]
+err4=rfbc6$err.rate
+oob4=err[nrow(err4),"OOB"]
+err5=rfbc7$err.rate
+oob5=err[nrow(err5),"OOB"]
+err6=rfbc6$err.rate
+oob6=err[nrow(err6),"OOB"]
+x2=c(oob1,oob2,oob3,oob4,oob5,oob6)
+y2=mean(x2)
+print(y2)
+x3=c(rfb3,rfbc2,rfbc4,rfbc6,rfbc7,rfbc8)
+```
