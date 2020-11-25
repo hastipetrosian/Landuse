@@ -135,6 +135,7 @@ tem2018 <- raster("Average_temperature/2018AT.tif")
 stack=raster::stack(slope,aspect,raster2018,pre2018,wind2018,tem2018)
 stack <- stack[[1:5]]
 save(stack, file="stack.rda")
+
 ```
 
 ```{r range_of_spatial_autocorrelation}
