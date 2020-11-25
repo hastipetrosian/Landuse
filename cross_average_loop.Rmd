@@ -61,7 +61,7 @@ The appropriate format of species data for the blockCV package is simple feature
 PA_data <- st_as_sf(dat_upsample, coords = c("x", "y"), crs = crs(Classified1))
 ```
 
-```{r}
+```{r loop}
 to_binary <- function(x) { as.numeric(x) -1 }
 auc <- function(x) c(x$auc)
 corners <- matrix(c(601500,605000,2839900,2835800,
@@ -74,43 +74,56 @@ corners <- matrix(c(601500,605000,2839900,2835800,
                     595500,598500,2843500,2835000,
                     593500,595500,2846500,2843000),
                     ncol=4, byrow=TRUE,
-                    dimnames=list(NULL,c("x1","x2","y1","y2")))
+                  dimnames=list(NULL,c("x1","x2","y1","y2")))
+
+set.seed(101)
+## set up empty vector for AUC values and an empty list for the
+##  random forest fits
 aucvec <- rep(NA,nrow(corners))
 rflist <- list()                  
 pts <- seq(nrow(dat_upsample))
-for (i in seq(nrow(corners))) {
+for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
+    ## i <- 1
     cat(i,"\n")
+    ## select test values in the square
     test <- pts[dat_upsample$x > corners[i,"x1"] &
-            dat_upsample$x < corners[i,"x2"] &
-            dat_upsample$y < corners[i,"y1"] &
-            dat_upsample$y > corners[i,"y2"]]
+                dat_upsample$x < corners[i,"x2"] &
+                dat_upsample$y < corners[i,"y1"] &
+                dat_upsample$y > corners[i,"y2"]]
+    ## select train values as everything else
     train <- setdiff(pts,test)
-    numFolds <- trainControl(method = "cv", number = 10)
+    numFolds <- trainControl(method = "cv", number = 10) ## ???
     train2 <- PA_data[train,]
-    test2 <- PA_data[test, ]
+    test2  <- PA_data[test, ]
     train2$geometry <- NULL
     test2$geometry <- NULL
+    ## fitting the random forest model,
+    ##  saving the fitted model in rflist
     rflist[[i]] <- randomForest(formula= factor(change2) ~ . - landuse - change,
                         data = train2,
                         n.trees=400,interaction.depth=7,
                         ## do.trace=1,
                         type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
+    ## do the predictions, etc 
     predbc <- predict(rflist[[i]], newdata=test2, typeprobs="prob", predict.all=TRUE)
     ff2 <-  factor(test2$change,
                    ## 0 = no gain,  1 = gain
                    levels=c(0,1),  ## these are the values in the original vector
                    labels=c("no gain","gain") ## these will be the names in the new vector
                    )
+    table(ff2)
+    ## try() doesn't stop if there's an error
     rocCurve2 <- try(pROC::roc(to_binary(ff2),
-                      to_binary(predbc$aggregate)))
-    if (!inherits(rocCurve2, "try-error")) aucvec[i] <- auc(rocCurve2)
+                               to_binary(predbc$aggregate)))
+    ## calculate auc (if the test data had gain and no gain) and store it in the vector
+    if (!inherits(rocCurve2, "try-error")) {
+        aucvec[i] <- auc(rocCurve2)
+    }
 }
 ```
 
 ```{r}
-x=c(a1,a2,a3,a4,a5,a6)
-y=mean(x)
-print(y)
+print(aucvec)
 ```
 
 Out of bag (OOB) score is a way of validating the Random forest model.
@@ -120,5 +133,6 @@ get_err <- function(x) {
     err <- x$err.rate
     tail(err[,"OOB"],1)
 }
+## get the OOB error for every fold
 oobvec <- sapply(rflist,get_err)
 ```

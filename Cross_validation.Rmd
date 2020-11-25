@@ -132,18 +132,21 @@ aspect <- terrain(demR, opt="aspect", unit="radians", neighbors=8)
 wind2018 <- raster("wind/2018W.tif")
 pre2018 <- raster("precipitation/2018PR.tif")
 tem2018 <- raster("Average_temperature/2018AT.tif")
-stack=raster::stack(slope,aspect,raster2018,pre2018,wind2018,tem2018)
-stack <- stack[[1:5]]
+stack=raster::stack(slope,aspect,raster2018,pre2018
+                   , wind2018
+                   , tem2018)
+## stack2 <- stack[[1:5]] ## ??? take just the first 5???
 save(stack, file="stack.rda")
 
 ```
 
 ```{r range_of_spatial_autocorrelation}
 range3 <- spatialAutoRange(rasterLayer = stack,
-                              sampleNumber = 1000,
-                              doParallel = TRUE,                              nCores = NULL,
-                              plotVariograms = FALSE,
-                              showPlots = TRUE)
+                           sampleNumber = 1000,
+                           doParallel = TRUE,
+                           nCores = NULL,
+                           plotVariograms = FALSE,
+                           showPlots = TRUE)
 ```
 
 generates spatially separated training and testing folds by considering buffers of specified distance around each observation point. 

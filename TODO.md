@@ -411,7 +411,7 @@ compute spatial autocorrelation function of residuals. That's what will tell us 
 
 ## 18 Nov 2020
 
-- figure out how to stack all the #@%@#$ rasters
+- figure out how to stack all the #@%@#$ rasters (DONE)
 - think about goodness-of-fit/accuracy measures other than AUC (deviance? R^2? ? want measures that are not just binary classifiers [i.e. they incorporate the distance of the prediction from the outcome, not just whether you predicted correctly or not])
 - think about scaling up to the full landscape (need better computing resources for this)
 - consider whether we really want to upsample ...
@@ -427,3 +427,8 @@ compute spatial autocorrelation function of residuals. That's what will tell us 
 
 - make `cross_average.rmd` use a loop instead of repeating the code every time
 - how do we extract block coordinates from autorange or spatialblock objects?
+
+## 25 Nov 2020 list
+
+* errors when calculating R^2 etc.?
+* sort out github authentication?
