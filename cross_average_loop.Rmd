@@ -116,20 +116,9 @@ print(y)
 Out of bag (OOB) score is a way of validating the Random forest model.
 
 ```{r Out_of_Bag_error, eval=FALSE}
-err1=rfb3$err.rate
-oob1=err[nrow(err),"OOB"]
-err2=rfbc2$err.rate
-oob2=err[nrow(err2),"OOB"]
-err3=rfbc4$err.rate
-oob3=err[nrow(err3),"OOB"]
-err4=rfbc6$err.rate
-oob4=err[nrow(err4),"OOB"]
-err5=rfbc7$err.rate
-oob5=err[nrow(err5),"OOB"]
-err6=rfbc6$err.rate
-oob6=err[nrow(err6),"OOB"]
-x2=c(oob1,oob2,oob3,oob4,oob5,oob6)
-y2=mean(x2)
-print(y2)
-x3=c(rfb3,rfbc2,rfbc4,rfbc6,rfbc7,rfbc8)
+get_err <- function(x) {
+    err <- x$err.rate
+    tail(err[,"OOB"],1)
+}
+oobvec <- sapply(rflist,get_err)
 ```
