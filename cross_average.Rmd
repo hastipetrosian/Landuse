@@ -72,7 +72,7 @@ main block
 ```{r determine_data}
 ##introsucing the specific block 
 corners <- list(x=c(601500,605000),
-                y=c(2840000,2836000))
+                y=c(2839900,2835800))
 pts <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
 test <- pts[dat_upsample$x > corners$x[1] &
@@ -146,7 +146,7 @@ with(dat_upsample[test1,], points(x,y,col=2,pch=16))
 block2
 ```{r}
 corn2 <- list(x=c(601500,605000),
-                y=c(2843000,2839800))
+                y=c(2843000,2839600))
 pts2 <- seq(nrow(dat_upsample))
 ##introducing test data in the introduced block
 test2 <- pts2[dat_upsample$x > corn2$x[1] &
@@ -451,4 +451,27 @@ a6=auc(rocCurve8)
 x=c(a1,a2,a3,a4,a5,a6)
 y=mean(x)
 print(y)
+```
+Out of bag (OOB) score is a way of validating the Random forest model.
+```{r Out_of_Bag_error}
+
+err1=rfb3$err.rate
+oob1=err[nrow(err),"OOB"]
+err2=rfbc2$err.rate
+oob2=err[nrow(err2),"OOB"]
+err3=rfbc4$err.rate
+oob3=err[nrow(err3),"OOB"]
+err4=rfbc6$err.rate
+oob4=err[nrow(err4),"OOB"]
+err5=rfbc7$err.rate
+oob5=err[nrow(err5),"OOB"]
+err6=rfbc6$err.rate
+oob6=err[nrow(err6),"OOB"]
+x2=c(oob1,oob2,oob3,oob4,oob5,oob6)
+y2=mean(x2)
+print(y2)
+x3=c(rfb3,rfbc2,rfbc4,rfbc6,rfbc7,rfbc8)
+err <- map(x3, err.rate)
+x3
+
 ```
