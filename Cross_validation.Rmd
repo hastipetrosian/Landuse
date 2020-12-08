@@ -25,6 +25,7 @@ library(spdep)
 library(rfPermute)
 library(metRology)
 library(Metrics)
+library(vip)
 ```
 
 To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
@@ -459,6 +460,10 @@ length(lstw2$neighbours)
 ## BMB: still not sure how to make this work ...
 ## moran.test(res2, lstw2)
 ```
-
+importance plots
+```{r variable_importance_plot}
+vi(rfb3)
+vip(rfb3)
+```
 
 
