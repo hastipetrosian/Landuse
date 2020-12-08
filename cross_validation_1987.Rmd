@@ -1,0 +1,141 @@
+---
+title: "Cross validation 1987"
+---
+
+```
+## 0: not-erg before and after (no gain)
+## 1: not-erg before, erg after (gain)
+## 2: erg before, not-erg after (loss)
+## 3: erg before and after (no loss)
+```
+```{r packages, message=FALSE, warning=FALSE}
+library(tidyverse) ## load filter(), ... function
+library(blockCV)
+library(sf)
+library(raster)
+library(ggplot2)
+library(shiny) ## what for ... ??
+library(ROSE)
+library(caret)
+source("functions.R")
+library(randomForest)
+library(rpart.plot)
+library(spdep)
+library(rfPermute)
+library(metRology)
+library(Metrics)
+library(vip)
+```
+
+To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
+
+```{r input_data}
+## increase memory
+if (.Platform$OS.type=="windows") memory.limit(1000000)
+load("rr_points14.RData")
+dat1987 <- dplyr::filter(rr_points14[["1987"]],
+                     x<604000 & y >284000 &  y < 2846000)
+dat1987$change2 <- change_fun(dat1987$change)
+dat1987_gain <- dplyr::filter(dat1987, change2 %in% c("no gain", "gain")) 
+dat1987_upsample <- ROSE::ovun.sample(change ~ ., data = dat1987_gain, method = "both", N=1500)$data
+
+```
+
+buffer based on the defined boders=buffer 3
+```{r determine_data}
+##introsucing the specific block 
+corners1987 <- list(x=c(601500,605000),
+                y=c(2840000,2836000))
+pts1987 <- seq(nrow(dat1987_upsample))
+##introducing test data in the introduced block
+test1987 <- pts1987[dat1987_upsample$x > corners1987$x[1] &
+            dat1987_upsample$x < corners1987$x[2] &
+            dat1987_upsample$y < corners1987$y[1] &
+            dat1987_upsample$y > corners1987$y[2]]
+
+##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
+train1987 <- setdiff(pts1987,test1987)
+plot(y~x,data=dat1987_upsample[train1987,])
+grid(nx=4,ny=4,col=5)
+with(dat1987_upsample[test1987,], points(x,y,col=2,pch=16))
+```
+
+```{r classified_maps}
+Classified1=raster("Classified1.tif")
+Classified2=raster("classified2.tif")
+```
+The appropriate format of species data for the blockCV package is simple features (sf) or SpatialPointsDataFrame.pamake a SpatialPointsDataFrame object from data.frame
+```{r numeric_data}
+PA_data <- st_as_sf(dat1987_upsample, coords = c("x", "y"), crs = crs(Classified1))
+```
+determine train and test data 
+```{r train_testdata}
+##number of k
+numFolds <- trainControl(method = "cv", number = 10)
+##trainand
+train19872 <- PA_data[train1987,]
+test19872 <- PA_data[test1987, ]
+train19872$geometry <- NULL
+test19872$geometry <- NULL
+```
+Random forest
+```{r random_forest_buffer3}
+rfb31987 <- randomForest(formula= factor(change2) ~ . - landuse - change,
+                       data = train19872, n.trees=250,interaction.depth=7,
+                       ## do.trace=1,
+                       type="classification", proximity=TRUE, trcontrol=numFolds)
+plot(rfb31987)
+varImpPlot(rfb31987)
+predb31987 <- predict(rfb31987, newdata=test19872, typeprobs="prob", predict.all=TRUE)
+conb1987 <- caret::confusionMatrix(predb31987$aggregate, as.factor(test19872$change2))
+table1987=table(test19872$change2, predb31987$aggregate)
+
+set_tree2 = rpart(change2 ~ . -change -landuse ,
+                 data =train19872)
+rpart.plot(set_tree2)
+```
+H-P:error:R2: NA Rsquare:R2
+```{r Rsquare:R2}
+accuracy1987=postResample(pred = predb31987$aggregate,obs = as.factor(test19872$change2))
+print(accuracy1987)
+print(paste0('R2: ' ,caret::postResample(pred = predb31987$aggregate,obs = as.factor(test19872$change2)['Rsquared'] )))
+```
+ROC
+```{r roc_random_forest_buffer3_roc, message=TRUE}
+ff1987 <-  factor(test19872$change,
+              ## 0 = no gain,  1 = gain
+              levels=c(0,1),  ## these are the values in the original vector
+              labels=c("no gain","gain") ## these will be the names in the new vector
+              )
+table(test19872$change)
+table(ff1987)
+## convert a two-level factor back to 0/1
+to_binary1987 <- function(x) { as.numeric(x) -1 }
+rocCurve1987 <- pROC::roc(to_binary1987(ff1987),
+                      ## predb3[,"change"]
+                      to_binary1987(predb31987$aggregate))
+caret::confusionMatrix(ff1987, predb31987$aggregate)
+## gain/no gain  vs.  change/no change
+plot(rocCurve1987)
+
+## undebug(pROC:::roc.default)
+pp <- pROC::roc(sample(0:1,size=50,replace=TRUE), pred=runif(50))
+plot(pp)
+plot(pROC::roc(c(1,1,0,0), pred=c(0.2,0.4,0.1,0.2)))
+plot(pROC::roc(c(1,0), pred=c(0.2,0.2)))
+## we know this won't work because it only has one data point,
+## we need at least one observation in each level
+try(plot(pROC::roc(factor(1, levels=0:1), pred=0.2)), silent=TRUE)
+ 
+plot(rocCurve1987 ,col=c(4))
+###calculate the area under curve (bigger is better)
+## extract AUC and drop extra information
+auc <- function(x) c(x$auc)
+a1987=auc(rocCurve1987)
+```
+The basic idea is to consider a variable important if it has a positive effect on the prediction accuracy (classification)
+importance plots
+```{r variable_importance_plot}
+vi(rfb31987)
+vip(rfb31987)
+```
