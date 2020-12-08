@@ -8,6 +8,7 @@ title: "Cross validation 2003"
 ## 2: erg before, not-erg after (loss)
 ## 3: erg before and after (no loss)
 ```
+
 ```{r packages, message=FALSE, warning=FALSE}
 library(tidyverse) ## load filter(), ... function
 library(blockCV)
