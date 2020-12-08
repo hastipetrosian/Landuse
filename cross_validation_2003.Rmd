@@ -1,0 +1,152 @@
+
+---
+title: "Cross validation 2003"
+---
+
+```
+## 0: not-erg before and after (no gain)
+## 1: not-erg before, erg after (gain)
+## 2: erg before, not-erg after (loss)
+## 3: erg before and after (no loss)
+```
+
+```{r packages, message=FALSE, warning=FALSE}
+library(tidyverse) ## load filter(), ... function
+library(blockCV)
+library(sf)
+library(raster)
+library(ggplot2)
+library(shiny) ## what for ... ??
+library(ROSE)
+library(caret)
+source("functions.R")
+library(randomForest)
+library(rpart.plot)
+library(spdep)
+library(rfPermute)
+library(metRology)
+library(Metrics)
+library(vip)
+```
+
+To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
+
+```{r input_data}
+## increase memory
+if (.Platform$OS.type=="windows") memory.limit(1000000)
+load("rr_points14.RData")
+dat2003 <- dplyr::filter(rr_points14[["2003"]],
+                     x<604000 & y >284000 &  y < 2846000)
+dat2003$change2 <- change_fun(dat2003$change)
+dat2003_gain <- dplyr::filter(dat2003, change2 %in% c("no gain", "gain")) 
+dat2003_upsample <- ROSE::ovun.sample(change ~ ., data = dat2003_gain, method = "both", N=1500)$data
+
+```
+
+
+buffer based on the defined boders=buffer 3
+```{r determine_data}
+##introsucing the specific block 
+corners2003 <- list(x=c(598500,601700),
+                y=c(2843100,2839500))
+pts2003 <- seq(nrow(dat2003_upsample))
+##introducing test data in the introduced block
+test2003 <- pts2003[dat2003_upsample$x > corners2003$x[1] &
+            dat2003_upsample$x < corners2003$x[2] &
+            dat2003_upsample$y < corners2003$y[1] &
+            dat2003_upsample$y > corners2003$y[2]]
+
+##setdiff indicates which elements of a vector or data frame X are not existent in a vector or data frame Y.
+train2003 <- setdiff(pts2003,test2003)
+plot(y~x,data=dat2003_upsample[train2003,])
+grid(nx=4,ny=4,col=5)
+with(dat2003_upsample[test2003,], points(x,y,col=2,pch=16))
+```
+
+```{r classified_maps}
+Classified1=raster("Classified1.tif")
+Classified2=raster("classified2.tif")
+```
+The appropriate format of species data for the blockCV package is simple features (sf) or SpatialPointsDataFrame.pamake a SpatialPointsDataFrame object from data.frame
+```{r numeric_data}
+PA_data <- st_as_sf(dat2003_upsample, coords = c("x", "y"), crs = crs(Classified1))
+```
+determine train and test data 
+```{r train_testdata}
+##number of k
+numFolds <- trainControl(method = "cv", number = 10)
+##trainand
+train20032 <- PA_data[train2003,]
+test20032 <- PA_data[test2003, ]
+train20032$geometry <- NULL
+test20032$geometry <- NULL
+```
+Random forest
+```{r random_forest_buffer3}
+rfb32003 <- randomForest(formula= factor(change2) ~ . - landuse - change,
+                       data = train20032, n.trees=250,interaction.depth=7,
+                       ## do.trace=1,
+                       type="classification", proximity=TRUE, trcontrol=numFolds)
+plot(rfb32003)
+varImpPlot(rfb32003)
+predb32003 <- predict(rfb32003, newdata=test20032, typeprobs="prob", predict.all=TRUE)
+conb2003 <- caret::confusionMatrix(predb32003$aggregate, as.factor(test20032$change2))
+
+if (!file.exists("table2003.rda")) {
+    table2003=table(test20032$change2, predb32003$aggregate)
+    save("table2003",file="table2003.rda")
+} else {
+    load("table2003.rda")
+}
+set_tree2 = rpart(change2 ~ . -change -landuse ,
+                 data =train20032)
+rpart.plot(set_tree2)
+```
+H-P:error:R2: NA Rsquare:R2
+```{r Rsquare:R2}
+accuracy2003=postResample(pred = predb32003$aggregate,obs = as.factor(test20032$change2))
+print(accuracy2003)
+print(paste0('R2: ' ,caret::postResample(pred = predb32003$aggregate,obs = as.factor(test20032$change2)['Rsquared'] )))
+```
+ROC
+```{r roc_random_forest_buffer3_roc, message=TRUE}
+ff2003 <-  factor(test20032$change,
+              ## 0 = no gain,  1 = gain
+              levels=c(0,1),  ## these are the values in the original vector
+              labels=c("no gain","gain") ## these will be the names in the new vector
+              )
+table(test20032$change)
+table(ff2003)
+## convert a two-level factor back to 0/1
+to_binary2003 <- function(x) { as.numeric(x) -1 }
+rocCurve2003 <- pROC::roc(to_binary2003(ff2003),
+                      ## predb3[,"change"]
+                      to_binary2003(predb32003$aggregate))
+caret::confusionMatrix(ff2003, predb32003$aggregate)
+## gain/no gain  vs.  change/no change
+plot(rocCurve2003)
+
+## undebug(pROC:::roc.default)
+pp <- pROC::roc(sample(0:1,size=50,replace=TRUE), pred=runif(50))
+plot(pp)
+plot(pROC::roc(c(1,1,0,0), pred=c(0.2,0.4,0.1,0.2)))
+plot(pROC::roc(c(1,0), pred=c(0.2,0.2)))
+## we know this won't work because it only has one data point,
+## we need at least one observation in each level
+try(plot(pROC::roc(factor(1, levels=0:1), pred=0.2)), silent=TRUE)
+ 
+plot(rocCurve2003 ,col=c(4))
+###calculate the area under curve (bigger is better)
+## extract AUC and drop extra information
+auc <- function(x) c(x$auc)
+a2003=auc(rocCurve2003)
+```
+The basic idea is to consider a variable important if it has a positive effect on the prediction accuracy (classification)
+importance plots
+```{r variable_importance_plot}
+vi(rfb32003)
+vip(rfb32003)
+```
+
+
+
