@@ -24,6 +24,7 @@ library(rpart.plot)
 library(spdep)
 library(rfPermute)
 library(metRology)
+library(Metrics)
 ```
 
 To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
@@ -116,7 +117,6 @@ rf_eb=train(as.factor(change2) ~ .,
               trControl = traincontroleb)
 ```
 The function works by automatically fitting variograms to each continuous raster and finding the effective range of spatial autocorrelation. 
-
 ```{r stack_all_maps}
 rasterfiles <- list.files(pattern="*.tif$",recursive=TRUE)
 years <- parse_number(rasterfiles)
@@ -137,7 +137,6 @@ stack=raster::stack(slope,aspect,raster2018,pre2018
                    , tem2018)
 ## stack2 <- stack[[1:5]] ## ??? take just the first 5???
 save(stack, file="stack.rda")
-
 ```
 
 ```{r range_of_spatial_autocorrelation}
@@ -148,7 +147,6 @@ range3 <- spatialAutoRange(rasterLayer = stack,
                            plotVariograms = FALSE,
                            showPlots = TRUE)
 ```
-
 generates spatially separated training and testing folds by considering buffers of specified distance around each observation point. 
 ```{r define_buffers}
 set.seed(101)
@@ -224,7 +222,6 @@ rfb1 <- randomForest(formula= factor(change2) ~ .  - landuse - change,
 predb1<- predict(rfb1, newdata=b, type = "prob")
 head(predb1)
 ```
-
 If we want to do things like plot ROC curves for these data, we have to run the random forest lots of times and save the test set and predictions for every fold ...
 H-P=Error in pp[1, "gain"] : subscript out of bounds
 ```{r many_folds}
@@ -249,7 +246,6 @@ for (k in 1:nfolds) {
     rf_obs[k] <- b$change2
 }
 ```
-
 
 ```{r plot}
 sb$plots + geom_sf(data = PA_data, alpha = 0.5)
@@ -303,9 +299,7 @@ test2 <- PA_data[test, ]
 train2$geometry <- NULL
 test2$geometry <- NULL
 ```
-2843200,2839000
 Random forest
-
 ```{r random_forest_buffer3}
 rfb3 <- randomForest(formula= factor(change2) ~ . - landuse - change,
                        data = train2, n.trees=250,interaction.depth=7,
@@ -331,13 +325,18 @@ set_tree = rpart(change2 ~ . -change -landuse ,
                  data =train2)
 rpart.plot(set_tree)
 ```
-
+H-P:error:R2: NA Rsquare:R2
+```{r Rsquare:R2}
+accuracy=postResample(pred = predb3$aggregate,obs = as.factor(test2$change2))
+print(accuracy)
+print(paste0('R2: ' ,caret::postResample(pred = predb3$aggregate,obs = as.factor(test2$change2)['Rsquared'] )))
+```
+out_of_bag_error
 ```{r out_of_bag_error}
 rfb3$err.rate[,1]
 plot(rfb3$err.rate[,1], type = "l")
 ```
-
-
+ROC
 ```{r roc_random_forest_buffer3_roc, message=TRUE}
 ff <-  factor(test2$change,
               ## 0 = no gain,  1 = gain
@@ -405,7 +404,6 @@ rf_predsb <- predict(rf_sb, sample_test)
 
 consb <- caret::confusionMatrix(rf_predsb, as.factor(sample_test$change2))
 ```
-
 The basic idea is to consider a variable important if it has a positive effect on the prediction accuracy (classification)
 ```{r Permutation_importance}
 create_rfplot <- function(rf, type){
@@ -438,7 +436,6 @@ create_rfplot(rfb3, type = 2)
 ##        u: A named list or named vector of length ‘length(x)’ of
 ##          standard uncertainties.
 ```
-
 Residual & Moran I
 ```{r resid_moranI}
 testpoint <- SpatialPointsDataFrame(cbind(dat_gain$x, dat_gain$y), dat_gain)
@@ -462,7 +459,6 @@ length(lstw2$neighbours)
 ## BMB: still not sure how to make this work ...
 ## moran.test(res2, lstw2)
 ```
-
 
 
 
