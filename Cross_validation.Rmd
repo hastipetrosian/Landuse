@@ -147,6 +147,14 @@ range3 <- spatialAutoRange(rasterLayer = stack,
                            nCores = NULL,
                            plotVariograms = FALSE,
                            showPlots = TRUE)
+
+spatialAutoRange(rasterLayer = raster2018,
+                 sampleNumber = 1000,
+                 doParallel = TRUE,
+                 nCores = NULL,
+                 plotVariograms = FALSE,
+                 showPlots = TRUE)
+
 ```
 generates spatially separated training and testing folds by considering buffers of specified distance around each observation point. 
 ```{r define_buffers}
@@ -330,7 +338,11 @@ H-P:error:R2: NA Rsquare:R2
 ```{r Rsquare:R2}
 accuracy=postResample(pred = predb3$aggregate,obs = as.factor(test2$change2))
 print(accuracy)
-print(paste0('R2: ' ,caret::postResample(pred = predb3$aggregate,obs = as.factor(test2$change2)['Rsquared'] )))
+## convert two-level factor (or string) back to 0/1
+mk_numeric <- function(x) { as.numeric(as.factor(x))-1 }
+caret::postResample(pred = mk_numeric(predb3$aggregate),obs = mk_numeric(test2$change2))
+
+## print(paste0('R2: ' ,caret::postResample(pred = predb3$aggregate,obs = as.factor(test2$change2)['Rsquared'] )))
 ```
 out_of_bag_error
 ```{r out_of_bag_error}

@@ -432,3 +432,15 @@ compute spatial autocorrelation function of residuals. That's what will tell us 
 
 * errors when calculating R^2 etc.?
 * sort out github authentication?
+
+## 9 Dec 
+
+* `spatialAutoRange` computes an appropriate range, but other than the plot
+it doesn't provide us with any information about the coordinates of the corners
+of the blocks that it creates; we need to figure this out!
+* how are we going to pick train (points for fitting model), test (evaluation), and 
+buffer points (left out to ensure independence) for any given fold
+   * split into square blocks of appropriate size
+   * each fold picks one block as test, the rest as train
+   * need to figure out coordinates of each block (so we can use it as a fold)
+

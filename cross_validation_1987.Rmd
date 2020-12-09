@@ -33,6 +33,7 @@ To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
 ## increase memory
 if (.Platform$OS.type=="windows") memory.limit(1000000)
 load("rr_points14.RData")
+## get the corner of the data set that we want
 dat1987 <- dplyr::filter(rr_points14[["1987"]],
                      x<604000 & y >284000 &  y < 2846000)
 dat1987$change2 <- change_fun(dat1987$change)
@@ -45,7 +46,7 @@ buffer based on the defined boders=buffer 3
 ```{r determine_data}
 ##introsucing the specific block 
 corners1987 <- list(x=c(601500,605000),
-                y=c(2840000,2836000))
+                    y=c(2840000,2836000))
 pts1987 <- seq(nrow(dat1987_upsample))
 ##introducing test data in the introduced block
 test1987 <- pts1987[dat1987_upsample$x > corners1987$x[1] &
