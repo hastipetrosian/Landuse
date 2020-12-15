@@ -32,8 +32,6 @@ To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
 
 ```{r input_data}
 ## increase memory
-if (.Platform$OS.type=="windows") memory.limit(1000000)
-
 ## get all data (as tables of x,y, predictors, change)
 load("rr_points14.RData")
 ## need
