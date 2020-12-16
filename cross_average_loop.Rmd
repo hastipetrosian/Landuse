@@ -136,3 +136,12 @@ get_err <- function(x) {
 ## get the OOB error for every fold
 oobvec <- sapply(rflist,get_err)
 ```
+for all data
+```{r}
+date=c(1987,1997,2003,2008,2014)
+datall <- map(date,~ dat)
+dat_gainall <- map(datall,~ dat_gain)
+
+dat_upsample <- ROSE::ovun.sample(change ~ ., data = dat_gainall, method = "both", N=1500)$data
+dat_upsampleall <- map(dat_gainall, dat_upsample)
+```
