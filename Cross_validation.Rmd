@@ -475,5 +475,13 @@ importance plots
 vi(rfb3)
 vip(rfb3)
 ```
-
+matrix of c,y for each line
+```{r}
+a=matrix(0,nrow=16,ncol=4)
+for (i in 1:4){for(j in 1:4){a[4*(i-1)+j,1]=594000+(i-1)*3232
+  a[((i-1)*4+j),2]=592000+(i)*3232
+  a[((i-1)*4+j),3]=2832000+(j-1)*3232
+  a[((i-1)*4+j),4]=2832000+(j)*3232}}
+a[5,]
+```
 
