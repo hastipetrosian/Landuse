@@ -35,13 +35,21 @@ load("rr_points14.RData")
 ## R CMD BATCH --vanilla basic.R
 
 ## test with smaller data set
-dat <- dplyr::filter(rr_points14[["2014"]],
-                     x<604000 & y >284000 &  y < 2846000)
-dat$change2 <- change_fun(dat$change)
+datfun <- function(date, restrict_range=TRUE) {
+    d1 <- rr_points14[[as.character(date)]]
+    if (restrict_range) {
+        d1 <- dplyr::filter(d1,
+              x<604000 & y >284000 &  y < 2846000)
+    }
+    d1$change2 <- change_fun(d1$change)
+    return(d1)
+}
+dat <- datfun(2014)
 ```
 
 ```{r upsample}
-dat_gain <- dplyr::filter(dat, change2 %in% c("no gain", "gain")) 
+dat_gainfun <- function(x) dplyr::filter(dat, change2 %in% c("no gain", "gain")) 
+dat_gain <- dat_gainfun(dat)
 ## analyzing gain only, first ...
 if (file.exists("dat_upsample.rda")) {
     load("dat_upsample.rda")
@@ -122,7 +130,7 @@ for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
 }
 ```
 
-```{r}
+```{r print_aucvec}
 print(aucvec)
 ```
 
@@ -137,11 +145,32 @@ get_err <- function(x) {
 oobvec <- sapply(rflist,get_err)
 ```
 for all data
-```{r}
-date=c(1987,1997,2003,2008,2014)
-datall <- map(date,~ dat)
-dat_gainall <- map(datall,~ dat_gain)
 
-dat_upsample <- ROSE::ovun.sample(change ~ ., data = dat_gainall, method = "both", N=1500)$data
-dat_upsampleall <- map(dat_gainall, dat_upsample)
+```{r loop2}
+date <- c(1987,1997,2003,2008,2014)
+## extract a separate data frame for each date
+datall <- map(date, ~datfun(.)) ## '.' means "each dataset in turn"
+names(datall) <- date
+## select only 'no gain'/'gain' pixels (i.e. pixels that started as NOT erg)
+dat_gainall <- map(datall, ~dat_gainfun(dat))
+names(dat_gainall) <- date
+## we can't use map() here (because ROSE::ovun.sample() tries to do something clever
+## that breaks it), so we have to set up our own list, compute each value, and add it
+## to the list
+dat_upsampleall <- list()  ## create an empty list
+for (i in seq_along(dat_gainall)) {  ## seq_along -> {1,2,3,4,5}
+    ## compute upsampled data for the next data set and put it in the list
+    dat_upsampleall[[i]] <-
+        ROSE::ovun.sample(change ~ .,  ## this '.' means "all variables other than 'change'"
+                          data = dat_gainall[[i]], 
+                          method = "both", N=1500)$data
+}
+## make sure that results are named by year ...
+names(dat_upsampleall) <- date
 ```
+
+```{r check_upsamples}
+sapply(dat_upsampleall,nrow)
+```
+
+## next step ...

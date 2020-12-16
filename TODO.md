@@ -444,3 +444,6 @@ buffer points (left out to ensure independence) for any given fold
    * each fold picks one block as test, the rest as train
    * need to figure out coordinates of each block (so we can use it as a fold)
 
+## 16 Dec
+
+* get x-coord, y-coord, grid size
