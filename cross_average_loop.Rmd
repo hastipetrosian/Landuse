@@ -151,7 +151,6 @@ get_err <- function(x) {
 oobvec <- sapply(rflist,get_err)
 ```
 for all data
-
 ```{r loop2}
 date <- c(1987,1997,2003,2008,2014)
 ## extract a separate data frame for each date
@@ -183,7 +182,7 @@ sapply(dat_upsampleall,nrow)
 ```{r PA_data_all}
 PA_data2 <- map(dat_upsampleall, ~st_as_sf(., coords = c("x", "y"), crs = crs(Classified1)))
 class(PA_data2) ## the class is not sf
-
+##why I chose above method
 ##change list to data frame
 dat_upsampleall2=as.data.frame(dat_upsampleall)
 ##st_as_sf_all
@@ -192,41 +191,48 @@ for (i in seq_along(dat_upsampleall2))
     st_as_sf(x=dat_upsampleall2[[i]]~ .,  
     coords = c("x", "y"), crs = crs(Classified1))
 ```
-rename(dat_upsampleall2, c("X1987.x"="x", "X1997.x"="x", "X2003.x"="x", "X2008.x"="x", "X2014.x"="x","X1987.y"="y", "X1997.y"="y", "X2003.y"="y", "X2008.y"="y", "X2014.y"="y"))
 
+```{r}
+rflist2 <- list()
+pts <- seq(nrow(dat_upsampleall2))
 for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
-+     ## i <- 1
-+     cat(i,"\n")
-+     test2 <- pts[dat_upsampleall2$x > corners[i,"x1"] &
-+                 dat_upsampleall2$x < corners[i,"x2"] &
-+                 dat_upsampleall2$y < corners[i,"y1"] &
-+                 dat_upsampleall2$y > corners[i,"y2"]]
-+     ## select train values as everything else
-+     train2 <- setdiff(pts,test2)
-+     numFolds <- trainControl(method = "cv", number = 10) ## ???
-+     train2all <- PA_data2[train2,]
-+     test2all <- PA_data2[test2, ]
-+     train2all$geometry <- NULL
-+     test2all$geometry <- NULL
-+     rflist2[[i]] <- randomForest(formula= factor(change2) ~ . - landuse - change,
-+                         data = train2all,
-+                         n.trees=400,interaction.depth=7,
-+                         ## do.trace=1,
-+                         type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
-+     ## do the predictions, etc 
-+     predbc22 <- predict(rflist2[[i]], newdata=test2all, typeprobs="prob", predict.all=TRUE)
-+     ff22 <-  factor(test2all$change,
-+                    ## 0 = no gain,  1 = gain
-+                    levels=c(0,1),  ## these are the values in the original vector
-+                    labels=c("no gain","gain") ## these will be the names in the new vector
-+                    )
-+     table(ff22)
-+     ## try() doesn't stop if there's an error
-+     rocCurve22 <- try(pROC::roc(to_binary(ff22),
-+                                to_binary(predbc22$aggregate)))
-+     ## calculate auc (if the test data had gain and no gain) and store it in the vector
-+     if (!inherits(rocCurve2, "try-error")) {
-+         aucvec[i] <- auc(rocCurve2)
-+     }
-+ }
+     ## i <- 1
+     cat(i,"\n")
+     test2 <- pts[dat_upsampleall2$x > corners[i,"x1"] &
+                 dat_upsampleall2$x < corners[i,"x2"] &
+                 dat_upsampleall2$y < corners[i,"y1"] &
+                 dat_upsampleall2$y > corners[i,"y2"]]
+     ## select train values as everything else
+     train2 <- setdiff(pts,test2)
+     numFolds <- trainControl(method = "cv", number = 10)
+      ## ???
+     ## i is 9 but for PA_data2, i should be 1 to 6
+     ##
+     for (i in seq_along(PA_data2)) {
+     train2all <- PA_data2[[i]][train2,]
+     test2all <- PA_data2[[i]][test2, ]
+     train2all$geometry <- NULL
+     test2all$geometry <- NULL
+     rflist2[[i]] <- randomForest(formula= factor(change2) ~ . - landuse - change,
+                         data = train2all,
+                         n.trees=400,interaction.depth=7,
+                         ## do.trace=1,
+                         type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
+     ## do the predictions, etc 
+     predbc22 <- predict(rflist2[[i]], newdata=test2all, typeprobs="prob", predict.all=TRUE)
+     ff22 <-  factor(test2all$change,
+                    ## 0 = no gain,  1 = gain
+                    levels=c(0,1),  ## these are the values in the original vector
+                    labels=c("no gain","gain") ## these will be the names in the new vector
+                    )
+     table(ff22)
+     ## try() doesn't stop if there's an error
+     }}
+rocCurve22 <- try(pROC::roc(to_binary(ff22),
+                                to_binary(predbc22$aggregate)))
+     ## calculate auc (if the test data had gain and no gain) and store it in the vector
+     if (!inherits(rocCurve2, "try-error")) {
+         aucvec[i] <- auc(rocCurve2)
+     }
+```
 
