@@ -192,7 +192,7 @@ for (i in seq_along(dat_upsampleall2))
     coords = c("x", "y"), crs = crs(Classified1))
 ```
 
-```{r}
+```{r Loop_years_and_blocks}
 rflist2 <- list()
 pts <- seq(nrow(dat_upsampleall2))
 for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
@@ -207,7 +207,6 @@ for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
      numFolds <- trainControl(method = "cv", number = 10)
       ## ???
      ## i is 9 but for PA_data2, i should be 1 to 6
-     ##
      for (i in seq_along(PA_data2)) {
      train2all <- PA_data2[[i]][train2,]
      test2all <- PA_data2[[i]][test2, ]
@@ -228,11 +227,12 @@ for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
      table(ff22)
      ## try() doesn't stop if there's an error
      }}
+##ROC
 rocCurve22 <- try(pROC::roc(to_binary(ff22),
-                                to_binary(predbc22$aggregate)))
+     to_binary(predbc22$aggregate)))
      ## calculate auc (if the test data had gain and no gain) and store it in the vector
-     if (!inherits(rocCurve2, "try-error")) {
-         aucvec[i] <- auc(rocCurve2)
+     if (!inherits(rocCurve22, "try-error")) {
+         aucvec[i] <- auc(rocCurve22)
      }
 ```
 
