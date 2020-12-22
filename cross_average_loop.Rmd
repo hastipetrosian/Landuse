@@ -194,7 +194,7 @@ for (i in seq_along(dat_upsampleall2))
 ```
 rename(dat_upsampleall2, c("X1987.x"="x", "X1997.x"="x", "X2003.x"="x", "X2008.x"="x", "X2014.x"="x","X1987.y"="y", "X1997.y"="y", "X2003.y"="y", "X2008.y"="y", "X2014.y"="y"))
 
-> for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
+for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
 +     ## i <- 1
 +     cat(i,"\n")
 +     test2 <- pts[dat_upsampleall2$x > corners[i,"x1"] &
