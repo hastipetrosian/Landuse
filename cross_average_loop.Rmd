@@ -180,62 +180,76 @@ sapply(dat_upsampleall,nrow)
 
 ```{r PA_data_all}
 PA_data2 <- map(dat_upsampleall, ~st_as_sf(., coords = c("x", "y"), crs = crs(Classified1)))
-class(PA_data2) ## the class is not sf
-##why I chose above method
-##change list to data frame
-dat_upsampleall2=as.data.frame(dat_upsampleall)
 ##st_as_sf_all
-for (i in seq_along(dat_upsampleall2)) 
-    PA_data2[[i]] <-
-    st_as_sf(x=dat_upsampleall2[[i]]~ .,  
-    coords = c("x", "y"), crs = crs(Classified1))
+## for (i in seq_along(dat_upsampleall2)) {
+##     PA_data2[[i]] <- st_as_sf(x=dat_upsampleall2[[i]]~ .,  
+##                              coords = c("x", "y"), crs = crs(Classified1))
+## }
 ```
 
 ```{r Loop_years_and_blocks}
-rflist2 <- list()
-pts <- seq(nrow(dat_upsampleall2))
+rflist2 <- vector("list", length=nrow(corners))
+names(rflist2) <- paste0("fold",seq(nrow(corners)))
+## baseline data: don't need to know what year we're in, because we're only selecting which
+## points to take, and the point indices (x,y, values, etc.) should be the
+## same in every year
+dd1 <- dat_upsampleall[["1987"]]
+pts <- seq(nrow(dd1))
+aucmat <- matrix(NA, nrow=nrow(corners), ncol=length(PA_data2),
+                 dimnames=list(names(rflist2), names(PA_data2)))
+
 for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
-     ## i <- 1
-     cat(i,"\n")
-     test2 <- pts[dat_upsampleall2$x > corners[i,"x1"] &
-                 dat_upsampleall2$x < corners[i,"x2"] &
-                 dat_upsampleall2$y < corners[i,"y1"] &
-                 dat_upsampleall2$y > corners[i,"y2"]]
-     ## select train values as everything else
-     train2 <- setdiff(pts,test2)
-     numFolds <- trainControl(method = "cv", number = 10)
-      ## ???
-     ## i is 9 but for PA_data2, i should be 1 to 6
-     for (i in seq_along(PA_data2)) {
-     train2all <- PA_data2[[i]][train2,]
-     test2all <- PA_data2[[i]][test2, ]
-     train2all$geometry <- NULL
-     test2all$geometry <- NULL
-     rflist2[[i]] <- randomForest(formula= factor(change2) ~ . - landuse - change,
-                         data = train2all,
-                         n.trees=400,interaction.depth=7,
-                         ## do.trace=1,
-                         type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
-     ## do the predictions, etc 
-     predbc22 <- predict(rflist2[[i]], newdata=test2all, typeprobs="prob", predict.all=TRUE)
-     ff22 <-  factor(test2all$change,
-                    ## 0 = no gain,  1 = gain
-                    levels=c(0,1),  ## these are the values in the original vector
-                    labels=c("no gain","gain") ## these will be the names in the new vector
-                    )
-     table(ff22)
+    ## i <- 1
+    cat(i,"\n")
+    test2 <- pts[dd1$x > corners[i,"x1"] &
+                 dd1$x < corners[i,"x2"] &
+                 dd1$y < corners[i,"y1"] &
+                 dd1$y > corners[i,"y2"]]
+    ## select train values as everything else
+    train2 <- setdiff(pts,test2)
+    numFolds <- trainControl(method = "cv", number = 10)
+    ## ???
+    ## i is 9 but for PA_data2, i should be 1 to 6
+    rflist2[[i]] <- vector("list", length=length(PA_data2))
+    names(rflist2[[i]]) <- names(PA_data2)
+    for (j in seq_along(PA_data2)) {
+        cat(names(PA_data2)[[j]],"\n")
+        train2all <- PA_data2[[j]][train2,]
+        test2all  <- PA_data2[[j]][test2, ]
+        train2all$geometry <- NULL
+        test2all$geometry <- NULL
+        ## jth element of the ith list = fold i, year j
+        rflist2[[i]][[j]] <- randomForest(formula= factor(change2) ~ . - landuse - change,
+                                          data = train2all,
+                                          n.trees=400,interaction.depth=7,
+                                          ## do.trace=1,
+                                          type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
+         ## do the predictions, etc 
+        predbc22 <- predict(rflist2[[i]][[j]], newdata=test2all, typeprobs="prob", predict.all=TRUE)
+        ff22 <-  factor(test2all$change,
+                        ## 0 = no gain,  1 = gain
+                        levels=c(0,1),  ## these are the values in the original vector
+                        labels=c("no gain","gain") ## these will be the names in the new vector
+                        )
+        table(ff22)
+        ##ROC
+        rocCurve22 <- try(pROC::roc(to_binary(ff22),
+                                    to_binary(predbc22$aggregate)))
+        ## calculate auc (if the test data had gain and no gain) and store it in the vector
+        if (!inherits(rocCurve22, "try-error")) {
+            aucmat[i,j] <- auc(rocCurve22)
+        }
      ## try() doesn't stop if there's an error
-     }}
+    }  ## loop over years
+} ## loop over folds
 ```
 ```{r ROC}
-##ROC
-rocCurve22 <- try(pROC::roc(to_binary(ff22),
-     to_binary(predbc22$aggregate)))
-     ## calculate auc (if the test data had gain and no gain) and store it in the vector
-     if (!inherits(rocCurve22, "try-error")) {
-         aucvec[i] <- auc(rocCurve22)
-     }
-print(aucvec)[[1]]
-print(aucvec)[[2]]
+par(las=1)
+matplot(t(aucmat),type="b",xlab="year",axes=FALSE,
+             ylab="test-set AUC")
+axis(side=2)
+axis(side=1, at=seq(length(PA_data2)), label=names(PA_data2),
+
+
 ```
 
