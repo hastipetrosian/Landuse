@@ -32,7 +32,7 @@ fn <- "rr_points14.RData"
 if (!file.exists(fn)) {
     source("climate.R")
     source("winddir.R")
-    source("basic.R")
+    source("compile_data.R")
 }
 load("rr_points14.RData")
 ## need
