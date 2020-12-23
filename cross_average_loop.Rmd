@@ -226,6 +226,8 @@ for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
      table(ff22)
      ## try() doesn't stop if there's an error
      }}
+```
+```{r ROC}
 ##ROC
 rocCurve22 <- try(pROC::roc(to_binary(ff22),
      to_binary(predbc22$aggregate)))
@@ -233,5 +235,7 @@ rocCurve22 <- try(pROC::roc(to_binary(ff22),
      if (!inherits(rocCurve22, "try-error")) {
          aucvec[i] <- auc(rocCurve22)
      }
+print(aucvec)[[1]]
+print(aucvec)[[2]]
 ```
 
