@@ -1,5 +1,7 @@
 ---
 title: "averaging AUC across folds"
+editor_options:
+  chunk_output_type: console
 ---
 
 ```{r packages, message=FALSE, warning=FALSE}
@@ -197,7 +199,6 @@ dd1 <- dat_upsampleall[["1987"]]
 pts <- seq(nrow(dd1))
 aucmat <- matrix(NA, nrow=nrow(corners), ncol=length(PA_data2),
                  dimnames=list(names(rflist2), names(PA_data2)))
-
 for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
     ## i <- 1
     cat(i,"\n")
@@ -242,9 +243,10 @@ for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
      ## try() doesn't stop if there's an error
     }  ## loop over years
 } ## loop over folds
+save("aucmat","rflist2",file="rfoutput.rda")
 ```
-```{r ROC}
-par(las=1)
+```{r AUCplot}
+par(las=1,bty="l")
 matplot(t(aucmat),type="b",xlab="year",axes=FALSE,
              ylab="test-set AUC")
 axis(side=2)
