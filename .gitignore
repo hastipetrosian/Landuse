@@ -9,3 +9,9 @@
 \.#*
 *.Rproj
 analysis.html
+*.html
+*.RData
+*.Rout
+*.rda
+*_cache/
+*_files/
