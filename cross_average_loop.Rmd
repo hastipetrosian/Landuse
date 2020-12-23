@@ -178,7 +178,6 @@ names(dat_upsampleall) <- date
 sapply(dat_upsampleall,nrow)
 ```
 
-## next step ...
 ```{r PA_data_all}
 PA_data2 <- map(dat_upsampleall, ~st_as_sf(., coords = c("x", "y"), crs = crs(Classified1)))
 class(PA_data2) ## the class is not sf
