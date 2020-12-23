@@ -446,4 +446,7 @@ buffer points (left out to ensure independence) for any given fold
 
 ## 16 Dec
 
+## 23 Dec (again!)
+
+* sort out RStudio cloud (@$#%@#$%@#$!) try running code with an 8G limit
 * get x-coord, y-coord, grid size

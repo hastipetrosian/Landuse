@@ -879,3 +879,6 @@ sb <- spatialBlock(speciesData = PA_data,
                    xOffset = 0, # shift the blocks horizontally
                    yOffset = 0)
 
+if (.Platform$OS.type=="windows") {
+    memory.size(max=TRUE)
+}

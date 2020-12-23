@@ -248,8 +248,12 @@ par(las=1)
 matplot(t(aucmat),type="b",xlab="year",axes=FALSE,
              ylab="test-set AUC")
 axis(side=2)
-axis(side=1, at=seq(length(PA_data2)), label=names(PA_data2),
+axis(side=1, at=seq(length(PA_data2)), label=names(PA_data2))
+```
 
-
+```{r mem_limit}
+if (.Platform$OS.type=="windows") {
+    memory.size(max=TRUE)
+}
 ```
 
