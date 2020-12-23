@@ -37,10 +37,6 @@ if (!file.exists(fn)) {
     source("compile_data.R")
 }
 load("rr_points14.RData")
-## need
-## R CMD BATCH --vanilla climate.R
-## R CMD BATCH --vanilla winddir.R
-## R CMD BATCH --vanilla basic.R
 
 ## test with smaller data set
 datfun <- function(date, restrict_range=TRUE) {
@@ -72,14 +68,17 @@ if (file.exists("dat_upsample.rda")) {
 Classified1=raster("Classified1.tif")
 Classified2=raster("classified2.tif")
 ```
-The appropriate format of species data for the blockCV package is simple features (sf) or SpatialPointsDataFrame.pamake a SpatialPointsDataFrame object from data.frame
+
+The appropriate format of species data for the `blockCV` package is simple features (`sf`) or `SpatialPointsDataFrame`. Make a `SpatialPointsDataFrame` object from `data.frame`:
 ```{r numeric_data}
 PA_data <- st_as_sf(dat_upsample, coords = c("x", "y"), crs = crs(Classified1))
 ```
 
-```{r loop}
+```{r loop, cache=TRUE, message=FALSE, results="hide"}
 to_binary <- function(x) { as.numeric(x) -1 }
 auc <- function(x) c(x$auc)
+## hand-coded corners: will need to figure out how to extract these
+##  from a spatialBlockCV object ...
 corners <- matrix(c(601500,605000,2839900,2835800,
                     601500,605000,2836000,2833500,
                     601500,605000,2843000,2839600,
@@ -152,7 +151,9 @@ get_err <- function(x) {
 ## get the OOB error for every fold
 oobvec <- sapply(rflist,get_err)
 ```
-for all data
+
+## Run for all years
+
 ```{r loop2}
 date <- c(1987,1997,2003,2008,2014)
 ## extract a separate data frame for each date
@@ -176,20 +177,22 @@ for (i in seq_along(dat_gainall)) {  ## seq_along -> {1,2,3,4,5}
 names(dat_upsampleall) <- date
 ```
 
+Check rows per chunk:
+
 ```{r check_upsamples}
 sapply(dat_upsampleall,nrow)
 ```
 
 ```{r PA_data_all}
 PA_data2 <- map(dat_upsampleall, ~st_as_sf(., coords = c("x", "y"), crs = crs(Classified1)))
-##st_as_sf_all
-## for (i in seq_along(dat_upsampleall2)) {
-##     PA_data2[[i]] <- st_as_sf(x=dat_upsampleall2[[i]]~ .,  
-##                              coords = c("x", "y"), crs = crs(Classified1))
-## }
 ```
 
-```{r Loop_years_and_blocks}
+```{r Loop_years_and_blocks, cache=TRUE, results="hide", message=FALSE}
+## CACHED: delete 'cache=TRUE' or change something in this chunk to trigger re-running
+##  if you change something upstream!
+## start timing
+pracma::tic()
+## allocate space for top-level list (fold)
 rflist2 <- vector("list", length=nrow(corners))
 names(rflist2) <- paste0("fold",seq(nrow(corners)))
 ## baseline data: don't need to know what year we're in, because we're only selecting which
@@ -197,6 +200,7 @@ names(rflist2) <- paste0("fold",seq(nrow(corners)))
 ## same in every year
 dd1 <- dat_upsampleall[["1987"]]
 pts <- seq(nrow(dd1))
+## matrix for storing AUC values by fold and year
 aucmat <- matrix(NA, nrow=nrow(corners), ncol=length(PA_data2),
                  dimnames=list(names(rflist2), names(PA_data2)))
 for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
@@ -208,9 +212,9 @@ for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
                  dd1$y > corners[i,"y2"]]
     ## select train values as everything else
     train2 <- setdiff(pts,test2)
+    ## ? not sure what this is for (but used in `trcontrol=` argument below)
     numFolds <- trainControl(method = "cv", number = 10)
-    ## ???
-    ## i is 9 but for PA_data2, i should be 1 to 6
+    ## allocate space for results
     rflist2[[i]] <- vector("list", length=length(PA_data2))
     names(rflist2[[i]]) <- names(PA_data2)
     for (j in seq_along(PA_data2)) {
@@ -224,7 +228,8 @@ for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
                                           data = train2all,
                                           n.trees=400,interaction.depth=7,
                                           ## do.trace=1,
-                                          type="classification", proximity=TRUE, trcontrol=numFolds, keep.inbag = TRUE)
+                                          type="classification", proximity=TRUE, 
+                                          trcontrol=numFolds, keep.inbag = TRUE)
          ## do the predictions, etc 
         predbc22 <- predict(rflist2[[i]][[j]], newdata=test2all, typeprobs="prob", predict.all=TRUE)
         ff22 <-  factor(test2all$change,
@@ -233,18 +238,23 @@ for (i in seq(nrow(corners))) { ## set i = 1, 2, 3, ... number of squares (9)
                         labels=c("no gain","gain") ## these will be the names in the new vector
                         )
         table(ff22)
-        ##ROC
+        ## ROC: try() means "keep going even if there's an error"
         rocCurve22 <- try(pROC::roc(to_binary(ff22),
                                     to_binary(predbc22$aggregate)))
         ## calculate auc (if the test data had gain and no gain) and store it in the vector
         if (!inherits(rocCurve22, "try-error")) {
             aucmat[i,j] <- auc(rocCurve22)
         }
-     ## try() doesn't stop if there's an error
     }  ## loop over years
 } ## loop over folds
 save("aucmat","rflist2",file="rfoutput.rda")
+tt <- pracma::toc()
 ```
+
+Total time for this chunk is `r round(tt[["elapsed"]]/60,1)` minutes.
+
+Plot:
+
 ```{r AUCplot}
 par(las=1,bty="l")
 matplot(t(aucmat),type="b",xlab="year",axes=FALSE,
