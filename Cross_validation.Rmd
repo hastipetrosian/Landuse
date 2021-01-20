@@ -489,3 +489,18 @@ for (i in 1:4){for(j in 1:4){a[4*(i-1)+j,1]=592000+(i-1)*3232
 a[5,]
 ```
 
+```{r plot}
+b=predb3$individual[1:47]
+b1=matrix(b)
+a=test2$geometry
+a1=st_coordinates(a)
+merge(a1, b1, by = "row.names", all = TRUE)
+ggplot(data=c, aes(x=X, y=Y))+ geom_point(aes(color = factor(V1),size=1))
+
+```
+
+
+
+
+
+
