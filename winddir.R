@@ -37,8 +37,8 @@ plot(rr_list[[1]])
 ## definitions
 n <- 25  ## window size: helps if n is odd
 ## 'range': larger value means we have longer-range influence
-r <- 35 
-kappa <- 20  ## concentration parameter: larger means more focused
+r <- 55 
+kappa <- 5  ## concentration parameter: larger means more focused
 
 ##example winddirection=-45
 winddir <- pi/4     ## wind direction
@@ -66,7 +66,7 @@ d <- sqrt(x^2+y^2) ## distance from the focal cell
 image(d)
 
 ##e^(-d/r)
-r=20
+r=50
 d2 <- exp(-d/r)
 image(d2)
 persp(d2)
@@ -93,12 +93,12 @@ image(dir2)
 image(Matrix(dir2))
 ## rgl::persp3d(dir2,col="gray")
 ## multiply direction and distance effects: this is what we want to use for focal()
-comb <- dir2*d2  
-image(Matrix(comb))
-persp(comb)
-comb[mid,mid] <- 0 ## don't count focal cell
+winddirection <- dir2*d2  
+image(Matrix(winddirection))
+persp(winddirection, theta = 0, phi = 55, expand =  0.25, col = "red", shade = 0.4)
+winddirection[mid,mid] <- 0 ## don't count focal cell
 ## rgl::persp3d(comb,col="gray")
-image(comb)
+image(winddirection)
 
 ##use comb in 1987
 plot(rr_list[[1]])
