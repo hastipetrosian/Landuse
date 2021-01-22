@@ -314,7 +314,11 @@ rfb3 <- randomForest(formula= factor(change2) ~ . - landuse - change,
                        type="classification", proximity=TRUE, trcontrol=numFolds)
 plot(rfb3)
 varImpPlot(rfb3)
-predb3 <- predict(rfb3, newdata=test2, typeprobs="prob", predict.all=TRUE)
+## ?predict.randomForest
+## why predict.all=TRUE?  gives the answer for each of 500 trees
+predb3 <- predict(rfb3, newdata=test2, type="response", predict.all=TRUE)
+predb3_prob <- predict(rfb3, newdata=test2, type="prob", predict.all=TRUE)
+predb3_vote <- predict(rfb3, newdata=test2, type="vote", predict.all=TRUE)
 if (!file.exists("conb")) {
     conb <- caret::confusionMatrix(predb3$aggregate, as.factor(test2$change2))
     save("conb",file="conb")
@@ -489,14 +493,29 @@ for (i in 1:4){for(j in 1:4){a[4*(i-1)+j,1]=592000+(i-1)*3232
 a[5,]
 ```
 
-```{r plot}
-b=predb3$individual[1:47]
-b1=matrix(b)
-a=test2$geometry
-a1=st_coordinates(a)
-merge(a1, b1, by = "row.names", all = TRUE)
-ggplot(data=c, aes(x=X, y=Y))+ geom_point(aes(color = factor(V1),size=1))
+```{r plot2}
+pred =predb3$aggregate  ## taking average predictions
+coords=st_coordinates(PA_data[test,]$geometry)
+c1 <- data.frame(coords,
+                 predval=predb3$aggregate,
+                 predprob=predb3_prob$aggregate[,"gain"],
+                 observed=PA_data[test,]$change2  ## observed change
+                 )
+hist(c1$predprob,col="gray",breaks=20)
+ggplot(data=c1, aes(x=X, y=Y))+ geom_point(aes(color = predval),size=5)
+library(cowplot)
+g0 <- ggplot(data=c1, aes(x=X, y=Y))+
+    ## geom_point(aes(colour=observed),size=8,pch=16) +
+    geom_point(aes(colour = predprob, shape=observed),size=3) +
+    geom_point(aes(colour = predprob, shape=observed),size=4) +
+    geom_point(aes(colour = predprob, shape=observed),size=5) +
+    scale_colour_viridis_c(name="probability\nof gaining") +
+    scale_shape_manual(values=c(16 ,1)) + theme_bw()
+    ## scale_colour_manual(values=c("red","blue")) + theme_bw()
+print(g0)
+## plot_grid(
 
+##     g0+ scale_fill_viridis_c(trans="logit"))  ## too confusing 
 ```
 
 
