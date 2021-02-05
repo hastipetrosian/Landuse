@@ -184,6 +184,7 @@ clossloss <- data.frame(coords,
 hist(clossloss$predprob2,col="gray",breaks=20)
 p=ggplot(data=clossloss, aes(x=X, y=Y))+ geom_point(aes(color = predvalloss),size=5)
 print(p)
+load("saved_gain_preds.RData")
 p2=ggplot(data=c1, aes(x=X, y=Y))+ geom_point(aes(color = predval),size=5)+theme_bw()
 
 print(p2)

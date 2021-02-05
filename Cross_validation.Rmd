@@ -155,7 +155,7 @@ spatialAutoRange(rasterLayer = raster2018,
 
 ```
 generates spatially separated training and testing folds by considering buffers of specified distance around each observation point. 
-```{r define_buffers}
+```{r define_buffers,cache=TRUE}
 set.seed(101)
 bf <- buffering(speciesData = PA_data,
                   theRange = 1000,#ideally the range of spatial autocorrelation
@@ -511,6 +511,7 @@ c1 <- data.frame(coords,
                  predprob=predb3_prob$aggregate[,"gain"],
                  observed=PA_data[test,]$change2  ## observed change
                  )
+save("c1", file="saved_gain_preds.RData")
 hist(c1$predprob,col="gray",breaks=20)
 ggplot(data=c1, aes(x=X, y=Y))+ geom_point(aes(color = predval),size=5)
 library(cowplot)
