@@ -89,13 +89,14 @@ stack=raster::stack(slope,aspect,raster2018,pre2018
 save(stack, file="stack.rda")
 ```
 generates spatially separated training and testing folds by considering buffers of specified distance around each observation point. 
-```{r define_buffers}
+```{r define_buffers,cache=TRUE}
 set.seed(101)
 bf <- buffering(speciesData = PA_dataloss,
                   theRange = 1000,#ideally the range of spatial autocorrelation
                   species = "change2", # to count the number of presences and absences/backgrounds
-                  spDataType = "PA", # presence-absence  data type
-                  progress = TRUE)
+                  spDataType = "PA" # presence-absence  data type
+                                        #progress = TRUE
+                )
 ```
 
 ```{r random_forest_buffer1}
@@ -145,8 +146,13 @@ head(predb1)
 
 ```
 If we want to do things like plot ROC curves for these data, we have to run the random forest lots of times and save the test set and predictions for every fold ...
-```{r train_testdata}
 
+Retrieve information about train and test data sets from the first CV calculations:
+```{r}
+load("traintest.RData")
+```
+
+```{r train_testdata}
 trainloss2 <- PA_dataloss[train,]
 testloss2 <- PA_dataloss[test, ]
 trainloss2$geometry <- NULL
@@ -178,10 +184,10 @@ clossloss <- data.frame(coords,
 hist(clossloss$predprob2,col="gray",breaks=20)
 p=ggplot(data=clossloss, aes(x=X, y=Y))+ geom_point(aes(color = predvalloss),size=5)
 print(p)
-
 p2=ggplot(data=c1, aes(x=X, y=Y))+ geom_point(aes(color = predval),size=5)+theme_bw()
+
 print(p2)
-ggplot(NULL, aes(x=X, y=Y)) +geom_point(data=clossloss, aes(color = predval))+geom_point(data=c1, aes(color = predvalloss))
+ggplot(NULL, aes(x=X, y=Y)) +geom_point(data=clossloss, aes(color = predvalloss))+geom_point(data=c1, aes(color = predval))
 ```
 
 

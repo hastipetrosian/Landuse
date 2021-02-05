@@ -296,7 +296,14 @@ plot(y~x,data=dat_upsample[train,])
 grid(nx=4,ny=4,col=5)
 with(dat_upsample[test,], points(x,y,col=2,pch=16))
 ```
+
+```{r save_train_test}
+save("train","test",file="traintest.RData")
+```
+
+
 determine train and test data 
+
 ```{r train_testdata}
 ##number of k
 numFolds <- trainControl(method = "cv", number = 10)
@@ -306,7 +313,9 @@ test2 <- PA_data[test, ]
 train2$geometry <- NULL
 test2$geometry <- NULL
 ```
+
 Random forest
+
 ```{r random_forest_buffer3}
 rfb3 <- randomForest(formula= factor(change2) ~ . - landuse - change,
                        data = train2, n.trees=250,interaction.depth=7,
@@ -347,6 +356,7 @@ caret::postResample(pred = mk_numeric(predb3$aggregate),obs = mk_numeric(test2$c
 ## print(paste0('R2: ' ,caret::postResample(pred = predb3$aggregate,obs = as.factor(test2$change2)['Rsquared'] )))
 ```
 out_of_bag_error
+
 ```{r out_of_bag_error}
 rfb3$err.rate[,1]
 plot(rfb3$err.rate[,1], type = "l")
