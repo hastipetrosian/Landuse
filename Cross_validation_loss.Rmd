@@ -1,0 +1,191 @@
+---
+title: "Cross validation"
+---
+
+```
+## 0: not-erg before and after (no gain)
+## 1: not-erg before, erg after (gain)
+## 2: erg before, not-erg after (loss)
+## 3: erg before and after (no loss)
+```
+
+```{r packages, message=FALSE, warning=FALSE}
+library(tidyverse) ## load filter(), ... function
+library(blockCV)
+library(sf)
+library(raster)
+library(ggplot2)
+library(shiny) ## what for ... ??
+library(ROSE)
+library(caret)
+source("functions.R")
+library(randomForest)
+library(rpart.plot)
+library(spdep)
+library(rfPermute)
+library(metRology)
+library(Metrics)
+library(vip)
+```
+
+To knit "by hand", `rmarkdown::render("Cross_validation.Rmd")`
+
+```{r input_data}
+## increase memory
+## get all data (as tables of x,y, predictors, change)
+load("rr_points14.RData")
+## need
+## R CMD BATCH --vanilla climate.R
+## R CMD BATCH --vanilla winddir.R
+## R CMD BATCH --vanilla basic.R
+
+## test with smaller data set
+dat <- dplyr::filter(rr_points14[["2014"]],
+                     x<604000 & y >284000 &  y < 2846000)
+dat$change2 <- change_fun(dat$change)
+
+```
+
+```{r upsample}
+dat_loss <- dplyr::filter(dat, change2 %in% c("no loss", "loss"))
+dat_upsampleloss <- ROSE::ovun.sample(change ~ ., data = dat_loss, method = "both", N=1500)$data
+```
+
+```{r classified_maps}
+Classified1=raster("Classified1.tif")
+Classified2=raster("classified2.tif")
+```
+The appropriate format of species data for the blockCV package is simple features (sf) or SpatialPointsDataFrame.pamake a SpatialPointsDataFrame object from data.frame
+```{r numeric_data}
+PA_dataloss <- st_as_sf(dat_upsampleloss, coords = c("x", "y"), crs = crs(Classified1))
+```
+
+```{r train_vs_test}
+set.seed(23489)
+train_indexloss <- sample(1:nrow(PA_dataloss), 0.9 * nrow(dat_upsampleloss))
+sample_trainloss <- PA_dataloss[train_indexloss, ]
+sample_testloss  <- PA_dataloss[-train_indexloss, ]
+```
+specify sets of similar environmental conditions based on the input covariates. Species data corresponding to any of these groups or clusters are assigned to a fold.
+```{r stack_all_maps}
+rasterfiles <- list.files(pattern="*.tif$",recursive=TRUE)
+years <- parse_number(rasterfiles)
+years <- years[years>1900] ## leave out DEM file
+years2 <- unique(years)
+rr_list <- map(years2 , get_categorical_raster, list_cats=TRUE)
+raster2018=raster("2018R/2018raster.tif")
+dem <- raster("dem/Extract_dem11.tif")
+demR <- projectRaster(dem, rr_list[[1]])
+extent_dem <- extent(dem)
+slope <- terrain(demR, opt="slope", unit="radians", neighbors=8)
+aspect <- terrain(demR, opt="aspect", unit="radians", neighbors=8)
+wind2018 <- raster("wind/2018W.tif")
+pre2018 <- raster("precipitation/2018PR.tif")
+tem2018 <- raster("Average_temperature/2018AT.tif")
+stack=raster::stack(slope,aspect,raster2018,pre2018
+                   , wind2018
+                   , tem2018)
+## stack2 <- stack[[1:5]] ## ??? take just the first 5???
+save(stack, file="stack.rda")
+```
+generates spatially separated training and testing folds by considering buffers of specified distance around each observation point. 
+```{r define_buffers}
+set.seed(101)
+bf <- buffering(speciesData = PA_dataloss,
+                  theRange = 1000,#ideally the range of spatial autocorrelation
+                  species = "change2", # to count the number of presences and absences/backgrounds
+                  spDataType = "PA", # presence-absence  data type
+                  progress = TRUE)
+```
+
+```{r random_forest_buffer1}
+# extract the folds (list)SpatialBlock object 
+folds <- bf$folds
+fvec <- seq_len(length(folds))
+for (k in fvec) {
+    ## extracting the training and testing indices
+    ## this way works with folds list (but not foldID)
+    trainSet <- unlist(folds[[k]][1]) # training set indices
+    testSet <- unlist(folds[[k]][2]) # testing set indices
+}
+## BMB: when this finishes, we have
+trainSet <- unlist(folds[[1500]][1])
+testSet <- unlist(folds[[1500]][2])
+
+## if you want to run the rf for lots of folds
+## rf_list <- list()
+## for (k in 1:nfolds) {
+##    ## extract train set
+##    ## run rf on train set
+##    rf_list[[k]] <- ## random forest model you just fitted
+## }
+## if you have 10 folds, this will save 10 fitted random forest models
+
+## aucvec <- rep(NA,nfolds)
+## for (k in 1:nfolds) {
+##   get test set data for fold k
+##   get predictions from rf_list[[k]]
+##   pp <- pROC::roc
+##   aucvec[k] <- c(pp$auc)
+## }
+## mean(aucvec)
+##
+## averaging the ROC curves is harder ...
+a <- PA_dataloss[trainSet,]
+a$geometry <- NULL
+b <- PA_dataloss[testSet, ]
+b$geometry <- NULL
+rfb1 <- randomForest(formula= factor(change2) ~ .  - landuse - change,
+                       data = a, n.trees=250,interaction.depth=7,
+                       ## do.trace=1,
+                     type="classification", proximity=TRUE) # model fitting on training set
+## test set is only 1 point
+predb1<- predict(rfb1, newdata=b, type = "prob")
+head(predb1)
+
+```
+If we want to do things like plot ROC curves for these data, we have to run the random forest lots of times and save the test set and predictions for every fold ...
+```{r train_testdata}
+
+trainloss2 <- PA_dataloss[train,]
+testloss2 <- PA_dataloss[test, ]
+trainloss2$geometry <- NULL
+testloss2$geometry <- NULL
+```
+Random forest
+```{r random_forest_buffer3}
+rfbloss <- randomForest(formula= factor(change2) ~ . - landuse - change,
+                       data = trainloss2, n.trees=250,interaction.depth=7,
+                       ## do.trace=1,
+                       type="classification", proximity=TRUE, trcontrol=numFolds)
+plot(rfbloss)
+varImpPlot(rfbloss)
+## ?predict.randomForest
+## why predict.all=TRUE?  gives the answer for each of 500 trees
+predbloss <- predict(rfbloss, newdata=testloss2, type="response", predict.all=TRUE)
+predbloss_prob <- predict(rfbloss, newdata=testloss2, type="prob", predict.all=TRUE)
+predbloss_vote <- predict(rfbloss, newdata=testloss2, type="vote", predict.all=TRUE)
+```
+The basic idea is to consider a variable important if it has a positive effect on the prediction 
+```{r plot2}
+pred =predbloss$aggregate  ## taking average predictions
+coords=st_coordinates(PA_dataloss[test,]$geometry)
+clossloss <- data.frame(coords,
+                 predvalloss=predbloss$aggregate,
+                 predprob2=predbloss_prob$aggregate[,"loss"],
+                 observed=PA_dataloss[test,]$change2  ## observed change
+                 )
+hist(clossloss$predprob2,col="gray",breaks=20)
+p=ggplot(data=clossloss, aes(x=X, y=Y))+ geom_point(aes(color = predvalloss),size=5)
+print(p)
+
+p2=ggplot(data=c1, aes(x=X, y=Y))+ geom_point(aes(color = predval),size=5)+theme_bw()
+print(p2)
+ggplot(NULL, aes(x=X, y=Y)) +geom_point(data=clossloss, aes(color = predval))+geom_point(data=c1, aes(color = predvalloss))
+```
+
+
+
+
+
+
